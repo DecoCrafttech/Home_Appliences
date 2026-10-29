@@ -1,0 +1,58 @@
+[
+  {
+    "path": "apps/admin-pwa/src/App.tsx",
+    "count": 1
+  },
+  {
+    "path": "apps/admin-pwa/src/Catalogue.tsx",
+    "count": 3
+  },
+  {
+    "path": "apps/admin-pwa/src/CompleteRequestModal.tsx",
+    "count": 1
+  },
+  {
+    "path": "apps/admin-pwa/src/Feedback.tsx",
+    "count": 3
+  },
+  {
+    "path": "apps/admin-pwa/src/OperationsPage.tsx",
+    "count": 2
+  },
+  {
+    "path": "apps/admin-pwa/src/Support.tsx",
+    "count": 1
+  },
+  {
+    "path": "apps/admin-pwa/src/TechnicianOperations.tsx",
+    "count": 4
+  },
+  {
+    "path": "apps/admin-pwa/src/Technicians.tsx",
+    "count": 2
+  },
+  {
+    "path": "apps/customer-pwa/src/Aftercare.tsx",
+    "count": 3
+  },
+  {
+    "path": "apps/customer-pwa/src/BookingWizard.tsx",
+    "count": 3
+  },
+  {
+    "path": "apps/customer-pwa/src/EstimateApproval.tsx",
+    "count": 2
+  },
+  {
+    "path": "apps/customer-pwa/src/SupportConversation.tsx",
+    "count": 1
+  },
+  {
+    "path": "apps/customer-pwa/src/WorkflowPages.tsx",
+    "count": 2
+  },
+  {
+    "path": "apps/technician-pwa/src/TechnicianApp.tsx",
+    "count": 11
+  }
+]

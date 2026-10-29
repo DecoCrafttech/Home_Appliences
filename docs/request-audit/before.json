@@ -1,0 +1,45 @@
+{
+  "customer": {
+    "initial": {
+      "/api/v1/catalogue/appliances": 1,
+      "/api/v1/profile": 1,
+      "/api/v1/auth/customer/config": 1,
+      "/api/v1/requests": 1,
+      "/api/v1/notifications": 1
+    },
+    "idle": {},
+    "notificationOpen": {
+      "/api/v1/notifications": 1
+    }
+  },
+  "admin": {
+    "initial": {
+      "/api/v1/admin/auth/me": 1,
+      "/api/v1/admin/notifications": 1,
+      "/api/v1/admin/dashboard/allocation": 1,
+      "/api/v1/admin/dashboard/summary": 1,
+      "/api/v1/admin/dashboard/activity": 1
+    },
+    "idle": {
+      "/api/v1/admin/dashboard/summary": 2,
+      "/api/v1/admin/dashboard/activity": 2
+    },
+    "notificationOpen": {
+      "/api/v1/admin/notifications": 1
+    }
+  },
+  "technician": {
+    "initial": {
+      "/api/v1/technician/auth/me": 1,
+      "/api/v1/technician/profile/photo": 1,
+      "/api/v1/technician/dashboard": 1,
+      "/api/v1/technician/notifications": 1
+    },
+    "idle": {
+      "/api/v1/technician/dashboard": 4
+    },
+    "notificationOpen": {
+      "/api/v1/technician/notifications": 1
+    }
+  }
+}

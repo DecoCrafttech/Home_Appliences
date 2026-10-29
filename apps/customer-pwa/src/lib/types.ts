@@ -1,0 +1,88 @@
+import type { CatalogueOption, ServiceFormField } from "@home/shared";
+export type Customer = {
+  id: string;
+  customer_reference?: string;
+  full_name: string | null;
+  email: string | null;
+  phone_e164: string | null;
+  profile_photo_url?: string | null;
+  created_at: string;
+};
+export type Address = {
+  id: string;
+  label: string;
+  recipient_name: string;
+  phone: string;
+  line1: string;
+  area: string;
+  city: string;
+  state: string;
+  pin_code: string;
+  landmark?: string;
+  is_default: boolean;
+};
+export type CatalogueItem = {
+  description?: string;
+  booking_options?: CatalogueOption[];
+  icon_url?: string | null;
+  id: string;
+  name: string;
+  slug?: string;
+  base_price?: string | null;
+  form_fields?: ServiceFormField[];
+};
+export type RequestRecord = {
+  status_source?: string;
+  display_number?: number | string;
+  assigned_technician_name?: string;
+  assigned_technician_phone?: string;
+  confirmed_date?: string;
+  confirmed_time_window?: string;
+  id: string;
+  request_number: string;
+  request_type: "SERVICE" | "INSTALLATION";
+  appliance: string;
+  service_name: string;
+  appliance_category_id: string;
+  service_catalogue_id: string;
+  details: Record<string, unknown>;
+  address_snapshot: {
+    name: string;
+    phone: string;
+    line1: string;
+    area: string;
+    city: string;
+    state: string;
+    pinCode: string;
+  };
+  preferred_date: string;
+  preferred_time_window: string;
+  status: string;
+  version: number;
+  created_at: string;
+  work_summary?: string;
+  completion_notes?: string;
+  completed_at: string | null;
+  review_id?: string | null;
+  review_reminder_dismissed_at: string | null;
+};
+export type Review = {
+  id: string;
+  request_id?: string;
+  request_number?: string;
+  appliance?: string;
+  rating: number;
+  comment: string;
+  tags: string[];
+  created_at: string;
+};
+export type Notification = {
+  related_path?: string;
+  id: string;
+  request_id: string;
+  kind: string;
+  title: string;
+  message: string;
+  read_at: string | null;
+  created_at: string;
+};

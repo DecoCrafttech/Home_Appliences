@@ -1,9 +1,0 @@
-
- RUN  v5.0.5 D:/HA
-
-
- Test Files  2 passed (2)
-      Tests  18 passed (18)
-   Start at  15:12:10
-   Duration  3.17s (import 83%, transform 13%, worker 3%, tests 1%)
-

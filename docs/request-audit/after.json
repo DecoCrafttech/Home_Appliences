@@ -1,0 +1,80 @@
+{
+  "customer": {
+    "initial": {
+      "/api/v1/catalogue/appliances": 1,
+      "/api/v1/profile": 1,
+      "/api/v1/auth/customer/config": 1,
+      "/api/v1/requests": 1
+    },
+    "idle": {},
+    "notificationOpen": {
+      "/api/v1/notifications": 1
+    },
+    "navigation": {
+      "listOpen": {
+        "/api/v1/catalogue/appliances": 1,
+        "/api/v1/profile": 1,
+        "/api/v1/auth/customer/config": 1
+      },
+      "recordOpen": {
+        "/api/v1/profile": 1,
+        "/api/v1/auth/customer/config": 1,
+        "/api/v1/requests/11111111-1111-4111-8111-111111111111": 1,
+        "/api/v1/requests/11111111-1111-4111-8111-111111111111/timeline": 1,
+        "/api/v1/requests/11111111-1111-4111-8111-111111111111/estimates": 1
+      }
+    },
+    "aborted": {}
+  },
+  "admin": {
+    "initial": {
+      "/api/v1/admin/auth/me": 1,
+      "/api/v1/admin/dashboard/allocation": 1,
+      "/api/v1/admin/dashboard/summary": 1,
+      "/api/v1/admin/dashboard/activity": 1
+    },
+    "idle": {},
+    "notificationOpen": {
+      "/api/v1/admin/notifications": 1
+    },
+    "navigation": {
+      "listOpen": {
+        "/api/v1/admin/auth/me": 1,
+        "/api/v1/admin/technicians": 1,
+        "/api/v1/admin/catalogue": 1,
+        "/api/v1/admin/requests": 2
+      },
+      "recordOpen": {
+        "/api/v1/admin/auth/me": 1,
+        "/api/v1/admin/requests/11111111-1111-4111-8111-111111111111": 1
+      }
+    },
+    "aborted": {
+      "/api/v1/admin/requests": 1
+    }
+  },
+  "technician": {
+    "initial": {
+      "/api/v1/technician/auth/me": 1,
+      "/api/v1/technician/profile/photo": 1,
+      "/api/v1/technician/dashboard": 1
+    },
+    "idle": {},
+    "notificationOpen": {
+      "/api/v1/technician/notifications": 1
+    },
+    "navigation": {
+      "listOpen": {
+        "/api/v1/technician/auth/me": 1,
+        "/api/v1/technician/profile/photo": 1,
+        "/api/v1/technician/jobs": 1
+      },
+      "recordOpen": {
+        "/api/v1/technician/auth/me": 1,
+        "/api/v1/technician/profile/photo": 1,
+        "/api/v1/technician/jobs/11111111-1111-4111-8111-111111111111": 1
+      }
+    },
+    "aborted": {}
+  }
+}

@@ -1,0 +1,2 @@
+ALTER TABLE request_status_overrides DROP CONSTRAINT request_status_overrides_request_id_fkey;
+ALTER TABLE request_status_overrides ADD CONSTRAINT request_status_overrides_request_id_fkey FOREIGN KEY(request_id) REFERENCES service_requests(id) ON DELETE CASCADE;

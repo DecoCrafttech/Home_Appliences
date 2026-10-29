@@ -1,0 +1,15 @@
+export const customerKeys = {
+  profile: ["profile"] as const,
+  addresses: ["addresses"] as const,
+  requests: ["requests"] as const,
+  request: (id: string | null | undefined) => ["request", id] as const,
+  timeline: (id: string | undefined) => ["timeline", id] as const,
+  review: (id: string) => ["review", id] as const,
+  reviews: ["my-reviews"] as const,
+  notifications: ["notifications"] as const,
+  tickets: ["tickets"] as const,
+  conversation: (id: string) => ["support-conversation", id] as const,
+  appliances: ["appliances"] as const,
+  catalogue: (type: string, id: string) => ["catalogue", type, id] as const,
+  appointmentWindows: ["appointment-windows"] as const,
+};

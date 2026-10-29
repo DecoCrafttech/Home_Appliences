@@ -1,3 +1,0 @@
-{"name":"admin","manifest":"PASS","serviceWorker":"PASS","chromeInstallability":"PASS","privateApiCache":"NONE","offlineShell":"PASS","cachedAssets":9}
-{"name":"customer","manifest":"PASS","serviceWorker":"PASS","chromeInstallability":"PASS","privateApiCache":"NONE","offlineShell":"PASS","cachedAssets":8}
-{"name":"technician","manifest":"PASS","serviceWorker":"PASS","chromeInstallability":"PASS","privateApiCache":"NONE","offlineShell":"PASS","cachedAssets":9}

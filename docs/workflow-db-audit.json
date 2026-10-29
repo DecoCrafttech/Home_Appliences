@@ -1,0 +1,12 @@
+{
+  "branch": "codex-customer-dev",
+  "checkedAt": "2026-10-23T06:45:31.006Z",
+  "potentialBookings": [],
+  "assignments": [],
+  "reviews": [],
+  "completions": [],
+  "notifications": [],
+  "staleAssignments": [],
+  "statusHistory": [],
+  "note": "Read-only audit. Repeated bookings or status labels are candidates for human review, not proven duplicates. No business records were deleted."
+}
