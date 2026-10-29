@@ -1,0 +1,13 @@
+
+> home-service-platform@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.5 D:/HA
+
+
+ Test Files  19 passed (19)
+      Tests  104 passed (104)
+   Start at  15:38:44
+   Duration  414.96s (tests 97%, import 3%)
+

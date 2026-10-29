@@ -1,0 +1,22 @@
+
+Running 14 tests using 1 worker
+
+(node:13776) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/14] tests\browser\admin-layout.spec.ts:226:5 › mobile admin navigation opens, navigates and closes
+[2/14] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 360px
+[3/14] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 390px
+[4/14] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 768px
+[5/14] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 1024px
+[6/14] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 1440px
+[7/14] tests\browser\admin-layout.spec.ts:282:5 › completion modal cancels safely, keeps failed input and confirms a real response
+[8/14] tests\browser\admin-layout.spec.ts:351:5 › session network errors offer retry without showing a login form
+[9/14] tests\browser\admin-layout.spec.ts:369:5 › navigation uses unique icon links, collapses and opens the working profile settings
+[10/14] tests\browser\admin-layout.spec.ts:403:5 › one request toolbar applies filters and refreshes the server query
+[11/14] tests\browser\admin-layout.spec.ts:441:5 › overview keeps urgent work visible and reporting optional
+[12/14] tests\browser\request-measurement.spec.ts:6:7 › customer request measurement
+[13/14] tests\browser\request-measurement.spec.ts:6:7 › admin request measurement
+[14/14] tests\browser\request-measurement.spec.ts:6:7 › technician request measurement
+  14 passed (1.8m)

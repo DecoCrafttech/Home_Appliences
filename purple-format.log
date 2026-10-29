@@ -1,0 +1,67 @@
+packages/ui/src/bookedPrices.tsx 60ms (unchanged)
+packages/ui/src/calendar.tsx 42ms (unchanged)
+packages/ui/src/contact.tsx 8ms (unchanged)
+packages/ui/src/icons.tsx 6ms (unchanged)
+packages/ui/src/index.tsx 50ms (unchanged)
+packages/ui/src/location.tsx 10ms (unchanged)
+packages/ui/src/navigation.tsx 3ms
+packages/ui/src/notifications.tsx 20ms (unchanged)
+packages/ui/src/primitives.tsx 10ms (unchanged)
+packages/ui/src/skeletons.tsx 21ms
+packages/ui/src/widgets.tsx 25ms
+packages/ui/src/essentials.css 74ms
+packages/ui/src/platform.css 107ms
+packages/ui/src/styles.css 31ms
+packages/ui/src/tokens.css 5ms (unchanged)
+apps/customer-pwa/src/Aftercare.tsx 77ms (unchanged)
+apps/customer-pwa/src/App.tsx 37ms (unchanged)
+apps/customer-pwa/src/BackButton.tsx 6ms (unchanged)
+apps/customer-pwa/src/BookingWizard.tsx 110ms (unchanged)
+apps/customer-pwa/src/EstimateApproval.tsx 9ms (unchanged)
+apps/customer-pwa/src/main.tsx 4ms
+apps/customer-pwa/src/PublishedServices.tsx 33ms (unchanged)
+apps/customer-pwa/src/SupportConversation.tsx 8ms (unchanged)
+apps/customer-pwa/src/WorkflowPages.tsx 34ms
+apps/customer-pwa/src/components/ui.tsx 7ms
+apps/admin-pwa/src/AdminLayout.tsx 14ms (unchanged)
+apps/admin-pwa/src/App.tsx 38ms (unchanged)
+apps/admin-pwa/src/ApplianceCatalogueSettings.tsx 11ms (unchanged)
+apps/admin-pwa/src/Appointments.tsx 20ms (unchanged)
+apps/admin-pwa/src/AssignTechnicianDrawer.tsx 16ms (unchanged)
+apps/admin-pwa/src/BookingSummary.tsx 10ms (unchanged)
+apps/admin-pwa/src/Catalogue.tsx 16ms
+apps/admin-pwa/src/CatalogueEditor.tsx 30ms
+apps/admin-pwa/src/CatalogueIconUpload.tsx 9ms
+apps/admin-pwa/src/CatalogueQuestions.tsx 11ms (unchanged)
+apps/admin-pwa/src/ChangeRequestStatusModal.tsx 15ms (unchanged)
+apps/admin-pwa/src/CompleteReportDialog.tsx 8ms (unchanged)
+apps/admin-pwa/src/CompleteRequestModal.tsx 10ms (unchanged)
+apps/admin-pwa/src/components.tsx 1ms (unchanged)
+apps/admin-pwa/src/Dashboard.tsx 21ms (unchanged)
+apps/admin-pwa/src/design.tsx 3ms (unchanged)
+apps/admin-pwa/src/Feedback.tsx 27ms
+apps/admin-pwa/src/main.tsx 3ms
+apps/admin-pwa/src/Notifications.tsx 4ms (unchanged)
+apps/admin-pwa/src/OperationsPage.tsx 12ms
+apps/admin-pwa/src/PwaUpdate.tsx 3ms (unchanged)
+apps/admin-pwa/src/RequestWorkReport.tsx 10ms (unchanged)
+apps/admin-pwa/src/RequestWorkspace.tsx 46ms (unchanged)
+apps/admin-pwa/src/ServiceIconEditor.tsx 5ms (unchanged)
+apps/admin-pwa/src/Support.tsx 19ms (unchanged)
+apps/admin-pwa/src/TechnicianAccount.tsx 10ms (unchanged)
+apps/admin-pwa/src/TechnicianOperations.tsx 22ms (unchanged)
+apps/admin-pwa/src/Technicians.tsx 17ms (unchanged)
+apps/admin-pwa/src/WorkflowActions.tsx 12ms (unchanged)
+apps/technician-pwa/src/CompleteJobButton.tsx 11ms (unchanged)
+apps/technician-pwa/src/components.tsx 1ms (unchanged)
+apps/technician-pwa/src/design.tsx 1ms (unchanged)
+apps/technician-pwa/src/main.tsx 3ms
+apps/technician-pwa/src/PwaUpdate.tsx 2ms (unchanged)
+apps/technician-pwa/src/RescheduleRequest.tsx 7ms (unchanged)
+apps/technician-pwa/src/TechnicianApp.tsx 81ms (unchanged)
+apps/technician-pwa/src/TechSchedule.tsx 7ms (unchanged)
+apps/admin-pwa/src/styles.css 36ms
+apps/customer-pwa/src/styles.css 91ms
+apps/technician-pwa/src/styles.css 31ms
+tests/browser/ui-essentials.spec.ts 34ms
+scripts/generate-app-icons.mjs 29ms

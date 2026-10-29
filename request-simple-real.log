@@ -1,0 +1,27 @@
+◇ injected env (7) from .env.local // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from ..\.env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from ..\.env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (2) from backend\.env.local // tip: ⌘ override existing { override: true }
+◇ injected env (0) from backend\.env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+Running 1 test using 1 worker
+
+(node:15704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+◇ injected env (0) from .env.local // tip: ⌘ override existing { override: true }
+
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+◇ injected env (0) from ..\.env.local // tip: ⌘ enable debugging { debug: true }
+
+◇ injected env (0) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+◇ injected env (0) from backend\.env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+
+◇ injected env (0) from backend\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[1/1] tests\browser\technician-workflow.spec.ts:6:7 › three-way technician browser: SERVICE
+  1 passed (2.9m)

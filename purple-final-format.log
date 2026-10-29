@@ -1,0 +1,8 @@
+apps/customer-pwa/src/PublishedServices.tsx 157ms
+apps/customer-pwa/src/BookingWizard.tsx 154ms
+apps/admin-pwa/src/RequestWorkspace.tsx 86ms
+packages/ui/src/tokens.css 33ms
+packages/ui/src/essentials.css 54ms
+tests/browser/redesign-lifecycle.spec.ts 66ms
+docs/DESIGN_SYSTEM.md 40ms
+docs/PURPLE_UI_ESSENTIALS_REPORT.md 14ms

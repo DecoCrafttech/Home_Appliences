@@ -1,0 +1,62 @@
+
+Running 54 tests using 1 worker
+
+(node:21896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/54] tests\browser\admin-controls.spec.ts:99:5 › report export downloads the fetched counts as CSV
+[2/54] tests\browser\admin-controls.spec.ts:113:5 › profile save refreshes identity and password errors preserve form input
+[3/54] tests\browser\admin-controls.spec.ts:155:5 › technician editor saves metadata and archive requires confirmation
+[4/54] tests\browser\admin-layout.spec.ts:226:5 › mobile admin navigation opens, navigates and closes
+[5/54] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 360px
+[6/54] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 390px
+[7/54] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 768px
+[8/54] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 1024px
+[9/54] tests\browser\admin-layout.spec.ts:242:7 › admin pages remain usable at 1440px
+[10/54] tests\browser\admin-layout.spec.ts:282:5 › completion modal cancels safely, keeps failed input and confirms a real response
+[11/54] tests\browser\admin-layout.spec.ts:351:5 › session network errors offer retry without showing a login form
+[12/54] tests\browser\admin-layout.spec.ts:369:5 › navigation uses unique icon links, collapses and opens the working profile settings
+[13/54] tests\browser\admin-layout.spec.ts:403:5 › one request toolbar applies filters and refreshes the server query
+[14/54] tests\browser\admin-layout.spec.ts:441:5 › overview keeps urgent work visible and reporting optional
+[15/54] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 360px
+[16/54] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 390px
+[17/54] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 768px
+[18/54] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 1024px
+[19/54] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 1440px
+[20/54] tests\browser\booking-navigation.spec.ts:104:5 › unchanged defaults do not block harmless booking navigation
+[21/54] tests\browser\booking-navigation.spec.ts:112:5 › browser Back preserves editing, drafts omit contact details, and discard requires confirmation
+[22/54] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 360px
+[23/54] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 390px
+[24/54] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 768px
+[25/54] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 1440px
+[26/54] tests\browser\marketplace-polish.spec.ts:128:7 › admin metric shortcuts and debounced search work at 360px
+[27/54] tests\browser\marketplace-polish.spec.ts:128:7 › admin metric shortcuts and debounced search work at 1440px
+[28/54] tests\browser\redesign-ui.spec.ts:75:9 › customer notification dialog is usable at 360px
+[29/54] tests\browser\redesign-ui.spec.ts:75:9 › customer notification dialog is usable at 390px
+[30/54] tests\browser\redesign-ui.spec.ts:75:9 › customer notification dialog is usable at 768px
+[31/54] tests\browser\redesign-ui.spec.ts:75:9 › customer notification dialog is usable at 1024px
+[32/54] tests\browser\redesign-ui.spec.ts:75:9 › customer notification dialog is usable at 1440px
+[33/54] tests\browser\redesign-ui.spec.ts:75:9 › admin notification dialog is usable at 360px
+[34/54] tests\browser\redesign-ui.spec.ts:75:9 › admin notification dialog is usable at 390px
+[35/54] tests\browser\redesign-ui.spec.ts:75:9 › admin notification dialog is usable at 768px
+[36/54] tests\browser\redesign-ui.spec.ts:75:9 › admin notification dialog is usable at 1024px
+[37/54] tests\browser\redesign-ui.spec.ts:75:9 › admin notification dialog is usable at 1440px
+[38/54] tests\browser\redesign-ui.spec.ts:75:9 › technician notification dialog is usable at 360px
+[39/54] tests\browser\redesign-ui.spec.ts:75:9 › technician notification dialog is usable at 390px
+[40/54] tests\browser\redesign-ui.spec.ts:75:9 › technician notification dialog is usable at 768px
+[41/54] tests\browser\redesign-ui.spec.ts:75:9 › technician notification dialog is usable at 1024px
+[42/54] tests\browser\redesign-ui.spec.ts:75:9 › technician notification dialog is usable at 1440px
+[43/54] tests\browser\redesign-ui.spec.ts:139:5 › admin navigation exposes the unified destinations and mobile drawer closes safely
+[44/54] tests\browser\service-icon-upload.spec.ts:10:5 › admin uploads, saves, replaces and removes a service SVG visible to customers
+[45/54] tests\browser\workflow-safety.spec.ts:4:5 › assignment drawer blocks triple submission, preserves selection on failure and retries with the same key
+[46/54] tests\browser\workflow-safety.spec.ts:113:5 › refresh during an unknown committed assignment never automatically submits again
+[47/54] tests\browser\workflow-safety.spec.ts:191:7 › customer notifications load on demand without idle polling
+[48/54] tests\browser\workflow-safety.spec.ts:191:7 › admin notifications load on demand without idle polling
+[49/54] tests\browser\workflow-safety.spec.ts:191:7 › technician notifications load on demand without idle polling
+[50/54] tests\browser\workflow-safety.spec.ts:360:7 › assignment drawer fits 360px and returns focus after cancel
+[51/54] tests\browser\workflow-safety.spec.ts:360:7 › assignment drawer fits 390px and returns focus after cancel
+[52/54] tests\browser\workflow-safety.spec.ts:360:7 › assignment drawer fits 768px and returns focus after cancel
+[53/54] tests\browser\workflow-safety.spec.ts:360:7 › assignment drawer fits 1024px and returns focus after cancel
+[54/54] tests\browser\workflow-safety.spec.ts:360:7 › assignment drawer fits 1440px and returns focus after cancel
+  54 passed (2.5m)

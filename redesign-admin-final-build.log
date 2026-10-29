@@ -1,0 +1,29 @@
+
+> @home/admin@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 265 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                          0.36 kB
+dist/index.html                                    0.46 kB │ gzip:   0.30 kB
+dist/assets/calendar-DtJKZp3O.css                 16.95 kB │ gzip:   3.84 kB
+dist/assets/index-BZNUoDp6.css                    46.39 kB │ gzip:   9.69 kB
+dist/assets/workbox-window.prod.es5-BBnX5xw4.js    5.75 kB │ gzip:   2.36 kB
+dist/assets/calendar-B_NUibGf.js                 349.81 kB │ gzip:  99.58 kB
+dist/assets/index-4tqKDBCJ.js                    673.16 kB │ gzip: 204.02 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.56s
+
+PWA v1.3.0
+mode      generateSW
+precache  9 entries (1066.90 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-2fbc6a65.js

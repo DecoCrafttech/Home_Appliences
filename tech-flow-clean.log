@@ -1,0 +1,14 @@
+
+Running 6 tests using 1 worker
+
+(node:10384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/6] tests\browser\technician-flow.spec.ts:179:7 › technician moves from offer to completed job at 360px
+[2/6] tests\browser\technician-flow.spec.ts:179:7 › technician moves from offer to completed job at 1440px
+[3/6] tests\browser\technician-flow.spec.ts:315:5 › estimates pause reporting and reveal revisions only on demand
+[4/6] tests\browser\technician-flow.spec.ts:357:5 › decline preserves the selected reason on failure and returns to jobs after one explicit retry
+[5/6] tests\browser\technician-flow.spec.ts:391:5 › resolved reports cannot expose completion while an estimate blocks the backend
+[6/6] tests\browser\technician-flow.spec.ts:427:5 › profile keeps working settings and hides unused destinations and security forms
+  6 passed (9.9s)

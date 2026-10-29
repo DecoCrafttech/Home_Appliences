@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+(node:14532) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/2] tests\browser\ux-workflow.spec.ts:3:5 › technician workday shortcuts request the matching job list
+[2/2] tests\browser\ux-workflow.spec.ts:53:5 › customer home prioritizes an estimate decision and shows confirmed visit
+  2 passed (4.1s)

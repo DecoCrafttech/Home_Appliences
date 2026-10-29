@@ -1,0 +1,22 @@
+
+Running 14 tests using 1 worker
+
+(node:12112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/14] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 360px
+[2/14] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 390px
+[3/14] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 768px
+[4/14] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 1440px
+[5/14] tests\browser\marketplace-polish.spec.ts:127:7 › admin metric shortcuts and debounced search work at 360px
+[6/14] tests\browser\marketplace-polish.spec.ts:127:7 › admin metric shortcuts and debounced search work at 1440px
+[7/14] tests\browser\technician-flow.spec.ts:179:7 › technician moves from offer to completed job at 360px
+[8/14] tests\browser\technician-flow.spec.ts:179:7 › technician moves from offer to completed job at 1440px
+[9/14] tests\browser\technician-flow.spec.ts:315:5 › estimates pause reporting and reveal revisions only on demand
+[10/14] tests\browser\technician-flow.spec.ts:357:5 › decline preserves the selected reason on failure and returns to jobs after one explicit retry
+[11/14] tests\browser\technician-flow.spec.ts:391:5 › resolved reports cannot expose completion while an estimate blocks the backend
+[12/14] tests\browser\technician-flow.spec.ts:427:5 › profile keeps working settings and hides unused destinations and security forms
+[13/14] tests\browser\ux-workflow.spec.ts:3:5 › technician workday shortcuts request the matching job list
+[14/14] tests\browser\ux-workflow.spec.ts:53:5 › customer home prioritizes an estimate decision and shows confirmed visit
+  14 passed (26.8s)

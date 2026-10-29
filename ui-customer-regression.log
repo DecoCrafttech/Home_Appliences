@@ -1,0 +1,24 @@
+
+Running 16 tests using 1 worker
+
+(node:25516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/16] tests\browser\customer-experience.spec.ts:3:5 › booking date choices remain clear across a month boundary on mobile
+[2/16] tests\browser\customer-experience.spec.ts:230:5 › wizard preserves defaults, restores draft and confirms only a persisted submission
+[3/16] tests\browser\customer-experience.spec.ts:274:5 › failed submission keeps the review page and never shows a success banner
+[4/16] tests\browser\customer-experience.spec.ts:291:5 › repeat request prefills appliance and address but clears the old visit
+[5/16] tests\browser\customer-experience.spec.ts:306:5 › location permission denial falls back to manual entry
+[6/16] tests\browser\customer-experience.spec.ts:334:5 › current location fills approximate fields and leaves house number for confirmation
+[7/16] tests\browser\customer-experience.spec.ts:358:5 › feedback reminder dismissal survives reload and does not prevent a manual review
+[8/16] tests\browser\customer-experience.spec.ts:384:5 › one-tap support carries the real request reference
+[9/16] tests\browser\customer-experience.spec.ts:397:7 › responsive customer screens at 360px
+[10/16] tests\browser\customer-experience.spec.ts:397:7 › responsive customer screens at 390px
+[11/16] tests\browser\customer-experience.spec.ts:397:7 › responsive customer screens at 768px
+[12/16] tests\browser\customer-experience.spec.ts:397:7 › responsive customer screens at 1024px
+[13/16] tests\browser\customer-experience.spec.ts:397:7 › responsive customer screens at 1440px
+[14/16] tests\browser\request-measurement.spec.ts:6:7 › customer request measurement
+[15/16] tests\browser\request-measurement.spec.ts:6:7 › admin request measurement
+[16/16] tests\browser\request-measurement.spec.ts:6:7 › technician request measurement
+  16 passed (1.0m)

@@ -1,0 +1,17 @@
+
+Running 9 tests using 1 worker
+
+(node:5088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/9] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 360px
+[2/9] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 390px
+[3/9] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 768px
+[4/9] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 1024px
+[5/9] tests\browser\appliance-flow.spec.ts:7:7 › appliance navigation and multi-option booking at 1440px
+[6/9] tests\browser\catalogue-card-layout.spec.ts:9:7 › catalogue cards align and remain usable at 360px
+[7/9] tests\browser\catalogue-card-layout.spec.ts:9:7 › catalogue cards align and remain usable at 768px
+[8/9] tests\browser\catalogue-card-layout.spec.ts:9:7 › catalogue cards align and remain usable at 1440px
+[9/9] tests\browser\service-icon-upload.spec.ts:10:5 › admin uploads, saves, replaces and removes a service SVG visible to customers
+  9 passed (27.8s)

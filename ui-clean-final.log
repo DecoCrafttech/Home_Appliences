@@ -1,0 +1,16 @@
+
+Running 8 tests using 1 worker
+
+(node:26276) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/8] tests\browser\customer-experience.spec.ts:3:5 › booking date choices remain clear across a month boundary on mobile
+[2/8] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 360px
+[3/8] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 390px
+[4/8] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 768px
+[5/8] tests\browser\marketplace-polish.spec.ts:8:7 › populated technician cards keep contact and actions usable at 1440px
+[6/8] tests\browser\marketplace-polish.spec.ts:128:7 › admin metric shortcuts and debounced search work at 360px
+[7/8] tests\browser\marketplace-polish.spec.ts:128:7 › admin metric shortcuts and debounced search work at 1440px
+[8/8] tests\browser\workflow-safety.spec.ts:4:5 › assignment drawer blocks triple submission, preserves selection on failure and retries with the same key
+  8 passed (15.9s)

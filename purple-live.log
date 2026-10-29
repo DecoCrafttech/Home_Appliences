@@ -1,0 +1,65 @@
+◇ injected env (7) from .env.local // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from ..\.env.local // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from ..\.env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (2) from backend\.env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from backend\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+Running 2 tests using 1 worker
+
+(node:25004) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+◇ injected env (0) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+◇ injected env (0) from ..\.env.local // tip: ⌘ suppress logs { quiet: true }
+
+◇ injected env (0) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+◇ injected env (0) from backend\.env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+◇ injected env (0) from backend\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[1/2] tests\browser\redesign-lifecycle.spec.ts:6:5 › real UI: publish options and icon, book, provision username, and approve technician reschedule
+  1) tests\browser\redesign-lifecycle.spec.ts:6:5 › real UI: publish options and icon, book, provision username, and approve technician reschedule 
+
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Contact name', { exact: true })
+
+
+      208 |     await client
+      209 |       .getByLabel("Contact name", { exact: true })
+    > 210 |       .fill("Redesign UI Customer");
+          |        ^
+      211 |     await client
+      212 |       .getByLabel("Mobile number", { exact: true })
+      213 |       .fill("9876543210");
+        at D:\HA\tests\browser\redesign-lifecycle.spec.ts:210:8
+
+    Error Context: test-results\purple-live\redesign-lifecycle-real-UI-03578-prove-technician-reschedule\error-context.md
+
+
+(node:21104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+◇ injected env (0) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+◇ injected env (0) from ..\.env.local // tip: ⌘ enable debugging { debug: true }
+
+◇ injected env (0) from ..\.env // tip: ⌁ auth for agents [www.vestauth.com]
+
+◇ injected env (0) from backend\.env.local // tip: ⌁ auth for agents [www.vestauth.com]
+
+◇ injected env (0) from backend\.env // tip: ⌘ suppress logs { quiet: true }
+
+[2/2] tests\browser\technician-workflow.spec.ts:6:7 › three-way technician browser: SERVICE
+  1 failed
+    tests\browser\redesign-lifecycle.spec.ts:6:5 › real UI: publish options and icon, book, provision username, and approve technician reschedule 
+  1 passed (4.8m)
