@@ -7,13 +7,20 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      devOptions: { enabled: true, type: "module" },
       registerType: "prompt",
+      injectManifest: { globPatterns: ["**/*.{js,css,html,svg,png,webp,woff2}"] },
       manifest: {
-        name: "Home Services Operations",
-        short_name: "HS Operations",
+        name: "Fixbeez Operations",
+        short_name: "Fixbeez Admin",
         theme_color: "#512da8",
-        background_color: "#f7f2ff",
+        background_color: "#ffffff",
         display: "standalone",
+        id: "/",
+        scope: "/",
         start_url: "/",
         icons: [
           {
@@ -30,11 +37,6 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [],
-      },
     }),
   ],
   optimizeDeps: { force: true },
@@ -45,5 +47,3 @@ export default defineConfig({
     proxy: { "/api": "http://localhost:3001" },
   },
 });
-
-

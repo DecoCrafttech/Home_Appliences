@@ -40,8 +40,15 @@ export function CompleteJobButton({
   job: { id: string; status: string; assignment_state: string };
 }) {
   const [open, setOpen] = useState(false);
-  if (job.assignment_state !== "ACCEPTED" || job.status !== "IN_PROGRESS")
-    return null;
+  if (job.assignment_state !== "ACCEPTED") return null;
+  if (job.status === "ON_HOLD")
+    return (
+      <button type="button" className="tech-complete-action" disabled>
+        <FaCircleCheck aria-hidden="true" /> Complete job unavailable while on
+        hold
+      </button>
+    );
+  if (job.status !== "IN_PROGRESS") return null;
   return (
     <>
       <button

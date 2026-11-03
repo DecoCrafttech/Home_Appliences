@@ -1,3 +1,4 @@
+import { BrandLogo } from "@home/ui";
 import {
   ConfirmActionDialog,
   useSafeMutation,
@@ -29,6 +30,7 @@ import {
   useGoogleScriptStatus,
 } from "./lib/googleAuth";
 import { api } from "./lib/api";
+import { removeCurrentPushSubscription } from "@home/ui/push";
 
 type Address = {
   id: string;
@@ -73,7 +75,12 @@ export function LoginPage() {
   const script = useGoogleScriptStatus();
   const { scriptLoadedSuccessfully } = useGoogleOAuth();
   return (
-    <Page title={t("Welcome to Home Services")}>
+    <Page title={t("Welcome to Fixbeez")}>
+      <div className="customer-auth-brand fb-header-gradient">
+        <BrandLogo />
+        <p>Home appliance service &amp; installation</p>
+        <small>We fit it. We fix it.</small>
+      </div>
       <div className="workflow-form google-login">
         <p>Sign in securely to book appliance care and track your requests.</p>
         {config.isPending || busy ? (
@@ -321,8 +328,9 @@ export function ProfilePage() {
         ))}
       </div>
       <button
-        className="secondary"
+        className="secondary soft-logout"
         onClick={async () => {
+          await removeCurrentPushSubscription(api).catch(() => undefined);
           await api.post("/auth/logout");
           googleLogout();
           qc.clear();
@@ -337,6 +345,12 @@ export function ProfilePage() {
 }
 
 export function AddressesPage() {
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const defaultAddress = useSafeMutation(async (id: string) => {
+    await api.patch(`/addresses/${id}/default`);
+    await qc.invalidateQueries({ queryKey: customerKeys.addresses });
+    return true;
+  });
   const { t } = useTranslation();
   const qc = useQueryClient();
   const saveGuard = useRef(false);
@@ -362,18 +376,23 @@ export function AddressesPage() {
     const form = e.currentTarget;
     const data = new FormData(form);
     try {
-      await api.post("/addresses", {
-        label: data.get("label"),
-        recipientName: data.get("recipientName"),
-        phone: data.get("phone"),
-        line1: data.get("line1"),
-        area: data.get("area"),
-        landmark: data.get("landmark"),
-        city: data.get("city"),
-        state: data.get("state"),
-        pinCode: data.get("pinCode"),
-        isDefault: data.get("isDefault") === "on",
+      await api.request({
+        url: editingAddress ? `/addresses/${editingAddress.id}` : "/addresses",
+        method: editingAddress ? "PATCH" : "POST",
+        data: {
+          label: data.get("label"),
+          recipientName: data.get("recipientName"),
+          phone: data.get("phone"),
+          line1: data.get("line1"),
+          area: data.get("area"),
+          landmark: data.get("landmark"),
+          city: data.get("city"),
+          state: data.get("state"),
+          pinCode: data.get("pinCode"),
+          isDefault: data.get("isDefault") === "on",
+        },
       });
+      setEditingAddress(null);
       toast.success("Address saved successfully.");
       form.reset();
       qc.invalidateQueries({ queryKey: customerKeys.addresses });
@@ -388,11 +407,16 @@ export function AddressesPage() {
   }
   return (
     <Page title={t("Saved addresses")}>
-      <form className="workflow-form" onSubmit={save}>
+      <form
+        key={editingAddress?.id || "new"}
+        className="workflow-form saved-address-form form-grid"
+        onSubmit={save}
+      >
         <label>
           {t("Label")}
           <input
             name="label"
+            defaultValue={editingAddress?.label || ""}
             minLength={2}
             maxLength={30}
             placeholder="Home"
@@ -401,12 +425,19 @@ export function AddressesPage() {
         </label>
         <label>
           {t("Recipient name")}
-          <input name="recipientName" minLength={2} maxLength={100} required />
+          <input
+            name="recipientName"
+            defaultValue={editingAddress?.recipient_name || ""}
+            minLength={2}
+            maxLength={100}
+            required
+          />
         </label>
         <label>
           {t("Mobile number")}
           <input
             name="phone"
+            defaultValue={editingAddress?.phone || ""}
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
@@ -417,28 +448,57 @@ export function AddressesPage() {
         </label>
         <label>
           {t("House / street")}
-          <input name="line1" minLength={3} maxLength={150} required />
+          <input
+            name="line1"
+            defaultValue={editingAddress?.line1 || ""}
+            minLength={3}
+            maxLength={150}
+            required
+          />
         </label>
         <label>
           {t("Area")}
-          <input name="area" minLength={2} maxLength={100} required />
+          <input
+            name="area"
+            defaultValue={editingAddress?.area || ""}
+            minLength={2}
+            maxLength={100}
+            required
+          />
         </label>
         <label>
           {t("Landmark")}
-          <input name="landmark" maxLength={100} />
+          <input
+            name="landmark"
+            defaultValue={editingAddress?.landmark || ""}
+            maxLength={100}
+          />
         </label>
         <label>
           {t("City")}
-          <input name="city" minLength={2} maxLength={80} required />
+          <input
+            name="city"
+            defaultValue={editingAddress?.city || ""}
+            minLength={2}
+            maxLength={80}
+            required
+          />
         </label>
         <label>
           {t("State")}
-          <input name="state" minLength={2} maxLength={80} required />
+          <input
+            name="state"
+            defaultValue={editingAddress?.state || ""}
+            minLength={2}
+            maxLength={80}
+            required
+          />
         </label>
         <label>
           {t("PIN code")}
           <input
             name="pinCode"
+            defaultValue={editingAddress?.pin_code || ""}
             inputMode="numeric"
             autoComplete="postal-code"
             pattern="\d{6}"
@@ -447,15 +507,28 @@ export function AddressesPage() {
           />
         </label>
         <label className="checkbox">
-          <AppCheckbox name="isDefault" /> Set as default
+          <AppCheckbox
+            name="isDefault"
+            defaultChecked={editingAddress?.is_default || false}
+          />{" "}
+          Set as default
         </label>
         <AppButton
           type="submit"
           pending={saving}
           pendingLabel="Saving address..."
         >
-          Save address
+          {editingAddress ? "Save changes" : "Save address"}
         </AppButton>
+        {editingAddress && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setEditingAddress(null)}
+          >
+            Cancel editing
+          </button>
+        )}
       </form>
       {query.isPending ? (
         <LoadingSkeleton />
@@ -475,6 +548,34 @@ export function AddressesPage() {
             <span>
               {a.recipient_name}, {a.line1}, {a.area}, {a.city} {a.pin_code}
             </span>
+            <div className="address-card-actions">
+              <button
+                className="secondary"
+                onClick={() => {
+                  setEditingAddress(a);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                Edit
+              </button>
+              {!a.is_default && (
+                <AppButton
+                  variant="outline"
+                  disabled={defaultAddress.isPending}
+                  onClick={async () => {
+                    try {
+                      await defaultAddress.run(a.id);
+                    } catch (error) {
+                      toast.error(
+                        message(error, "Unable to set default address."),
+                      );
+                    }
+                  }}
+                >
+                  Set as default
+                </AppButton>
+              )}
+            </div>
             <button
               className="secondary"
               onClick={() => {
@@ -659,7 +760,9 @@ function Page({
 }) {
   return (
     <section className="section page workflow">
-      <h1>{title}</h1>
+      <div className="page-heading">
+        <h1>{title}</h1>
+      </div>
       {children}
     </section>
   );
@@ -669,21 +772,25 @@ function AuthError({ error, retry }: { error: unknown; retry?: () => void }) {
   const text = message(error, "Unable to load this page.");
   const expired = axios.isAxiosError(error) && error.response?.status === 401;
   return (
-    <div className="empty-state" role="alert">
-      <h2>{expired ? "Sign in to continue" : "Unable to load"}</h2>
-      <p>{text}</p>
-      {expired ? (
-        <Link className="primary" to="/login">
-          Login
-        </Link>
-      ) : (
-        <AppButton
-          variant="outline"
-          onClick={retry || (() => window.location.reload())}
-        >
-          Try again
-        </AppButton>
-      )}
+    <div role="alert">
+      <EmptyState
+        kind={expired ? "auth" : "network"}
+        title={expired ? "Sign in to continue" : "Unable to load information"}
+        description={text}
+      >
+        {expired ? (
+          <Link className="primary" to="/login">
+            Login
+          </Link>
+        ) : (
+          <AppButton
+            variant="outline"
+            onClick={retry || (() => window.location.reload())}
+          >
+            Try again
+          </AppButton>
+        )}
+      </EmptyState>
     </div>
   );
 }

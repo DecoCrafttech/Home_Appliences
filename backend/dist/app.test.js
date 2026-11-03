@@ -6,9 +6,9 @@ describe("API foundation", () => {
     it("serves the public Google client configuration without credentials or secrets", async () => {
         const res = await request(app).get("/api/v1/auth/customer/config");
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({
-            data: { clientId: env.GOOGLE_CLIENT_ID || null },
-        });
+        expect(res.body.data.clientId).toBe(env.GOOGLE_CLIENT_ID || null);
+        expect(res.body.data.adminOfficePhone === null ||
+            /^\+91[6-9]\d{9}$/.test(res.body.data.adminOfficePhone)).toBe(true);
         expect(res.headers["cache-control"]).toBe("no-store");
     });
     it("returns versioned health without caching", async () => {

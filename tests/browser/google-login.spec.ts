@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 // These tests exercise app behavior with a simulated Google provider.
 // Real origin authorization remains under the Google Cloud OAuth client.

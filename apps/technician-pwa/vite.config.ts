@@ -7,12 +7,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      devOptions: { enabled: true, type: "module" },
       registerType: "prompt",
+      injectManifest: { globPatterns: ["**/*.{js,css,html,svg,png,woff2}"] },
       manifest: {
-        name: "Home Services Technician",
-        short_name: "HS Technician",
+        name: "Fixbeez Technician",
+        short_name: "Fixbeez Tech",
         theme_color: "#512da8",
-        background_color: "#f7f2ff",
+        background_color: "#ffffff",
         display: "standalone",
         id: "/technician",
         scope: "/",
@@ -32,11 +37,6 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [],
-      },
     }),
   ],
   optimizeDeps: { force: true },
@@ -47,5 +47,3 @@ export default defineConfig({
     proxy: { "/api": "http://localhost:3001" },
   },
 });
-
-

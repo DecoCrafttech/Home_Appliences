@@ -370,7 +370,7 @@ feedbackRoutes.get(
     const input = z
       .object({
         q: z.string().trim().max(120).default(""),
-        status: z.enum(["", "OPEN", "IN_PROGRESS", "RESOLVED"]).default(""),
+        status: z.enum(["", "OPEN", "IN_PROGRESS", "RESOLVED", "IGNORED"]).default(""),
         page: z.coerce.number().int().min(1).max(100000).default(1),
         limit: z.coerce.number().int().min(1).max(200).default(200),
       })
@@ -395,7 +395,7 @@ feedbackRoutes.patch(
   handleFeedback,
   route(async (req, res) => {
     const input = z
-      .object({ status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]) })
+      .object({ status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "IGNORED"]) })
       .strict()
       .safeParse(req.body);
     if (!input.success)

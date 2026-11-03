@@ -1,4 +1,4 @@
-import { OfflineBanner, NavigationScroll } from "@home/ui";
+import { OfflineBanner, NavigationScroll, LaunchExperience } from "@home/ui";
 import { retryTransientRequest } from "@home/ui";
 import { PwaUpdate } from "./PwaUpdate";
 import React from "react";
@@ -9,6 +9,7 @@ import { ToastProvider } from "./components";
 import { App } from "./App";
 import "./styles.css";
 import "@home/ui/styles.css";
+import "@home/ui/staff.css";
 import { AppErrorBoundary } from "@home/ui";
 const client = new QueryClient({
   defaultOptions: {
@@ -28,10 +29,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <NavigationScroll />
         <PwaUpdate />
         <AppErrorBoundary>
-          <App />
+          <LaunchExperience role="admin">
+            <App />
+          </LaunchExperience>
         </AppErrorBoundary>
         <ToastProvider />
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+import "@home/ui/refinements.css";

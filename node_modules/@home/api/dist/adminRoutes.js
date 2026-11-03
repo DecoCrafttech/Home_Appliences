@@ -111,6 +111,31 @@ router.post("/auth/mfa", asyncRoute(async (req, res) => {
         },
     });
 }));
+function dashboardRange(query) {
+    const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(new Date());
+    const start = new Date(`${today}T12:00:00+05:30`);
+    start.setDate(start.getDate() - 6);
+    const defaultFrom = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(start);
+    return z
+        .object({
+        from: z.string().date().default(defaultFrom),
+        to: z.string().date().default(today),
+    })
+        .refine((value) => value.from <= value.to &&
+        new Date(value.to).getTime() - new Date(value.from).getTime() <=
+            366 * 86400000, "Choose a valid date range up to 366 days.")
+        .parse(query);
+}
 router.get("/auth/me", requireStaff, asyncRoute(async (req, res) => {
     const rows = await db() `SELECT id,username,full_name,role,must_change_password FROM staff_profiles WHERE id=${req.staff.id}`;
     res.json({ data: rows[0] });
@@ -153,24 +178,71 @@ router.post("/auth/logout", requireStaff, asyncRoute(async (req, res) => {
     await db() `UPDATE staff_sessions SET revoked_at=now() WHERE token_hash=${hash(token)}`;
     res.clearCookie("staff_session", { path: "/" }).status(204).end();
 }));
-router.get("/dashboard/summary", requireStaff, asyncRoute(async (_req, res) => {
-    const rows = await db() `SELECT (SELECT count(*)::int FROM customers) AS total_customers,(SELECT count(*)::int FROM service_requests WHERE request_type='SERVICE') AS service_requests,(SELECT count(*)::int FROM service_requests WHERE request_type='INSTALLATION') AS installation_requests,(SELECT count(*)::int FROM service_requests WHERE status NOT IN ('COMPLETED','CANCELLED')) AS pending_requests,(SELECT count(*)::int FROM service_requests WHERE status='COMPLETED') AS completed_requests,(SELECT count(*)::int FROM support_tickets WHERE status='OPEN') AS open_tickets,(SELECT COALESCE(round(avg(rating)::numeric,1),0)::float FROM request_reviews) AS average_rating,(SELECT count(*)::int FROM request_reviews WHERE handling_status='NEW') AS new_feedback,(SELECT count(*)::int FROM service_requests WHERE request_type='SERVICE' AND status='REQUESTED') AS new_service_requests,(SELECT count(*)::int FROM service_requests WHERE request_type='INSTALLATION' AND status='REQUESTED') AS new_installation_requests,(SELECT count(*)::int FROM technicians t JOIN technician_accounts a ON a.technician_id=t.id WHERE t.active AND t.verification_status='VERIFIED' AND a.status='ACTIVE') AS available_technicians,(SELECT count(*)::int FROM service_requests r WHERE r.status IN ('REQUESTED','UNDER_REVIEW','EXECUTIVE_CONTACTED','ASSIGNMENT_PENDING','TECHNICIAN_ASSIGNED') OR EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=r.id AND w.state='SUBMITTED_FOR_REVIEW')) AS needs_attention`;
+router.get("/dashboard/summary", requireStaff, asyncRoute(async (req, res) => {
+    const range = dashboardRange(req.query);
+    const { from, to } = range;
+    const rows = await db() `SELECT (SELECT count(*)::int FROM customers) AS total_customers,(SELECT count(*)::int FROM service_requests WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS total_requests,(SELECT count(*)::int FROM service_requests WHERE request_type='SERVICE' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS service_requests,(SELECT count(*)::int FROM service_requests WHERE request_type='INSTALLATION' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS installation_requests,(SELECT count(*)::int FROM service_requests WHERE status NOT IN ('COMPLETED','CANCELLED')) AS pending_requests,(SELECT count(*)::int FROM service_requests WHERE status IN ('TECHNICIAN_EN_ROUTE','TECHNICIAN_ARRIVED','IN_PROGRESS','ESTIMATE_PENDING_APPROVAL')) AS in_progress_requests,(SELECT count(*)::int FROM service_requests WHERE status='COMPLETED' AND (completed_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS completed_requests,(SELECT count(*)::int FROM support_tickets WHERE status='OPEN' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS open_tickets,(SELECT COALESCE(round(avg(rating)::numeric,1),0)::float FROM request_reviews WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS average_rating,(SELECT count(*)::int FROM request_reviews WHERE handling_status='NEW' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS new_feedback,(SELECT count(*)::int FROM service_requests WHERE request_type='SERVICE' AND status='REQUESTED' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS new_service_requests,(SELECT count(*)::int FROM service_requests WHERE request_type='INSTALLATION' AND status='REQUESTED' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS new_installation_requests,(SELECT count(*)::int FROM technicians t JOIN technician_accounts a ON a.technician_id=t.id WHERE t.active AND t.verification_status='VERIFIED' AND a.status='ACTIVE') AS available_technicians,(SELECT count(*)::int FROM service_requests r WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date AND (r.status IN ('REQUESTED','UNDER_REVIEW','EXECUTIVE_CONTACTED','ASSIGNMENT_PENDING','TECHNICIAN_ASSIGNED') OR EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=r.id AND w.state='SUBMITTED_FOR_REVIEW'))) AS needs_attention`;
     res.json({ data: rows[0] });
 }));
-router.get("/dashboard/allocation", requireStaff, asyncRoute(async (_req, res) => {
+router.get("/settings/business", requireStaff, asyncRoute(async (_req, res) => {
+    const rows = await db() `SELECT key,value,updated_at FROM app_settings WHERE key IN ('admin_office_phone','business_working_hours','supported_service_areas','support_contact')`;
+    const settings = new Map(rows.map((row) => [String(row.key), String(row.value)]));
+    res.json({
+        data: {
+            adminOfficePhone: settings.get("admin_office_phone") || null,
+            workingHours: settings.get("business_working_hours") || "",
+            serviceAreas: settings.get("supported_service_areas") || "",
+            supportContact: settings.get("support_contact") || "",
+            updatedAt: rows[0]?.updated_at || null,
+        },
+    });
+}));
+router.patch("/settings/business", requireStaff, allow("SUPER_ADMIN", "ADMIN"), asyncRoute(async (req, res) => {
+    const input = z
+        .object({
+        adminOfficePhone: z
+            .string()
+            .trim()
+            .regex(/^\+91[6-9]\d{9}$/, "Use an Indian phone number in +91 format"),
+        workingHours: z.string().trim().max(200).default(""),
+        serviceAreas: z.string().trim().max(2000).default(""),
+        supportContact: z.string().trim().max(254).default(""),
+    })
+        .strict()
+        .parse(req.body);
+    const values = [
+        ["admin_office_phone", input.adminOfficePhone],
+        ["business_working_hours", input.workingHours],
+        ["supported_service_areas", input.serviceAreas],
+        ["support_contact", input.supportContact],
+    ];
+    const rows = await db().transaction(values.map(([key, value]) => db() `INSERT INTO app_settings(key,value,updated_by) VALUES(${key},${value},${req.staff.id}) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING value,updated_at`));
+    res.json({
+        data: {
+            adminOfficePhone: input.adminOfficePhone,
+            workingHours: input.workingHours,
+            serviceAreas: input.serviceAreas,
+            supportContact: input.supportContact,
+            updatedAt: rows[0][0].updated_at,
+        },
+    });
+}));
+router.get("/dashboard/allocation", requireStaff, asyncRoute(async (req, res) => {
+    const { from, to } = dashboardRange(req.query);
     const [totals, workload] = await Promise.all([
-        db() `SELECT (SELECT count(*)::int FROM service_requests WHERE status NOT IN ('COMPLETED','CANCELLED','ON_HOLD')) AS assignable,(SELECT count(*)::int FROM service_requests r WHERE r.status NOT IN ('COMPLETED','CANCELLED','ON_HOLD') AND r.assigned_technician_id IS NULL AND NOT EXISTS(SELECT 1 FROM technician_assignments a WHERE a.request_id=r.id AND a.state='OFFERED' AND a.expires_at>now())) AS unassigned,(SELECT count(*)::int FROM technician_assignments a JOIN service_requests r ON r.id=a.request_id WHERE a.state='OFFERED' AND a.expires_at>now() AND r.status NOT IN ('COMPLETED','CANCELLED')) AS offered,(SELECT count(*)::int FROM technician_assignments a JOIN service_requests r ON r.id=a.request_id WHERE a.state='ACCEPTED' AND r.status NOT IN ('COMPLETED','CANCELLED')) AS accepted,(SELECT count(*)::int FROM technicians t LEFT JOIN technician_accounts a ON a.technician_id=t.id WHERE t.active AND (t.verification_status!='VERIFIED' OR a.status IS DISTINCT FROM 'ACTIVE')) AS unavailable`,
-        db() `SELECT t.id,t.full_name,count(a.id)::int AS jobs FROM technicians t JOIN technician_assignments a ON a.technician_id=t.id JOIN service_requests r ON r.id=a.request_id WHERE t.active AND a.state IN ('OFFERED','ACCEPTED') AND (a.state!='OFFERED' OR a.expires_at>now()) AND r.status NOT IN ('COMPLETED','CANCELLED') GROUP BY t.id ORDER BY count(a.id) DESC,t.full_name LIMIT 6`,
+        db() `SELECT (SELECT count(*)::int FROM service_requests WHERE status NOT IN ('COMPLETED','CANCELLED','ON_HOLD') AND COALESCE(confirmed_date,(created_at AT TIME ZONE 'Asia/Kolkata')::date) BETWEEN ${from}::date AND ${to}::date) AS assignable,(SELECT count(*)::int FROM service_requests r WHERE r.status NOT IN ('COMPLETED','CANCELLED','ON_HOLD') AND COALESCE(r.confirmed_date,(r.created_at AT TIME ZONE 'Asia/Kolkata')::date) BETWEEN ${from}::date AND ${to}::date AND r.assigned_technician_id IS NULL AND NOT EXISTS(SELECT 1 FROM technician_assignments a WHERE a.request_id=r.id AND a.state='OFFERED' AND a.expires_at>now())) AS unassigned,(SELECT count(*)::int FROM technician_assignments a JOIN service_requests r ON r.id=a.request_id WHERE a.state='OFFERED' AND a.expires_at>now() AND r.status NOT IN ('COMPLETED','CANCELLED') AND COALESCE(r.confirmed_date,(r.created_at AT TIME ZONE 'Asia/Kolkata')::date) BETWEEN ${from}::date AND ${to}::date) AS offered,(SELECT count(*)::int FROM technician_assignments a JOIN service_requests r ON r.id=a.request_id WHERE a.state='ACCEPTED' AND r.status NOT IN ('COMPLETED','CANCELLED') AND COALESCE(r.confirmed_date,(r.created_at AT TIME ZONE 'Asia/Kolkata')::date) BETWEEN ${from}::date AND ${to}::date) AS accepted,(SELECT count(*)::int FROM technicians t LEFT JOIN technician_accounts a ON a.technician_id=t.id WHERE t.active AND (t.verification_status!='VERIFIED' OR a.status IS DISTINCT FROM 'ACTIVE')) AS unavailable`,
+        db() `SELECT t.id,t.full_name,count(a.id)::int AS jobs FROM technicians t JOIN technician_assignments a ON a.technician_id=t.id JOIN service_requests r ON r.id=a.request_id WHERE t.active AND a.state IN ('OFFERED','ACCEPTED') AND (a.state!='OFFERED' OR a.expires_at>now()) AND r.status NOT IN ('COMPLETED','CANCELLED') AND COALESCE(r.confirmed_date,(r.created_at AT TIME ZONE 'Asia/Kolkata')::date) BETWEEN ${from}::date AND ${to}::date GROUP BY t.id ORDER BY count(a.id) DESC,t.full_name LIMIT 6`,
     ]);
     res.json({ data: { ...totals[0], workload } });
 }));
-router.get("/dashboard/activity", requireStaff, asyncRoute(async (_req, res) => {
+router.get("/dashboard/activity", requireStaff, asyncRoute(async (req, res) => {
+    const { from, to } = dashboardRange(req.query);
     const [trends, distribution, recent, attention, alerts] = await Promise.all([
-        db() `SELECT days.day::date::text AS date,count(r.id) FILTER(WHERE r.request_type='SERVICE')::int AS service,count(r.id) FILTER(WHERE r.request_type='INSTALLATION')::int AS installation FROM generate_series((now() AT TIME ZONE 'Asia/Kolkata')::date-6,(now() AT TIME ZONE 'Asia/Kolkata')::date,interval '1 day') AS days(day) LEFT JOIN service_requests r ON (r.created_at AT TIME ZONE 'Asia/Kolkata')::date=days.day::date GROUP BY days.day ORDER BY days.day`,
-        db() `SELECT request_type,count(*)::int AS count FROM service_requests GROUP BY request_type`,
-        db() `SELECT r.id,r.request_number,r.appliance,r.status,c.full_name AS customer_name FROM service_requests r JOIN customers c ON c.id=r.customer_id ORDER BY r.created_at DESC LIMIT 5`,
-        db() `SELECT r.id,r.request_number,r.appliance,r.status,c.full_name AS customer_name FROM service_requests r JOIN customers c ON c.id=r.customer_id WHERE r.status IN ('REQUESTED','UNDER_REVIEW','EXECUTIVE_CONTACTED','ASSIGNMENT_PENDING','TECHNICIAN_ASSIGNED') OR EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=r.id AND w.state='SUBMITTED_FOR_REVIEW') ORDER BY r.created_at LIMIT 8`,
-        db() `SELECT (SELECT count(*)::int FROM service_requests WHERE assigned_technician_id IS NULL AND status NOT IN ('COMPLETED','CANCELLED')) AS unassigned,(SELECT count(*)::int FROM service_requests WHERE confirmed_date IS NULL AND preferred_date<(now() AT TIME ZONE 'Asia/Kolkata')::date AND status NOT IN ('COMPLETED','CANCELLED')) AS overdue,(SELECT count(*)::int FROM request_reviews WHERE rating<=2 AND handling_status!='RESOLVED') AS negative`,
+        db() `SELECT days.day::date::text AS date,count(r.id) FILTER(WHERE r.request_type='SERVICE')::int AS service,count(r.id) FILTER(WHERE r.request_type='INSTALLATION')::int AS installation FROM generate_series(${from}::date,${to}::date,interval '1 day') AS days(day) LEFT JOIN service_requests r ON (r.created_at AT TIME ZONE 'Asia/Kolkata')::date=days.day::date GROUP BY days.day ORDER BY days.day`,
+        db() `SELECT request_type,count(*)::int AS count FROM service_requests WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date GROUP BY request_type`,
+        db() `SELECT r.id,r.request_number,r.appliance,r.status,c.full_name AS customer_name FROM service_requests r JOIN customers c ON c.id=r.customer_id WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date ORDER BY r.created_at DESC LIMIT 5`,
+        db() `SELECT r.id,r.request_number,r.appliance,r.service_name,r.status,r.confirmed_date,r.confirmed_time_window,c.full_name AS customer_name,COALESCE(NULLIF(r.address_snapshot->>'phone',''),c.phone_e164) AS customer_phone,t.full_name AS assigned_technician_name,CASE WHEN EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=r.id AND w.state='SUBMITTED_FOR_REVIEW') THEN 'Work report requires review' WHEN r.assigned_technician_id IS NULL THEN 'Technician not assigned' WHEN COALESCE(r.confirmed_date,r.preferred_date)<(now() AT TIME ZONE 'Asia/Kolkata')::date THEN 'Scheduled date has passed' ELSE 'Operational follow-up required' END AS attention_reason FROM service_requests r JOIN customers c ON c.id=r.customer_id LEFT JOIN technicians t ON t.id=r.assigned_technician_id WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date AND (r.status IN ('REQUESTED','UNDER_REVIEW','EXECUTIVE_CONTACTED','ASSIGNMENT_PENDING','TECHNICIAN_ASSIGNED') OR EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=r.id AND w.state='SUBMITTED_FOR_REVIEW')) ORDER BY CASE WHEN r.assigned_technician_id IS NULL THEN 0 WHEN COALESCE(r.confirmed_date,r.preferred_date)<(now() AT TIME ZONE 'Asia/Kolkata')::date THEN 1 ELSE 2 END,r.created_at LIMIT 8`,
+        db() `SELECT (SELECT count(*)::int FROM service_requests WHERE assigned_technician_id IS NULL AND status NOT IN ('COMPLETED','CANCELLED') AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS unassigned,(SELECT count(*)::int FROM service_requests WHERE confirmed_date IS NULL AND preferred_date<(now() AT TIME ZONE 'Asia/Kolkata')::date AND status NOT IN ('COMPLETED','CANCELLED') AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS overdue,(SELECT count(*)::int FROM request_reviews WHERE rating<=2 AND handling_status!='RESOLVED' AND (created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${from}::date AND ${to}::date) AS negative`,
     ]);
     res.json({
         data: { trends, distribution, recent, attention, alerts: alerts[0] },
@@ -405,8 +477,8 @@ const serviceBody = z.object({
     iconObjectKey: z.string().max(160).nullable().optional(),
 });
 router.get("/catalogue", requireStaff, asyncRoute(async (_req, res) => {
-    const categories = await db() `SELECT a.id,a.slug,a.name,a.icon_object_key,a.publication_status,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_preview_url FROM appliance_categories a WHERE a.active=true ORDER BY a.name`;
-    const services = await db() `SELECT s.*,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_preview_url,a.name AS appliance_name FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active=true AND a.active=true ORDER BY s.display_order,a.name,s.name`;
+    const categories = await db() `SELECT a.id,a.slug,a.name,a.kind,a.icon_object_key,a.publication_status,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_preview_url FROM appliance_categories a WHERE a.active=true ORDER BY a.name`;
+    const services = await db() `SELECT s.*,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_preview_url,a.name AS appliance_name,a.kind AS category_kind FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active=true AND a.active=true ORDER BY s.display_order,a.name,s.name`;
     res.json({ data: { categories, services } });
 }));
 router.post("/catalogue/services", requireStaff, manageCatalogue, asyncRoute(async (req, res) => {

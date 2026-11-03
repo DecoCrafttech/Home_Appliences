@@ -71,6 +71,92 @@ export function SkeletonProfile() {
     </div>
   );
 }
+export function HomeHeaderSkeleton() {
+  return (
+    <div
+      className="skeleton-greeting v6-home-header-skeleton"
+      aria-hidden="true"
+    >
+      <AppSkeleton className="skeleton-avatar" />
+      <div>
+        <AppSkeleton className="skeleton-line skeleton-line--title" />
+        <AppSkeleton className="skeleton-line" />
+      </div>
+    </div>
+  );
+}
+export function HeroBannerSkeleton() {
+  return (
+    <div className="v6-hero-skeleton" aria-hidden="true">
+      <div>
+        <AppSkeleton className="skeleton-line skeleton-line--short" />
+        <AppSkeleton className="skeleton-line skeleton-line--title" />
+        <AppSkeleton className="skeleton-line" />
+        <AppSkeleton className="v6-skeleton-button" />
+      </div>
+      <AppSkeleton className="v6-skeleton-product" />
+    </div>
+  );
+}
+export function ApplianceCardSkeleton() {
+  return (
+    <div className="appliance-card v6-appliance-skeleton" aria-hidden="true">
+      <AppSkeleton className="v6-appliance-image-skeleton" />
+      <div className="v6-appliance-footer-skeleton">
+        <AppSkeleton className="skeleton-line skeleton-line--title" />
+      </div>
+    </div>
+  );
+}
+export function ApplianceGridSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="v6-appliance-grid-skeleton" aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <ApplianceCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+export function ServiceCardSkeleton() {
+  return (
+    <div className="v6-service-skeleton" aria-hidden="true">
+      <AppSkeleton className="skeleton-icon" />
+      <div>
+        <AppSkeleton className="skeleton-line skeleton-line--title" />
+        <AppSkeleton className="skeleton-line" />
+      </div>
+    </div>
+  );
+}
+export function RequestCardSkeleton() {
+  return <SkeletonCard />;
+}
+export function RequestDetailsSkeleton() {
+  return (
+    <div className="v6-request-detail-skeleton" aria-hidden="true">
+      <AppSkeleton className="skeleton-line skeleton-line--title" />
+      <SkeletonCard />
+      <SkeletonProfile />
+    </div>
+  );
+}
+export function ProfileSkeleton() {
+  return <SkeletonProfile />;
+}
+export function FeedbackSkeleton() {
+  return (
+    <div className="skeleton-card v6-feedback-skeleton" aria-hidden="true">
+      <AppSkeleton className="skeleton-line skeleton-line--title" />
+      <div>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <AppSkeleton className="skeleton-icon" key={i} />
+        ))}
+      </div>
+      <AppSkeleton className="v6-feedback-textarea" />
+      <AppSkeleton className="v6-skeleton-button" />
+    </div>
+  );
+}
 export type SkeletonVariant =
   | "cards"
   | "appliances"
@@ -84,6 +170,9 @@ export type SkeletonVariant =
   | "calendar"
   | "notifications"
   | "summary"
+  | "services"
+  | "requests"
+  | "feedback"
   | "slots";
 export function LoadingSkeleton({
   title = "Loading…",
@@ -101,7 +190,23 @@ export function LoadingSkeleton({
       className={`app-loading app-loading--${variant}`}
     >
       <span className="skeleton-sr-label">{title}</span>
-      {variant === "slots" ? (
+      {variant === "services" ? (
+        <div className="v6-service-skeletons">
+          {Array.from({ length: count }, (_, i) => (
+            <ServiceCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : variant === "requests" ? (
+        <div className="skeleton-cards">
+          {Array.from({ length: count }, (_, i) => (
+            <RequestCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : variant === "feedback" ? (
+        <FeedbackSkeleton />
+      ) : variant === "appliances" ? (
+        <ApplianceGridSkeleton count={count} />
+      ) : variant === "slots" ? (
         <div className="skeleton-slots">
           {Array.from({ length: count }, (_, i) => (
             <AppSkeleton key={i} />
@@ -110,7 +215,7 @@ export function LoadingSkeleton({
       ) : variant === "table" ? (
         <SkeletonTable />
       ) : variant === "profile" ? (
-        <SkeletonProfile />
+        <ProfileSkeleton />
       ) : variant === "calendar" ? (
         <div className="skeleton-calendar" aria-hidden="true">
           <AppSkeleton className="skeleton-line skeleton-line--title" />
@@ -163,21 +268,11 @@ export function LoadingSkeleton({
           ) : null}
         </>
       ) : variant === "detail" ? (
-        <>
-          <AppSkeleton className="skeleton-line skeleton-line--title" />
-          <div className="skeleton-detail">
-            <SkeletonCard />
-            <SkeletonProfile />
-          </div>
-        </>
+        <RequestDetailsSkeleton />
       ) : (
-        <div
-          className={
-            variant === "appliances" ? "skeleton-appliances" : "skeleton-cards"
-          }
-        >
+        <div className="skeleton-cards">
           {Array.from({ length: count }, (_, i) => (
-            <SkeletonCard key={i} compact={variant === "appliances"} />
+            <SkeletonCard key={i} />
           ))}
         </div>
       )}

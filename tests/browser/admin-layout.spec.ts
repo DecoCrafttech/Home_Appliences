@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 const id = "11111111-1111-4111-8111-111111111111";
 async function setup(page: Page) {
   const customer = {
@@ -152,6 +152,10 @@ async function setup(page: Page) {
         json: {
           data: {
             total_customers: 1,
+            total_requests: 3,
+            needs_attention: 1,
+            in_progress_requests: 1,
+            available_technicians: 2,
             service_requests: 1,
             pending_requests: 1,
             completed_requests: 0,
@@ -302,7 +306,7 @@ test("completion modal cancels safely, keeps failed input and confirms a real re
   });
   await page.goto("http://127.0.0.1:5174/service-requests");
   await page
-    .locator(".desktop-request-table")
+    .locator(".mobile-request-list")
     .getByRole("button", { name: "Complete", exact: true })
     .click();
   await expect(
@@ -428,24 +432,99 @@ test("one request toolbar applies filters and refreshes the server query", async
   await expect.poll(() => queries.length).toBeGreaterThan(count);
 });
 
-test("overview keeps urgent work visible and reporting optional", async ({
-  page,
-}) => {
+test("overview keeps urgent work and reporting visible", async ({ page }) => {
   await setup(page);
   await page.goto("http://127.0.0.1:5174/");
   await expect(
-    page.getByRole("heading", { name: "Needs Attention", exact: true }),
+    page.getByRole("heading", { name: "Needs Assignment", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Assign technicians", exact: true })
-    .click();
-  await expect(page).toHaveURL(/requests\?assignment=unassigned$/);
+  await expect(
+    page.getByRole("button", { name: "Refresh dashboard", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("OPERATIONS AT A GLANCE", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: /Requests created/ }),
+  ).toBeVisible();
+});
+
+test("dashboard filters stage changes and synchronize all dashboard queries", async ({
+  page,
+}) => {
+  await setup(page);
+  const queries: URL[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (/\/dashboard\/(summary|activity|allocation)$/.test(url.pathname))
+      queries.push(url);
+  });
   await page.goto("http://127.0.0.1:5174/");
   await expect(
-    page.getByRole("heading", { name: /Request trends/ }),
-  ).not.toBeVisible();
-  await page.getByText("Trends & team workload", { exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: /Request trends/ }),
+    page.getByRole("heading", { name: "Overview", exact: true }),
   ).toBeVisible();
+  await expect.poll(() => queries.length).toBeGreaterThanOrEqual(3);
+  const trigger = page.getByRole("button", {
+    name: "Global filters",
+    exact: true,
+  });
+  for (const width of [320, 360, 390, 430, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    await trigger.click();
+    const popup = page.getByRole("dialog", {
+      name: "Global filters",
+      exact: true,
+    });
+    const bounds = await popup.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
+    if (width === 390) {
+      await page.screenshot({
+        path: "test-results/fixbeez/admin-filters-mobile.png",
+        fullPage: true,
+      });
+    }
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+    if (width === 390) {
+      await page.screenshot({
+        path: "test-results/fixbeez/admin-overview-mobile.png",
+        fullPage: true,
+      });
+    }
+  }
+  await trigger.click();
+  const count = queries.length;
+  await page.getByLabel("Dashboard date range").selectOption("custom");
+  await page.getByLabel("Start date", { exact: true }).fill("2026-10-01");
+  await page.getByLabel("End date", { exact: true }).fill("2026-10-07");
+  expect(queries.length).toBe(count);
+  await page
+    .getByRole("button", { name: "Apply filters", exact: true })
+    .click();
+  for (const endpoint of ["summary", "activity", "allocation"]) {
+    await expect
+      .poll(() =>
+        queries.some(
+          (url) =>
+            url.pathname.endsWith(`/dashboard/${endpoint}`) &&
+            url.searchParams.get("from") === "2026-10-01" &&
+            url.searchParams.get("to") === "2026-10-07",
+        ),
+      )
+      .toBe(true);
+  }
+  await page.reload();
+  await expect(trigger).toContainText("Custom dates");
+  await trigger.click();
+  await page.getByLabel("Start date", { exact: true }).fill("2026-10-10");
+  await expect(
+    page.getByRole("button", { name: "Apply filters", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(trigger).toContainText("Last 7 days");
+  await page.screenshot({
+    path: "test-results/fixbeez/admin-overview-desktop.png",
+    fullPage: true,
+  });
 });

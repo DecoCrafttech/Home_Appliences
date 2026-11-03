@@ -1,4 +1,4 @@
-import { useDebouncedValue } from "@home/ui";
+import { useDebouncedValue, BrandLogo } from "@home/ui";
 import { LoadingSkeleton } from "@home/ui/skeletons";
 import { PasswordInput } from "@home/ui";
 import { activeRecordRefresh } from "@home/ui";
@@ -284,7 +284,7 @@ function Login() {
         toast.success("Password verified. Enter your MFA code.");
       } else {
         await api.post("/auth/mfa", { challengeId: challenge, code });
-        toast.success("Welcome to Home Services Admin.");
+        toast.success("Welcome to Fixbeez Admin.");
         await qc.invalidateQueries({ queryKey: adminKeys.me });
         navigate("/");
       }
@@ -297,6 +297,7 @@ function Login() {
   return (
     <main className="login">
       <form onSubmit={submit}>
+        <BrandLogo />
         <h1>Admin sign in</h1>
         <p>Authorized staff only</p>
         {!challenge ? (
@@ -637,9 +638,11 @@ function CustomerDetail() {
 }
 
 function RequestDetail({ canManage }: { canManage: boolean }) {
-  const [changeStatus, setChangeStatus] = useState(false);
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const [changeStatus, setChangeStatus] = useState(
+    () => searchParams.get("action") === "status",
+  );
   const q = useQuery({
     queryKey: adminKeys.request(id),
     queryFn: async () =>
@@ -680,11 +683,13 @@ function RequestDetail({ canManage }: { canManage: boolean }) {
         />
       )}
       <BookingSummary request={r} />
-      <RequestWorkReport
-        reports={r.work_reports || []}
-        requestId={r.id}
-        canManage={canManage}
-      />
+      {!!r.work_reports?.length && (
+        <RequestWorkReport
+          reports={r.work_reports || []}
+          requestId={r.id}
+          canManage={canManage}
+        />
+      )}
       {r.work_summary && (
         <article className="ui-panel">
           <h2>Completion and Feedback</h2>
@@ -702,8 +707,8 @@ function RequestDetail({ canManage }: { canManage: boolean }) {
           )}
         </article>
       )}
-      <section className="ui-panel">
-        <h2>Progress Timeline</h2>
+      <details className="ui-panel">
+        <summary>Progress Timeline</summary>
         <ol className="timeline">
           {r.timeline?.map((event) => (
             <li key={event.id}>
@@ -723,20 +728,6 @@ function RequestDetail({ canManage }: { canManage: boolean }) {
             </li>
           ))}
         </ol>
-      </section>
-      <details className="ui-panel">
-        <summary>Help and Support</summary>
-        {r.support_tickets?.length ? (
-          r.support_tickets.map((ticket) => (
-            <p key={ticket.id}>
-              <Link to={`/support?ticket=${ticket.id}`}>
-                {ticket.ticket_number} · {ticket.subject}
-              </Link>
-            </p>
-          ))
-        ) : (
-          <p>No linked support conversations.</p>
-        )}
       </details>
     </Page>
   );

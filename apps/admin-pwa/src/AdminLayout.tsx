@@ -1,10 +1,16 @@
-import { AppErrorBoundary, AsyncActionButton, useSafeMutation } from "@home/ui";
+import {
+  AppErrorBoundary,
+  AsyncActionButton,
+  useSafeMutation,
+  BrandLogo,
+} from "@home/ui";
 import { NotificationCenter } from "@home/ui";
 import { useAdminNotifications } from "./Notifications";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
+import { removeCurrentPushSubscription } from "@home/ui/push";
 import { icons, navigation } from "./design";
 import { CustomerAvatar } from "./components";
 export type Staff = {
@@ -34,18 +40,12 @@ export function AdminSidebar({
     >
       <Link
         className="brand"
-        aria-label="Home Services dashboard"
+        aria-label="Fixbeez dashboard"
         to="/"
         onClick={onClose}
       >
-        <span className="brand-mark">
-          <icons.service />
-        </span>
-        {!collapsed && (
-          <span>
-            Home Services<small>ADMIN WORKSPACE</small>
-          </span>
-        )}
+        <BrandLogo compact={collapsed} />
+        {!collapsed && <small>ADMIN WORKSPACE</small>}
       </Link>
       <button
         className="mobile-drawer-close ui-icon-button"
@@ -99,6 +99,7 @@ export function AdminHeader({
   const [error, setError] = useState("");
   const profileMenu = useRef<HTMLDetailsElement>(null);
   const logout = useSafeMutation(async () => {
+    await removeCurrentPushSubscription(api).catch(() => undefined);
     await api.post("/auth/logout");
     qc.clear();
     window.location.assign("/");
@@ -162,6 +163,13 @@ export function AdminHeader({
         <span className="header-breadcrumb">
           Workspace <span>/</span> {section?.label || "Request details"}
         </span>
+        <Link
+          to="/"
+          className="admin-mobile-brand"
+          aria-label="Fixbeez dashboard"
+        >
+          <BrandLogo />
+        </Link>
       </div>
       <div className="header-tools">
         <NotificationCenter

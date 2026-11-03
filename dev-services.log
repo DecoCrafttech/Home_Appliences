@@ -6724,3 +6724,107 @@
 [customer]       at async EnvironmentPluginContainer.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29048:14)
 [customer]       at async loadAndTransform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:22914:26)
 [customer]       at async viteTransformMiddleware (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:24790:20)
+[customer] 12:06:31 am [vite] Internal server error: Failed to resolve import "virtual:pwa-register/react" from "src/components/PwaUpdate.tsx". Does the file exist?
+[customer]   Plugin: vite:import-analysis
+[customer]   File: D:/HA/apps/customer-pwa/src/components/PwaUpdate.tsx:1:30
+[customer]   1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[customer]   2  |  import { useRegisterSW } from "virtual:pwa-register/react";
+[customer]      |                                 ^
+[customer]   3  |  export function PwaUpdate() {
+[customer]   4  |    const {
+[customer]       at TransformPluginContext._formatLog (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29250:43)
+[customer]       at TransformPluginContext.error (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29247:14)
+[customer]       at normalizeUrl (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27370:18)
+[customer]       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[customer]       at async file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27428:32
+[customer]       at async Promise.all (index 1)
+[customer]       at async TransformPluginContext.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27396:4)
+[customer]       at async EnvironmentPluginContainer.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29048:14)
+[customer]       at async loadAndTransform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:22914:26)
+[customer]       at async viteTransformMiddleware (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:24790:20)
+[customer] 12:06:32 am [vite] (client) page reload src/PublishedServices.tsx
+[customer] 12:06:32 am [vite] (client) Pre-transform error: Failed to resolve import "virtual:pwa-register/react" from "src/components/PwaUpdate.tsx". Does the file exist?
+[customer]   Plugin: vite:import-analysis
+[customer]   File: D:/HA/apps/customer-pwa/src/components/PwaUpdate.tsx:1:30
+[customer]   1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[customer]   2  |  import { useRegisterSW } from "virtual:pwa-register/react";
+[customer]      |                                 ^
+[customer]   3  |  export function PwaUpdate() {
+[customer]   4  |    const {
+[customer] 12:06:32 am [vite] Internal server error: Failed to resolve import "virtual:pwa-register/react" from "src/components/PwaUpdate.tsx". Does the file exist?
+[customer]   Plugin: vite:import-analysis
+[customer]   File: D:/HA/apps/customer-pwa/src/components/PwaUpdate.tsx:1:30
+[customer]   1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[customer]   2  |  import { useRegisterSW } from "virtual:pwa-register/react";
+[customer]      |                                 ^
+[customer]   3  |  export function PwaUpdate() {
+[customer]   4  |    const {
+[customer]       at TransformPluginContext._formatLog (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29250:43)
+[customer]       at TransformPluginContext.error (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29247:14)
+[customer]       at normalizeUrl (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27370:18)
+[customer]       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[customer]       at async file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27428:32
+[customer]       at async Promise.all (index 1)
+[customer]       at async TransformPluginContext.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27396:4)
+[customer]       at async EnvironmentPluginContainer.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29048:14)
+[customer]       at async loadAndTransform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:22914:26)
+[customer]       at async viteTransformMiddleware (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:24790:20)
+[customer] 12:06:33 am [vite] (client) hmr update /src/styles.css
+[customer] 12:06:33 am [vite] (client) hmr update /src/styles.css
+[customer] 12:06:34 am [vite] Internal server error: Failed to resolve import "virtual:pwa-register/react" from "src/components/PwaUpdate.tsx". Does the file exist?
+[customer]   Plugin: vite:import-analysis
+[customer]   File: D:/HA/apps/customer-pwa/src/components/PwaUpdate.tsx:1:30
+[customer]   1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[customer]   2  |  import { useRegisterSW } from "virtual:pwa-register/react";
+[customer]      |                                 ^
+[customer]   3  |  export function PwaUpdate() {
+[customer]   4  |    const {
+[customer]       at TransformPluginContext._formatLog (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29250:43)
+[customer]       at TransformPluginContext.error (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29247:14)
+[customer]       at normalizeUrl (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27370:18)
+[customer]       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[customer]       at async file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27428:32
+[customer]       at async Promise.all (index 1)
+[customer]       at async TransformPluginContext.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27396:4)
+[customer]       at async EnvironmentPluginContainer.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29048:14)
+[customer]       at async loadAndTransform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:22914:26)
+[customer]       at async viteTransformMiddleware (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:24790:20)
+[customer] 12:06:34 am [vite] Internal server error: Failed to resolve import "virtual:pwa-register/react" from "src/components/PwaUpdate.tsx". Does the file exist?
+[customer]   Plugin: vite:import-analysis
+[customer]   File: D:/HA/apps/customer-pwa/src/components/PwaUpdate.tsx:1:30
+[customer]   1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[customer]   2  |  import { useRegisterSW } from "virtual:pwa-register/react";
+[customer]      |                                 ^
+[customer]   3  |  export function PwaUpdate() {
+[customer]   4  |    const {
+[customer]       at TransformPluginContext._formatLog (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29250:43)
+[customer]       at TransformPluginContext.error (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29247:14)
+[customer]       at normalizeUrl (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27370:18)
+[customer]       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[customer]       at async file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27428:32
+[customer]       at async Promise.all (index 1)
+[customer]       at async TransformPluginContext.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:27396:4)
+[customer]       at async EnvironmentPluginContainer.transform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:29048:14)
+[customer]       at async loadAndTransform (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:22914:26)
+[customer]       at async viteTransformMiddleware (file:///D:/HA/node_modules/vite/dist/node/chunks/config.js:24790:20)
+[admin] npm error Lifecycle script `dev` failed with error:
+[admin] npm error code 4294967295
+[admin] npm error path D:\HA\apps\admin-pwa
+[admin] npm error workspace @home/admin@0.1.0
+[admin] npm error location D:\HA\apps\admin-pwa
+[admin] npm error command failed
+[admin] npm error command C:\WINDOWS\system32\cmd.exe /d /s /c vite --host 127.0.0.1 --port 5174
+[technician] npm error Lifecycle script `dev` failed with error:
+[technician] npm error code 4294967295
+[technician] npm error path D:\HA\apps\technician-pwa
+[technician] npm error workspace @home/technician@0.1.0
+[technician] npm error location D:\HA\apps\technician-pwa
+[technician] npm error command failed
+[technician] npm error command C:\WINDOWS\system32\cmd.exe /d /s /c vite --host 127.0.0.1 --port 5175
+[admin] npm run dev -w @home/admin exited with code 4294967295
+--> Sending SIGTERM to other processes..
+[technician] npm run dev -w @home/technician exited with code 4294967295
+--> Sending SIGTERM to other processes..
+[customer] npm run dev -w @home/customer exited with code 1
+--> Sending SIGTERM to other processes..
+[api] npm run dev -w @home/api exited with code 1

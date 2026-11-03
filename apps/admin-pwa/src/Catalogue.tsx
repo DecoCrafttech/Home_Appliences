@@ -1,30 +1,19 @@
-import {
-  ImageWithFallback,
-  ConfirmActionDialog,
-  AppButton,
-  AppTabs,
-} from "@home/ui";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  indicativePrice,
-  type CatalogueOption,
-  type ServiceFormField,
-} from "@home/shared";
-import { AsyncActionButton, useSafeMutation } from "@home/ui";
+import { AppButton, ConfirmActionDialog, useSafeMutation } from "@home/ui";
+import { appliancePhoto, isMixerGrinder } from "@home/ui/applianceImages";
 import { toast } from "sonner";
+import axios from "axios";
+import type { CatalogueOption, ServiceFormField } from "@home/shared";
 import { api } from "./api";
 import { icons, adminKeys } from "./design";
 import {
   PageHeader,
-  PageToolbar,
-  SearchField,
   LoadingSkeleton,
   ErrorState,
   EmptyState,
 } from "./components";
 import { CatalogueEditor } from "./CatalogueEditor";
-import { ServiceIconEditor } from "./ServiceIconEditor";
 import {
   ApplianceCatalogueSettings,
   type ManagedAppliance,
@@ -34,6 +23,7 @@ export type ManagedService = {
   name: string;
   appliance_category_id: string;
   appliance_name: string;
+  category_kind?: string;
   request_type: "SERVICE" | "INSTALLATION";
   description?: string;
   display_order?: number;
@@ -49,295 +39,306 @@ export type ManagedCatalogue = {
   categories: ManagedAppliance[];
   services: ManagedService[];
 };
+
 export function Catalogue({ canManage }: { canManage: boolean }) {
   const q = useQuery({
     queryKey: adminKeys.catalogue,
     queryFn: async () =>
       (await api.get<{ data: ManagedCatalogue }>("/catalogue")).data.data,
+    refetchOnWindowFocus: true,
   });
-  const [type, setType] = useState<"SERVICE" | "INSTALLATION">("SERVICE"),
-    [search, setSearch] = useState(""),
-    [status, setStatus] = useState(""),
-    [editing, setEditing] = useState<ManagedService | "new" | null>(null);
-  const qc = useQueryClient();
-  const [manageAppliances, setManageAppliances] = useState(false);
-  const [iconService, setIconService] = useState<ManagedService | null>(null);
-  const [unpublishing, setUnpublishing] = useState<ManagedService | null>(null);
-  const [publicationError, setPublicationError] = useState("");
-  const publish = useSafeMutation(async (s: ManagedService) => {
-    await api.patch(`/catalogue/services/${s.id}`, {
-      name: s.name,
-      applianceCategoryId: s.appliance_category_id,
-      requestType: s.request_type,
-      formFields: s.form_fields,
-      publicationStatus:
-        s.publication_status === "DRAFT" ? "PUBLISHED" : "DRAFT",
-    });
-    await qc.invalidateQueries({ queryKey: adminKeys.catalogue });
+  const [category, setCategory] = useState<ManagedAppliance | null>(null);
+  const [editing, setEditing] = useState<ManagedService | "new" | null>(null);
+  const [type, setType] = useState<"SERVICE" | "INSTALLATION">("SERVICE");
+  const [maintenance, setMaintenance] = useState(false);
+  const [manage, setManage] = useState(false);
+  const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState<ManagedService | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const queryClient = useQueryClient();
+  const deletion = useSafeMutation(async (service: ManagedService) => {
+    await api.delete(`/catalogue/services/${service.id}`);
+    await queryClient.invalidateQueries({ queryKey: adminKeys.catalogue });
     return true;
   });
-  const rows =
-    q.data?.services.filter(
-      (s) =>
-        s.request_type === type &&
-        (!status || (s.publication_status || "PUBLISHED") === status) &&
-        `${s.name} ${s.appliance_name}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
+  function add(value: string) {
+    if (value === "category") {
+      setManage(true);
+      return;
+    }
+    setType(value === "installation" ? "INSTALLATION" : "SERVICE");
+    setMaintenance(value === "maintenance");
+    setEditing("new");
+  }
+  const categories =
+    q.data?.categories.filter(
+      (c) =>
+        !isMixerGrinder(c.name) &&
+        c.name.toLowerCase().includes(search.toLowerCase()),
     ) || [];
-  const groups =
-    q.data?.categories
-      .map((category) => ({
-        ...category,
-        services: rows.filter((s) => s.appliance_category_id === category.id),
-      }))
-      .filter((category) => category.services.length) || [];
+  const selected = q.data?.categories.find((c) => c.id === category?.id);
   return (
-    <section className="catalogue-page">
+    <section className="catalogue-page catalogue-board-page">
       <PageHeader
         title="Services & Installations"
-        description="Choose an appliance and manage its services and installations."
+        description={
+          selected?.name || "Services, installation and home maintenance"
+        }
         actions={
           canManage && (
-            <button className="primary" onClick={() => setEditing("new")}>
-              <icons.add /> Add{" "}
-              {type === "SERVICE" ? "Service" : "Installation"}
-            </button>
+            <details className="catalogue-add-menu">
+              <summary className="primary">
+                <icons.add /> Add
+              </summary>
+              <div>
+                {[
+                  ["service", "Add Service"],
+                  ["installation", "Add Installation"],
+                  ["maintenance", "Add Maintenance"],
+                  ["category", "Create New Category"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={(event) => {
+                      event.currentTarget.closest("details")!.open = false;
+                      add(value!);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </details>
           )
         }
       />
-      {canManage && (
-        <div className="catalogue-appliance-controls">
-          <button onClick={() => setManageAppliances(true)}>
-            Manage Appliances
-          </button>
-        </div>
-      )}
-      <AppTabs
-        label="Catalogue type"
-        value={type}
-        onChange={(value) => setType(value as "SERVICE" | "INSTALLATION")}
-        items={[
-          { value: "SERVICE", label: "Services" },
-          { value: "INSTALLATION", label: "Installations" },
-        ]}
-      >
-        <PageToolbar>
-          <SearchField
-            onClear={() => {
-              setSearch("");
-            }}
-            busy={q.isFetching}
-            aria-label="Search services"
-            placeholder="Appliance or service name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <label>
-            Publication
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">All services</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="DRAFT">Draft</option>
-            </select>
-          </label>
-          <AsyncActionButton pending={q.isFetching} onClick={() => q.refetch()}>
-            Refresh
-          </AsyncActionButton>
-        </PageToolbar>
-        {q.isPending ? (
-          <LoadingSkeleton variant="table" />
-        ) : q.isError ? (
-          <ErrorState
-            title="Unable to load catalogue"
-            retry={() => q.refetch()}
-          />
-        ) : !rows.length ? (
-          <EmptyState
-            title="No services match"
-            description="Add a service or adjust your filters."
-          />
-        ) : (
-          <div className="catalogue-appliance-groups">
-            {groups.map((group) => (
-              <section
-                className="catalogue-appliance-group"
-                key={group.id}
-                aria-label={group.name}
-              >
-                <div className="catalogue-appliance-heading">
-                  <h2>{group.name}</h2>
-                  <span>
-                    {group.services.length}{" "}
-                    {type === "SERVICE"
-                      ? group.services.length === 1
-                        ? "service"
-                        : "services"
-                      : group.services.length === 1
-                        ? "installation"
-                        : "installations"}
-                  </span>
-                </div>
-                <div className="catalogue-management-grid">
-                  {group.services.map((s) => (
-                    <article
-                      className="ui-panel catalogue-management-card"
-                      key={s.id}
+      {q.isPending ? (
+        <LoadingSkeleton variant="cards" />
+      ) : q.isError ? (
+        <ErrorState
+          title="Unable to load catalogue"
+          retry={() => q.refetch()}
+        />
+      ) : selected ? (
+        <>
+          <div className="ui-toolbar">
+            <button className="secondary" onClick={() => setCategory(null)}>
+              All categories
+            </button>
+            {canManage && (
+              <button className="secondary" onClick={() => setManage(true)}>
+                Edit category
+              </button>
+            )}
+          </div>
+          <div className="catalogue-kanban">
+            {(selected.kind === "MAINTENANCE"
+              ? ["MAINTENANCE"]
+              : ["SERVICE", "INSTALLATION"]
+            ).map((lane) => {
+              const services = q.data!.services.filter(
+                (s) =>
+                  s.appliance_category_id === selected.id &&
+                  s.request_type ===
+                    (lane === "INSTALLATION" ? "INSTALLATION" : "SERVICE"),
+              );
+              return (
+                <section className="catalogue-lane" key={lane}>
+                  <header>
+                    <h2>
+                      {lane === "SERVICE"
+                        ? "Services"
+                        : lane === "INSTALLATION"
+                          ? "Installation"
+                          : "Maintenance"}
+                    </h2>
+                    <span>{services.length}</span>
+                  </header>
+                  {canManage && (
+                    <button
+                      className="secondary"
+                      onClick={() => add(lane.toLowerCase())}
                     >
-                      <div className="catalogue-card-top">
-                        <div className="catalogue-card-icon">
-                          {s.icon_preview_url ? (
-                            <ImageWithFallback
-                              src={s.icon_preview_url}
-                              alt=""
-                            />
-                          ) : (
-                            <icons.service />
-                          )}
-                        </div>
+                      <icons.add /> Add{" "}
+                      {lane === "INSTALLATION" ? "installation" : "service"}
+                    </button>
+                  )}
+                  {services.map((service) => (
+                    <article
+                      className="catalogue-service-tile"
+                      key={service.id}
+                    >
+                      <strong>{service.name}</strong>
+                      {service.description && <p>{service.description}</p>}
+                      <footer>
                         <span
-                          className={`badge status-${s.publication_status === "DRAFT" ? "warning" : "success"}`}
+                          className={`catalogue-state ${service.publication_status?.toLowerCase()}`}
                         >
-                          {s.publication_status === "DRAFT"
-                            ? "Draft"
-                            : "Published"}
+                          {service.publication_status || "PUBLISHED"}
                         </span>
-                      </div>
-                      <div className="catalogue-service-heading">
-                        <h3>{s.name}</h3>
-                      </div>
-                      <div className="catalogue-card-details">
-                        <p className="catalogue-card-price">
-                          {s.booking_options?.find((o) => o.active)
-                            ? indicativePrice(
-                                s.booking_options.find((o) => o.active)!,
-                              )
-                            : s.base_price != null
-                              ? `From \u20b9${Number(s.base_price).toLocaleString("en-IN")}`
-                              : "Quote after inspection"}
-                        </p>
-                        <small className="catalogue-card-options">
-                          {s.booking_options?.filter((o) => o.active).length ||
-                            0}{" "}
-                          {s.booking_options?.filter((o) => o.active).length ===
-                          1
-                            ? "booking option"
-                            : "booking options"}
-                        </small>
-                      </div>
-                      {canManage && (
-                        <div className="workflow-actions">
-                          <button onClick={() => setEditing(s)}>
-                            <icons.edit /> Edit
-                          </button>
-                          <button onClick={() => setIconService(s)}>
-                            Change icon
-                          </button>
-                          <AsyncActionButton
-                            pending={publish.isPending}
-                            onClick={async () => {
-                              if (s.publication_status !== "DRAFT") {
-                                setPublicationError("");
-                                setUnpublishing(s);
-                                return;
-                              }
-                              try {
-                                if (await publish.run(s))
-                                  toast.success(
-                                    s.publication_status === "DRAFT"
-                                      ? "Service published."
-                                      : "Service unpublished.",
-                                  );
-                              } catch {
-                                toast.error(
-                                  "Unable to change publication status. Check the service options.",
-                                );
-                              }
-                            }}
-                          >
-                            {s.publication_status === "DRAFT"
-                              ? "Publish"
-                              : "Unpublish"}
-                          </AsyncActionButton>
-                        </div>
-                      )}
+                        {canManage && (
+                          <div className="catalogue-service-actions">
+                            <button
+                              className="secondary"
+                              onClick={() => setEditing(service)}
+                            >
+                              <icons.edit /> Edit
+                            </button>
+                            <button
+                              className="catalogue-delete-button"
+                              aria-label={`Delete ${service.name}`}
+                              onClick={() => {
+                                setDeleteError("");
+                                setDeleting(service);
+                              }}
+                            >
+                              <icons.delete aria-hidden="true" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </footer>
                     </article>
                   ))}
-                </div>
-              </section>
+                  {!services.length && <p>No services yet.</p>}
+                </section>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="catalogue-search-label">
+            Search categories
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Appliance or category"
+            />
+          </label>
+          <div className="catalogue-category-grid">
+            {categories.map((c) => (
+              <article className="catalogue-category-tile" key={c.id}>
+                {appliancePhoto(c.name) ? (
+                  <img src={appliancePhoto(c.name)} alt="" />
+                ) : (
+                  <span className="catalogue-category-placeholder">
+                    <icons.catalogue aria-hidden="true" />
+                  </span>
+                )}
+                <h2>{c.name}</h2>
+                <small>
+                  {c.kind === "MAINTENANCE"
+                    ? "Maintenance"
+                    : `${q.data!.services.filter((s) => s.appliance_category_id === c.id).length} services & installations`}
+                </small>
+                <span className="catalogue-state">
+                  {c.publication_status || "PUBLISHED"}
+                </span>
+                <button className="secondary" onClick={() => setCategory(c)}>
+                  {canManage ? "Edit" : "View"} <icons.next />
+                </button>
+              </article>
             ))}
           </div>
-        )}
-      </AppTabs>
-      {iconService && (
-        <ServiceIconEditor
-          key={iconService.id}
-          service={iconService}
-          onClose={() => setIconService(null)}
+          {!categories.length && <EmptyState title="No matching categories" />}
+        </>
+      )}
+      {editing && q.data && (
+        <CatalogueEditor
+          key={
+            editing === "new"
+              ? `new-${type}-${maintenance}-${selected?.id}`
+              : editing.id
+          }
+          service={editing === "new" ? null : editing}
+          type={type}
+          initialCategory={
+            maintenance
+              ? q.data.categories.find((c) => c.kind === "MAINTENANCE")?.id
+              : selected?.id
+          }
+          data={{
+            ...q.data,
+            categories: q.data.categories.filter(
+              (c) =>
+                !isMixerGrinder(c.name) &&
+                (editing !== "new" ||
+                  (maintenance
+                    ? c.kind === "MAINTENANCE"
+                    : c.kind !== "MAINTENANCE")),
+            ),
+          }}
+          onClose={() => setEditing(null)}
         />
       )}
-      {unpublishing && (
+      {manage && q.data && (
+        <ApplianceCatalogueSettings
+          categories={
+            selected
+              ? [selected]
+              : q.data.categories.filter((c) => !isMixerGrinder(c.name))
+          }
+          onClose={() => setManage(false)}
+        />
+      )}
+      {deleting && (
         <ConfirmActionDialog
-          title="Unpublish service?"
-          pending={publish.isPending}
-          onClose={() => setUnpublishing(null)}
+          title="Delete catalogue item?"
+          onClose={() => setDeleting(null)}
+          pending={deletion.isPending}
         >
-          <div className="customer-modal-content">
+          <div className="catalogue-delete-summary">
+            <strong>{deleting.name}</strong>
             <p>
-              {unpublishing.name} will be hidden from new customer bookings.
-              Existing requests keep their service details.
+              {deleting.appliance_name} ·{" "}
+              {deleting.request_type === "INSTALLATION"
+                ? "Installation"
+                : "Service"}
             </p>
-            {publicationError && (
-              <p className="safe-error" role="alert">
-                {publicationError}
+            <p>
+              Remove this option from the catalogue? Existing requests keep
+              their details.
+            </p>
+            {deleteError && (
+              <p role="alert" className="safe-error">
+                {deleteError}
               </p>
             )}
           </div>
-          <footer>
+          <footer className="catalogue-delete-footer">
             <AppButton
               variant="outline"
-              disabled={publish.isPending}
-              onClick={() => setUnpublishing(null)}
+              disabled={deletion.isPending}
+              onClick={() => setDeleting(null)}
             >
-              Keep published
+              Cancel
             </AppButton>
             <AppButton
               variant="destructive"
-              pending={publish.isPending}
-              pendingLabel="Unpublishing..."
+              pending={deletion.isPending}
+              pendingLabel="Deleting..."
               onClick={async () => {
-                setPublicationError("");
+                setDeleteError("");
                 try {
-                  if (await publish.run(unpublishing)) {
-                    toast.success("Service unpublished.");
-                    setUnpublishing(null);
+                  if (await deletion.run(deleting)) {
+                    toast.success("Catalogue item deleted.");
+                    setDeleting(null);
                   }
-                } catch {
-                  setPublicationError(
-                    "Unable to unpublish this service. Try again.",
+                } catch (error) {
+                  setDeleteError(
+                    axios.isAxiosError(error)
+                      ? error.response?.data?.error?.message ||
+                          "Unable to delete. Try again."
+                      : "Unable to delete. Try again.",
                   );
                 }
               }}
             >
-              Unpublish service
+              Delete item
             </AppButton>
           </footer>
         </ConfirmActionDialog>
-      )}
-      {editing && q.data && (
-        <CatalogueEditor
-          key={editing === "new" ? `new-${type}` : editing.id}
-          service={editing === "new" ? null : editing}
-          type={type}
-          data={q.data}
-          onClose={() => setEditing(null)}
-        />
-      )}
-      {manageAppliances && q.data && (
-        <ApplianceCatalogueSettings
-          categories={q.data.categories}
-          onClose={() => setManageAppliances(false)}
-        />
       )}
     </section>
   );

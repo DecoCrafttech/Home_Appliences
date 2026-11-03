@@ -25,7 +25,9 @@ export function CatalogueEditor({
   type,
   data,
   onClose,
+  initialCategory,
 }: {
+  initialCategory?: string;
   service: ManagedService | null;
   type: "SERVICE" | "INSTALLATION";
   data: ManagedCatalogue;
@@ -33,7 +35,9 @@ export function CatalogueEditor({
 }) {
   const [step, setStep] = useState(0),
     [name, setName] = useState(service?.name || ""),
-    [category, setCategory] = useState(service?.appliance_category_id || ""),
+    [category, setCategory] = useState(
+      service?.appliance_category_id || initialCategory || "",
+    ),
     [description, setDescription] = useState(service?.description || ""),
     [order, setOrder] = useState(service?.display_order || 0),
     [options, setOptions] = useState<CatalogueOption[]>(
@@ -84,7 +88,7 @@ export function CatalogueEditor({
           ?.publication_status === "DRAFT"
       )
         throw new Error(
-          "Publish this appliance in Manage Appliances before publishing its services.",
+          "Publish this appliance in Edit category before publishing its services.",
         );
       const parsed = catalogueOptionsSchema.safeParse(options),
         form = serviceFormSchema.safeParse(fields);
@@ -232,8 +236,8 @@ export function CatalogueEditor({
               {data.categories.find((item) => item.id === category)
                 ?.publication_status === "DRAFT" && (
                 <p className="inline-note">
-                  This appliance is a draft. Publish it in Manage Appliances
-                  before publishing this service.
+                  This appliance is a draft. Publish it in Edit category before
+                  publishing this service.
                 </p>
               )}
               <label>

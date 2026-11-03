@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 const id = "11111111-1111-4111-8111-111111111111",
   estimate = "22222222-2222-4222-8222-222222222222";
 test("estimate approval refreshes job data without refetching the customer profile", async ({

@@ -2,9 +2,12 @@ import { env } from "./config/env.js";
 import { db } from "./db.js";
 if (
   env.NODE_ENV === "production" ||
-  !["codex-customer-dev", "br-gentle-wind-b4tsvt43"].includes(
-    process.env.NEON_BRANCH || "",
-  )
+  ![
+    "development",
+    "br-broad-breeze-b41iqgjz",
+    "codex-customer-dev",
+    "br-gentle-wind-b4tsvt43",
+  ].includes(process.env.NEON_BRANCH || "")
 )
   throw new Error(
     "Only the configured isolated development branch may be migrated by this command.",
@@ -18,7 +21,9 @@ const identity = (
 )[0];
 if (
   identity?.project_id !== "snowy-hill-87120042" ||
-  identity?.branch_id !== "br-gentle-wind-b4tsvt43"
+  !["br-gentle-wind-b4tsvt43", "br-broad-breeze-b41iqgjz"].includes(
+    String(identity?.branch_id),
+  )
 )
   throw new Error(
     "Connected database is not the approved development project/branch.",

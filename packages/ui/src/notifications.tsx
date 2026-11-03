@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AsyncActionButton, ConfirmActionDialog } from "./index";
 import { icons } from "./icons";
 import { LoadingSkeleton } from "./skeletons";
+import { EmptyState } from "./emptyStates";
 
 export type InboxNotice = {
   id: string;
@@ -149,17 +150,23 @@ export function NotificationCenter({
               />
             ) : query.isError ? (
               <div role="alert">
-                <p>Unable to load notifications.</p>
-                <AsyncActionButton onClick={refresh}>
-                  Try again
-                </AsyncActionButton>
+                <EmptyState
+                  kind="network"
+                  title="Unable to load notifications."
+                  description="Check your connection and try again."
+                  primaryAction={
+                    <AsyncActionButton onClick={refresh}>
+                      Try again
+                    </AsyncActionButton>
+                  }
+                />
               </div>
             ) : !query.data?.items.length ? (
-              <div className="notification-empty">
-                <icons.bell />
-                <h3>No notifications yet</h3>
-                <p>Your booking and account updates will appear here.</p>
-              </div>
+              <EmptyState
+                kind="notifications"
+                title="You're all caught up!"
+                description="Your booking and account updates will appear here."
+              />
             ) : (
               <div className="notification-list">
                 {query.data.items.map((n) => (

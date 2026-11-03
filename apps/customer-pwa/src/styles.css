@@ -2539,3 +2539,120 @@ main#main {
     transform: none;
   }
 }
+.request-details-page {
+  max-width: 1080px;
+}
+.request-detail-hero {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  margin-bottom: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    var(--color-surface),
+    var(--color-surface-subtle)
+  );
+}
+.request-detail-hero h1 {
+  margin: 4px 0;
+}
+.request-detail-hero p {
+  margin: 0;
+  color: var(--color-secondary);
+}
+.request-appliance-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: 1.4rem;
+}
+.request-detail-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.request-info-card {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.request-info-card h2 {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+}
+.request-info-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.request-info-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.request-info-card dt,
+.request-info-row span {
+  color: var(--color-secondary);
+}
+.request-info-card dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+.request-info-row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+.request-info-row div {
+  display: grid;
+  gap: 3px;
+}
+.request-contact-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.request-call-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+}
+.admin-office-card {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-primary) 30%,
+    var(--color-border)
+  );
+}
+.request-completion-card {
+  margin-top: 16px;
+}
+@media (max-width: 700px) {
+  .request-detail-hero {
+    grid-template-columns: auto 1fr;
+    padding: 18px;
+  }
+  .request-detail-hero > .status-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .request-detail-sections {
+    grid-template-columns: 1fr;
+  }
+}

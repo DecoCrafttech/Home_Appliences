@@ -1,0 +1,136 @@
+[
+  {
+    "key": "service",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-c67170c3-8c4a-40fc-b1ba-4c6ad6c03c6b.png",
+    "destinations": [
+      "apps/customer-pwa/public/categories/v8/service.webp",
+      "apps/admin-pwa/public/categories/v8/service.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied service product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "installation",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-822bd672-b3b4-4090-b33f-b5171fb5e400.png",
+    "destinations": [
+      "apps/customer-pwa/public/categories/v8/installation.webp",
+      "apps/admin-pwa/public/categories/v8/installation.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied installation product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "maintenance",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-b53e6307-bfbf-4d78-b705-5d0a9771daed.png",
+    "destinations": [
+      "apps/customer-pwa/public/categories/v8/maintenance.webp",
+      "apps/admin-pwa/public/categories/v8/maintenance.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied maintenance product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "air-conditioner",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-715b9442-614d-49de-9769-3857ed38d176.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/air-conditioner.webp",
+      "apps/admin-pwa/public/appliances/v8/air-conditioner.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied air-conditioner product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "refrigerator",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-cf79100f-292c-42fc-b488-265af3d185f2.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/refrigerator.webp",
+      "apps/admin-pwa/public/appliances/v8/refrigerator.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied refrigerator product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "washing-machine",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-5122fb3b-2052-457f-9618-4a27740ea173.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/washing-machine.webp",
+      "apps/admin-pwa/public/appliances/v8/washing-machine.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied washing-machine product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "television",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-13112d0b-e4b1-4b79-9317-70369a8e4c7f.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/television.webp",
+      "apps/admin-pwa/public/appliances/v8/television.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied television product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "water-heater",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-d3f9ccf1-4809-4788-8267-cf3107bac830.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/water-heater.webp",
+      "apps/admin-pwa/public/appliances/v8/water-heater.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied water-heater product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "microwave",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-6e490bff-d928-4c5b-9953-891e8090dca5.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/microwave.webp",
+      "apps/admin-pwa/public/appliances/v8/microwave.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied microwave product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "water-purifier",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-e487036b-52ed-42cc-8db4-8c8f50094cac.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/water-purifier.webp",
+      "apps/admin-pwa/public/appliances/v8/water-purifier.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied water-purifier product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "kitchen-chimney",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-b36b76a8-dc88-4535-be80-8dc9fc7f3ca2.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/kitchen-chimney.webp",
+      "apps/admin-pwa/public/appliances/v8/kitchen-chimney.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied kitchen-chimney product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "dishwasher",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-c75af5b7-356f-4177-b09a-4aa7e0d399d9.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/dishwasher.webp",
+      "apps/admin-pwa/public/appliances/v8/dishwasher.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied dishwasher product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "cctv",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-effacec6-6d20-4577-85df-73d7d7c82488.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/cctv.webp",
+      "apps/admin-pwa/public/appliances/v8/cctv.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied cctv product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "internet",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-a1a77007-bd1e-429a-94c6-94a4b2b3aa9c.png",
+    "destinations": [
+      "apps/customer-pwa/public/appliances/v8/internet.webp",
+      "apps/admin-pwa/public/appliances/v8/internet.webp"
+    ],
+    "prompt": "Use case: background-extraction. Edit target: the supplied internet product image. Remove ONLY its warm-white/lavender studio backdrop and floor, including the rectangular background and broad cast shadow. Return the same foreground product or set of tools as a clean premium catalogue cutout on a genuinely transparent alpha background. Preserve the exact appliance/tool identity, colors, proportions, arrangement, camera angle, material detail and complete silhouette. Keep white appliance surfaces opaque; do not confuse them with the background. Retain only a very subtle close contact shadow if necessary, with no pale matte, opaque floor, halo, border, text or extra objects. Subject fully visible with transparent margin."
+  },
+  {
+    "key": "hero",
+    "source": "C:\\Users\\DELL\\.codex\\generated_images\\01a1a198-7b84-7ef0-a84f-de0ad857d51a\\exec-f1b756f4-2664-4a3b-abd2-55bfcb480fae.png",
+    "destinations": [
+      "apps/customer-pwa/public/banners/v8/appliance-family.webp"
+    ],
+    "prompt": "Use case: product-mockup. Create one brand-new premium photorealistic appliance group cutout for the right half of the Fixbeez home promotional banner. Composition compact and tall, approximately 4:5: a stainless steel double-door refrigerator at the back left, a white split air conditioner horizontally across the upper background, a white front-loading washing machine with blue glass door in front right, and a small stainless steel microwave in front left. Each appliance recognizable and physically plausible, full silhouettes in frame, coordinated perspective and soft studio lighting. Arrange as one carefully composed professional product family with enough separation and modest overlap; no floating fragments or duplicate appliances. Minimal tiny purple screwdriver accent near the base if needed. Genuinely transparent alpha background, no white rectangle, no floor, no backdrop, no people, no logos, no text, no watermark. Clear readable silhouettes at small mobile scale, generous transparent margin. Preserve realistic white and silver surfaces; return polished final raster artwork, not a UI mockup."
+  }
+]

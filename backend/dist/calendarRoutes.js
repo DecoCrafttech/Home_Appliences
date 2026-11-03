@@ -9,10 +9,6 @@ import { checkTechnicianSchedule } from "./technicianScheduling.js";
 const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((error) => next(error instanceof z.ZodError
     ? new ApiError(422, "VALIDATION_ERROR", error.issues[0]?.message || "Check appointment details.")
     : error));
-const windowSchema = z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/)
-    .refine((v) => v.slice(0, 5) < v.slice(6), "End time must follow start time.");
 const rangeSchema = z
     .object({ from: z.string().date(), to: z.string().date() })
     .refine((v) => v.to > v.from &&
@@ -20,7 +16,7 @@ const rangeSchema = z
 export const adminCalendarRoutes = Router(), technicianCalendarRoutes = Router();
 adminCalendarRoutes.get("/appointments", requireStaff, route(async (req, res) => {
     const { from, to } = rangeSchema.parse(req.query);
-    const rows = await db() `SELECT r.id,r.display_number,r.request_number,r.request_type,r.appliance,r.service_name,r.status,r.version,r.confirmed_date,r.confirmed_time_window,r.address_snapshot,c.full_name AS customer_name,COALESCE(NULLIF(r.address_snapshot->>'phone',''),c.phone_e164) AS customer_phone,t.full_name AS technician_name,r.assigned_technician_id FROM service_requests r JOIN customers c ON c.id=r.customer_id LEFT JOIN technicians t ON t.id=r.assigned_technician_id WHERE r.confirmed_date>=${from}::date AND r.confirmed_date<${to}::date AND r.status!='CANCELLED' ORDER BY r.confirmed_date,r.confirmed_time_window,r.id LIMIT 1001`;
+    const rows = await db() `SELECT r.id,r.display_number,r.request_number,r.request_type,r.appliance,r.service_name,r.status,r.version,COALESCE(r.confirmed_date,r.preferred_date) AS confirmed_date,COALESCE(r.confirmed_time_window,r.preferred_time_window) AS confirmed_time_window,(r.confirmed_date IS NOT NULL) AS visit_confirmed,r.address_snapshot,c.full_name AS customer_name,COALESCE(NULLIF(r.address_snapshot->>'phone',''),c.phone_e164) AS customer_phone,t.full_name AS technician_name,r.assigned_technician_id FROM service_requests r JOIN customers c ON c.id=r.customer_id LEFT JOIN technicians t ON t.id=r.assigned_technician_id WHERE COALESCE(r.confirmed_date,r.preferred_date)>=${from}::date AND COALESCE(r.confirmed_date,r.preferred_date)<${to}::date ORDER BY COALESCE(r.confirmed_date,r.preferred_date),r.confirmed_time_window,r.id LIMIT 1001`;
     res.json({
         data: rows.slice(0, 1000),
         meta: { truncated: rows.length > 1000 },
@@ -33,49 +29,6 @@ technicianCalendarRoutes.get("/schedule", requireTechnician, route(async (req, r
         data: rows.slice(0, 1000),
         meta: { truncated: rows.length > 1000 },
     });
-}));
-technicianCalendarRoutes.post("/jobs/:id/reschedule", requireTechnician, route(async (req, res) => {
-    const id = z.string().uuid().parse(req.params.id), i = z
-        .object({
-        date: bookingSchema.shape.preferredDate,
-        timeWindow: windowSchema,
-        reason: z.string().trim().max(1000).default(""),
-        version: z.number().int().positive(),
-    })
-        .strict()
-        .parse(req.body);
-    const jobs = await db() `SELECT r.* FROM service_requests r JOIN technician_assignments a ON a.request_id=r.id AND a.technician_id=r.assigned_technician_id AND a.state='ACCEPTED' WHERE r.id=${id} AND a.technician_id=${req.technician.id} FOR UPDATE OF r`;
-    const job = jobs[0];
-    if (!job)
-        throw new ApiError(404, "NOT_FOUND", "Job not found.");
-    if (!["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED"].includes(String(job.status)) ||
-        Number(job.version) !== i.version)
-        throw new ApiError(409, "STALE_WORKFLOW", "Refresh this job before requesting a schedule change.");
-    if (String(job.confirmed_date).slice(0, 10) === i.date &&
-        job.confirmed_time_window === i.timeWindow)
-        throw new ApiError(422, "UNCHANGED_SCHEDULE", "Choose a different appointment time.");
-    await checkTechnicianSchedule(req.technician.id, id, i.date, i.timeWindow);
-    const rows = await db() `WITH proposal AS(INSERT INTO appointment_reschedule_requests(request_id,technician_id,proposed_date,proposed_time_window,reason) VALUES(${id},${req.technician.id},${i.date}::date,${i.timeWindow},${i.reason}) ON CONFLICT(request_id) WHERE state='PENDING' DO NOTHING RETURNING *),history AS(INSERT INTO request_status_events(request_id,status,note,actor_role,actor_technician_id) SELECT request_id,${job.status},${`Technician proposed ${i.date} ${i.timeWindow}. Awaiting operations approval.`},'TECHNICIAN',technician_id FROM proposal RETURNING id) SELECT * FROM proposal`;
-    if (!rows[0]) {
-        const previous = await db() `SELECT * FROM appointment_reschedule_requests WHERE request_id=${id} AND state='PENDING'`;
-        if (previous[0]?.technician_id === req.technician.id &&
-            String(previous[0]?.proposed_date).slice(0, 10) === i.date &&
-            previous[0]?.proposed_time_window === i.timeWindow &&
-            previous[0]?.reason === i.reason) {
-            res.json({ data: previous[0], alreadyProcessed: true });
-            return;
-        }
-        throw new ApiError(409, "PENDING_RESCHEDULE", "Operations is already reviewing a schedule proposal for this job.");
-    }
-    res.status(201).json({ data: rows[0] });
-}));
-technicianCalendarRoutes.get("/jobs/:id/reschedules", requireTechnician, route(async (req, res) => {
-    const id = z.string().uuid().parse(req.params.id);
-    const owned = await db() `SELECT r.id FROM service_requests r JOIN technician_assignments a ON a.request_id=r.id AND a.technician_id=r.assigned_technician_id WHERE r.id=${id} AND a.state='ACCEPTED' AND a.technician_id=${req.technician.id}`;
-    if (!owned.length)
-        throw new ApiError(404, "NOT_FOUND", "Job not found.");
-    const rows = await db() `SELECT id,state,proposed_date,proposed_time_window,reason,decision_reason,requested_at,decided_at FROM appointment_reschedule_requests WHERE request_id=${id} AND technician_id=${req.technician.id} ORDER BY requested_at DESC LIMIT 20`;
-    res.json({ data: rows });
 }));
 adminCalendarRoutes.get("/appointment-reschedules", requireStaff, route(async (req, res) => {
     const state = z

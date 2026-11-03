@@ -63,12 +63,7 @@ type Row = CompletionRequest & {
   details?: Record<string, unknown>;
 };
 const column = createColumnHelper<Row>();
-type Mode =
-  | "SERVICE"
-  | "INSTALLATION"
-  | "COMPLETED"
-  | "APPOINTMENTS"
-  | "ALL";
+type Mode = "SERVICE" | "INSTALLATION" | "COMPLETED" | "APPOINTMENTS" | "ALL";
 export function RequestWorkspace({ mode }: { mode: Mode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = {
@@ -155,10 +150,10 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
     ...(mode === "COMPLETED"
       ? { status: "COMPLETED" }
       : mode === "APPOINTMENTS"
-          ? { appointments: "true" }
-          : mode === "ALL"
-            ? {}
-            : { type: mode }),
+        ? { appointments: "true" }
+        : mode === "ALL"
+          ? {}
+          : { type: mode }),
   };
   const q = useQuery({
     queryKey: [
@@ -181,12 +176,12 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
     mode === "COMPLETED"
       ? "Completed Requests"
       : mode === "APPOINTMENTS"
-          ? "Appointments"
-          : mode === "ALL"
-            ? "Requests"
-            : mode === "SERVICE"
-              ? "Service Requests"
-              : "Installation Requests";
+        ? "Appointments"
+        : mode === "ALL"
+          ? "Requests"
+          : mode === "SERVICE"
+            ? "Service Requests"
+            : "Installation Requests";
   function filter(key: keyof typeof filters, value: string) {
     // Merge current history: a second control can change before React renders the first URL update.
     setSearchParams(
@@ -224,15 +219,15 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
             </button>
           )}
         {canManage &&
-          ["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED", "IN_PROGRESS"].includes(
-            r.status,
-          ) &&
+          [
+            "TECHNICIAN_ASSIGNED",
+            "APPOINTMENT_CONFIRMED",
+            "IN_PROGRESS",
+          ].includes(r.status) &&
           (r.assigned_technician_name || r.assignment_state === "ACCEPTED") && (
             <button
               className="request-complete-button"
-              onClick={() =>
-                setCompletion(r)
-              }
+              onClick={() => setCompletion(r)}
             >
               <icons.success aria-hidden="true" /> Complete
             </button>
@@ -420,9 +415,6 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
         ) : (
           <>
             <StatusBadge status={operationalStatus(r.status)} />
-            {r.status_source === "ADMIN_OVERRIDE" && (
-              <small>Manual admin status</small>
-            )}
           </>
         ),
     }),
@@ -467,8 +459,8 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
           mode === "COMPLETED"
             ? "Finished work, completion reports and customer feedback."
             : mode === "APPOINTMENTS"
-                ? "Confirmed visits for your team."
-                : "Manage service and installation bookings."
+              ? "Confirmed visits for your team."
+              : "Manage service and installation bookings."
         }
       />
       {mode === "ALL" && (
@@ -711,9 +703,6 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
                   <Link to={`/requests/${r.id}`}>{requestReference(r)}</Link>
                   <>
                     <StatusBadge status={operationalStatus(r.status)} />
-                    {r.status_source === "ADMIN_OVERRIDE" && (
-                      <small>Manual admin status</small>
-                    )}
                     {mode === "COMPLETED" && r.completion_actor_name && (
                       <small>Completed by {r.completion_actor_name}</small>
                     )}

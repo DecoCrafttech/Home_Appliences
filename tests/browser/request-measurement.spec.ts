@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { writeFileSync, mkdirSync } from "node:fs";
 const roles = ["customer", "admin", "technician"] as const;
 const results: Record<string, unknown> = {};

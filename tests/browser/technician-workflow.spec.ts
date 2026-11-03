@@ -1,5 +1,5 @@
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { randomUUID, createHash } from "node:crypto";
 import { db } from "../../backend/src/db";
 for (const type of ["SERVICE", "INSTALLATION"])

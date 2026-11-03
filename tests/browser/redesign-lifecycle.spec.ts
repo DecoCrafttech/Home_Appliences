@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { randomUUID, createHash } from "node:crypto";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "../../backend/src/db";

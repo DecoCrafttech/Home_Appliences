@@ -65,7 +65,12 @@ export function SearchField({
         ref={field}
         onKeyDown={(event) => {
           onKeyDown?.(event);
-          if (!event.defaultPrevented && event.key === "Escape" && onClear && props.value) {
+          if (
+            !event.defaultPrevented &&
+            event.key === "Escape" &&
+            onClear &&
+            props.value
+          ) {
             event.preventDefault();
             event.stopPropagation();
             clear();
@@ -145,21 +150,7 @@ export function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-export function EmptyState({
-  title = "No records found",
-  description,
-}: {
-  title?: string;
-  description?: string;
-}) {
-  return (
-    <div className="ui-empty">
-      <icons.search aria-hidden="true" />
-      <h2>{title}</h2>
-      {description && <p>{description}</p>}
-    </div>
-  );
-}
+export { EmptyState } from "./emptyStates";
 export function ErrorState({
   title = "Unable to load data",
   retry,

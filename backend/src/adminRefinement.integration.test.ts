@@ -80,6 +80,15 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       expect(activity.status).toBe(200);
       expect(activity.body.data.trends).toHaveLength(7);
       expect(activity.body.data.alerts.unassigned).toBeTypeOf("number");
+      const custom = await request(app)
+        .get("/api/v1/admin/dashboard/activity?from=2026-11-01&to=2026-11-03")
+        .set("Cookie", staffCookie);
+      expect(custom.status).toBe(200);
+      expect(custom.body.data.trends).toHaveLength(3);
+      await request(app)
+        .get("/api/v1/admin/dashboard/summary?from=2026-11-03&to=2026-11-01")
+        .set("Cookie", staffCookie)
+        .expect(422);
     });
     it("creates and assigns a technician without skills or availability fields", async () => {
       const body = {

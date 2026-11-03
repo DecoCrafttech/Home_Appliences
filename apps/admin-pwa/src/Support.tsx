@@ -116,8 +116,10 @@ export function AdminSupport({ canManage }: { canManage: boolean }) {
           }}
         >
           <option value="">All ticket statuses</option>
-          {["OPEN", "IN_PROGRESS", "RESOLVED"].map((s) => (
-            <option key={s}>{s}</option>
+          {["OPEN", "IN_PROGRESS", "RESOLVED", "IGNORED"].map((s) => (
+            <option key={s} value={s}>
+              {s === "IGNORED" ? "Ignore" : s.replaceAll("_", " ")}
+            </option>
           ))}
         </select>
         <button onClick={() => query.refetch()} disabled={query.isFetching}>
@@ -285,8 +287,10 @@ function SupportDetail({
             }
           }}
         >
-          {["OPEN", "IN_PROGRESS", "RESOLVED"].map((s) => (
-            <option key={s}>{s}</option>
+          {["OPEN", "IN_PROGRESS", "RESOLVED", "IGNORED"].map((s) => (
+            <option key={s} value={s}>
+              {s === "IGNORED" ? "Ignore" : s.replaceAll("_", " ")}
+            </option>
           ))}
         </select>
       </label>

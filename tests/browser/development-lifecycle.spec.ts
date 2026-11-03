@@ -1,5 +1,5 @@
 import { requestReference } from "@home/shared";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { randomUUID, createHash } from "node:crypto";
 import { db } from "../../backend/src/db";
 

@@ -11,6 +11,7 @@ import "@fullcalendar/react/themes/classic/theme.css";
 import "@fullcalendar/react/themes/classic/palette.css";
 import { requestReference } from "@home/shared";
 export type CalendarBooking = {
+  visit_confirmed?: boolean;
   id: string;
   display_number?: number | string;
   request_number: string;

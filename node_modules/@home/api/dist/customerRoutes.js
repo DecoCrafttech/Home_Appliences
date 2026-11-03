@@ -147,9 +147,19 @@ router.post("/auth/customer/google", asyncRoute(async (req, res) => {
         },
     });
 }));
-router.get("/auth/customer/config", (_req, res) => {
-    res.json({ data: { clientId: env.GOOGLE_CLIENT_ID || null } });
-});
+router.get("/auth/customer/config", asyncRoute(async (_req, res) => {
+    const rows = await db() `SELECT key,value FROM app_settings WHERE key IN ('admin_office_phone','business_working_hours','supported_service_areas','support_contact')`;
+    const settings = new Map(rows.map((row) => [String(row.key), String(row.value)]));
+    res.json({
+        data: {
+            clientId: env.GOOGLE_CLIENT_ID || null,
+            adminOfficePhone: settings.get("admin_office_phone") || null,
+            workingHours: settings.get("business_working_hours") || null,
+            serviceAreas: settings.get("supported_service_areas") || null,
+            supportContact: settings.get("support_contact") || null,
+        },
+    });
+}));
 router.get("/auth/customer/me", requireAuth, asyncRoute(async (req, res) => {
     const rows = await db() `SELECT id,customer_reference,phone_e164,phone_verified,full_name,email,profile_photo_url,account_status,created_at FROM customers WHERE id=${req.customerId}`;
     res.json({ data: rows[0] });
@@ -220,7 +230,7 @@ router.get("/appliances", asyncRoute(async (_req, res) => {
     res.json({ data: rows });
 }));
 router.get("/catalogue", asyncRoute(async (_req, res) => {
-    const rows = await db() `SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,a.name AS appliance_name,a.slug AS appliance_slug,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active AND a.active AND a.publication_status='PUBLISHED' AND s.publication_status='PUBLISHED' ORDER BY s.display_order,a.name,s.name`;
+    const rows = await db() `SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,a.name AS appliance_name,a.kind AS category_kind,a.slug AS appliance_slug,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active AND a.active AND a.publication_status='PUBLISHED' AND s.publication_status='PUBLISHED' ORDER BY s.display_order,a.name,s.name`;
     res.json({ data: rows });
 }));
 router.get("/services", asyncRoute(async (req, res) => {
@@ -264,6 +274,12 @@ router.patch("/addresses/:id", requireAuth, asyncRoute(async (req, res) => {
         await db() `UPDATE customer_addresses SET is_default=false,updated_at=now() WHERE customer_id=${req.customerId}`;
     const a = input.data;
     const rows = await db() `UPDATE customer_addresses SET label=${a.label},recipient_name=${a.recipientName},phone=${a.phone},line1=${a.line1},area=${a.area},landmark=${a.landmark || null},city=${a.city},state=${a.state},pin_code=${a.pinCode},is_default=${a.isDefault},updated_at=now() WHERE id=${req.params.id} AND customer_id=${req.customerId} RETURNING *`;
+    if (!rows[0])
+        throw new ApiError(404, "NOT_FOUND", "Address not found");
+    res.json({ data: rows[0] });
+}));
+router.patch("/addresses/:id/default", requireAuth, asyncRoute(async (req, res) => {
+    const rows = await db() `WITH owned AS (SELECT id FROM customer_addresses WHERE id=${req.params.id} AND customer_id=${req.customerId}), changed AS (UPDATE customer_addresses SET is_default=(id=${req.params.id}::uuid),updated_at=now() WHERE customer_id=${req.customerId} AND EXISTS(SELECT 1 FROM owned) RETURNING id,is_default) SELECT * FROM changed WHERE is_default`;
     if (!rows[0])
         throw new ApiError(404, "NOT_FOUND", "Address not found");
     res.json({ data: rows[0] });

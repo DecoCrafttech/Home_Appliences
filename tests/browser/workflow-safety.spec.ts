@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 const id = "11111111-1111-4111-8111-111111111111",
   techId = "22222222-2222-4222-8222-222222222222";
 test("assignment drawer blocks triple submission, preserves selection on failure and retries with the same key", async ({
@@ -178,11 +178,10 @@ test("refresh during an unknown committed assignment never automatically submits
     .click();
   await expect.poll(() => committed).toBe(1);
   await page.reload();
-  await expect(
-    page.getByText("Assignment: ACCEPTED", {
-      exact: false,
-    }),
-  ).toBeVisible();
+  await expect(page.locator(".booking-summary-grid")).toContainText(
+    "Eligible Technician",
+  );
+  await expect(page.locator(".booking-summary-grid")).toContainText("Accepted");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(committed).toBe(1);
 });

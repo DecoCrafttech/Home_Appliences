@@ -33,6 +33,7 @@ import {
   adminCalendarRoutes,
   technicianCalendarRoutes,
 } from "./calendarRoutes.js";
+import { customerPushRoutes, adminPushRoutes, technicianPushRoutes } from "./pushRoutes.js";
 export const logger = pino({
   level: env.NODE_ENV === "test" ? "silent" : "info",
   redact: ["req.headers.cookie", "req.headers.authorization"],
@@ -89,10 +90,12 @@ app.get("/api/v1/health", (_req, res) =>
 );
 app.use("/api/v1", readinessRoutes);
 app.use("/api/v1/technician", technicianCalendarRoutes);
+app.use("/api/v1/technician/push", technicianPushRoutes);
 app.use("/api/v1/technician", technicianRoutes);
 app.use("/api/v1/technician", technicianIdentityRoutes);
 app.use("/api/v1/technician", technicianStorageRoutes);
 app.use("/api/v1/admin", adminIdentityRoutes);
+app.use("/api/v1/admin/push", adminPushRoutes);
 app.use("/api/v1/admin", adminStorageRoutes);
 app.use("/api/v1", technicianCustomerRoutes);
 app.use("/api/v1/admin", technicianAdminRoutes);
@@ -101,6 +104,7 @@ app.use("/api/v1/admin", catalogueMediaAdmin);
 app.use("/api/v1/admin", adminCalendarRoutes);
 app.use("/api/v1", catalogueMediaPublic);
 app.use("/api/v1", customerRoutes);
+app.use("/api/v1/push", customerPushRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/admin", statusOverrideRoutes);
 app.use("/api/v1", applianceCatalogueRoutes);

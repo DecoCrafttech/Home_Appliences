@@ -38,12 +38,6 @@ export function BookingSummary({ request: r }: { request: Booking }) {
   const labels = r.details?._fieldLabels as Record<string, string> | undefined;
   return (
     <>
-      {r.status_source === "ADMIN_OVERRIDE" && (
-        <p className="inline-note">
-          Manual administrative status. Technician assignments and work reports
-          are tracked separately.
-        </p>
-      )}
       <div className="booking-summary-grid">
         <section className="ui-panel">
           <h2>
@@ -143,49 +137,6 @@ export function BookingSummary({ request: r }: { request: Booking }) {
           <BookedPriceSummary details={r.details} />
         </section>
       </div>
-      <ol className="booking-progress" aria-label="Request progress">
-        {[
-          ["PENDING", "Pending"],
-          ["TECHNICIAN_ASSIGNED", "Technician assigned"],
-          ["IN_PROGRESS", "In progress"],
-          ["COMPLETED", "Completed"],
-        ].map(([state, label]) => {
-          const event = r.timeline?.find(
-              (e) => operationalStatus(e.status) === state,
-            ),
-            current = operationalStatus(r.status) === state;
-          return (
-            <li
-              key={state}
-              className={event ? "recorded" : ""}
-              aria-current={current ? "step" : undefined}
-            >
-              <strong>{label}</strong>
-              {event ? (
-                <>
-                  <time dateTime={event.created_at}>
-                    {new Date(event.created_at).toLocaleDateString("en-IN")}
-                  </time>
-                  {(event.actor_technician_name ||
-                    event.actor_staff_name ||
-                    event.actor_role) && (
-                    <small>
-                      Updated by{" "}
-                      {event.actor_technician_name ||
-                        event.actor_staff_name ||
-                        event.actor_role?.toLowerCase()}
-                    </small>
-                  )}
-                </>
-              ) : current ? (
-                <small>Current stage</small>
-              ) : (
-                <small>Not recorded</small>
-              )}
-            </li>
-          );
-        })}
-      </ol>
     </>
   );
 }

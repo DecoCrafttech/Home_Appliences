@@ -202,48 +202,21 @@ describe.runIf(Boolean(process.env.DATABASE_URL))("real catalogue, onboarding, i
         });
         expect((await admin("delete", `/technicians/${technician}`)).status).toBe(409);
     }, 180000);
-    it("synchronizes a deduplicated proposal and approved schedule across admin, technician and customer", async () => {
+    it("removes technician rescheduling while preserving the admin schedule", async () => {
         const range = { from: "2099-11-01", to: "2099-11-08" };
-        expect((await admin("get", "/appointments").query(range)).body.data.some((r) => r.id === booking)).toBe(true);
-        expect((await tech.get("/api/v1/technician/schedule").query(range)).body.data.some((r) => r.id === booking)).toBe(true);
-        const body = {
+        expect((await admin("get", "/appointments").query(range)).body.data.some((row) => row.id === booking)).toBe(true);
+        expect((await tech.get("/api/v1/technician/schedule").query(range)).body.data.some((row) => row.id === booking)).toBe(true);
+        await tech
+            .post(`/api/v1/technician/jobs/${booking}/reschedule`)
+            .set("X-CSRF-Token", csrf)
+            .send({
             version: (await current()).version,
             date: "2099-11-02",
             timeWindow: "10:00-11:00",
             reason: "Customer coordination",
-        }, key = randomUUID();
-        const proposals = await Promise.all([1, 2, 3].map(() => tech
-            .post(`/api/v1/technician/jobs/${booking}/reschedule`)
-            .set("X-CSRF-Token", csrf)
-            .set("Idempotency-Key", key)
-            .send(body)));
-        for (const r of proposals)
-            expect(r.status, JSON.stringify(r.body)).toBe(201);
-        expect(new Set(proposals.map((r) => r.body.data.id)).size).toBe(1);
-        expect((await current()).confirmed_date.slice(0, 10)).toBe("2099-11-01");
-        const proposal = proposals[0].body.data, decision = {
-            decision: "APPROVED",
-            version: proposal.version,
-            requestVersion: (await current()).version,
-            reason: "Approved after schedule-conflict check",
-        };
-        const approved = await admin("post", `/appointment-reschedules/${proposal.id}/decision`).send(decision);
-        expect(approved.status, JSON.stringify(approved.body)).toBe(200);
-        expect((await admin("post", `/appointment-reschedules/${proposal.id}/decision`)
-            .set("Idempotency-Key", randomUUID())
-            .send(decision)).status).toBe(200);
-        const own = (await request(app)
-            .get(`/api/v1/requests/${booking}`)
-            .set("Cookie", customerCookie)).body.data;
-        expect(own.confirmed_date.slice(0, 10)).toBe("2099-11-02");
-        expect(own.confirmed_time_window).toBe("10:00-11:00");
-        expect((await tech.get("/api/v1/technician/schedule").query(range)).body.data.find((r) => r.id === booking)
-            .confirmed_time_window).toBe("10:00-11:00");
-        expect((await tech
-            .post(`/api/v1/technician/jobs/${booking}/reschedule`)
-            .set("X-CSRF-Token", csrf)
-            .send({ ...body, version: own.version, date: "2000-01-01" })).status).toBe(422);
-        expect((await db() `SELECT id FROM appointment_reschedule_requests WHERE request_id=${booking}`).length).toBe(1);
+        })
+            .expect(404);
+        expect(await db() `SELECT id FROM appointment_reschedule_requests WHERE request_id=${booking}`).toHaveLength(0);
     }, 180000);
     it("counts older unread records, marks an owned snapshot and preserves other customers' unread state", async () => {
         await db() `INSERT INTO customer_notifications(customer_id,request_id,kind,title,message) SELECT ${customer},${booking},'bulk:'||n,'QA notification','QA only' FROM generate_series(1,105) AS n`;

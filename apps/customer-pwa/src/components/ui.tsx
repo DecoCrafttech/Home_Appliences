@@ -1,9 +1,12 @@
-import { ConfirmActionDialog } from "@home/ui";
+import {
+  ConfirmActionDialog,
+  EmptyState as SharedEmptyState,
+  emptyStateKind,
+} from "@home/ui";
 import {
   LoadingSkeleton as SharedSkeleton,
   type SkeletonVariant,
 } from "@home/ui/skeletons";
-import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation, statusLabel } from "../lib/language";
 export function Avatar({
@@ -77,17 +80,17 @@ export function LoadingSkeleton({
 export function EmptyState({
   title,
   children,
-}: {
-  title: string;
-  children?: ReactNode;
-}) {
+  ...props
+}: React.ComponentProps<typeof SharedEmptyState>) {
   const { t } = useTranslation();
   return (
-    <div className="empty-state">
-      <FaMagnifyingGlass aria-hidden="true" />
-      <h2>{t(title)}</h2>
+    <SharedEmptyState
+      {...props}
+      kind={props.kind || emptyStateKind(title || "No records found")}
+      title={t(title || "No records found")}
+    >
       {children}
-    </div>
+    </SharedEmptyState>
   );
 }
 export function AppModal({

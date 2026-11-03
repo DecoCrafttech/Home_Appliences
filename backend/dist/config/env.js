@@ -9,6 +9,8 @@ if (process.platform === "win32") {
     setDefaultResultOrder("ipv4first");
     setDefaultAutoSelectFamily(false);
 }
+config({ path: resolve(process.cwd(), ".env.push.local") });
+config({ path: resolve(process.cwd(), "../.env.push.local") });
 config({ path: resolve(process.cwd(), ".env.local") });
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "../.env.local") });
@@ -36,10 +38,14 @@ export const env = z
     SERVICE_PIN_PREFIXES: z.string().default(""),
     APPOINTMENT_WINDOWS: z
         .string()
-        .default('[{"id":"09:00-12:00","label":"Morning · 9 AM to 12 PM"},{"id":"12:00-16:00","label":"Afternoon · 12 PM to 4 PM"},{"id":"16:00-20:00","label":"Evening · 4 PM to 8 PM"}]'),
+        .default('[{"id":"08:00-12:00","label":"Morning · 8 AM to 12 PM"},{"id":"13:00-17:00","label":"Afternoon · 1 PM to 5 PM"},{"id":"18:00-21:00","label":"Evening · 6 PM to 9 PM"}]'),
     LEGACY_OTP_ENABLED: z
         .enum(["true", "false"])
         .default("false")
         .transform((value) => value === "true"),
+    VAPID_PUBLIC_KEY: z.string().min(20).optional(),
+    VAPID_PRIVATE_KEY: z.string().min(20).optional(),
+    VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(),
 })
+    .refine((value) => [value.VAPID_PUBLIC_KEY, value.VAPID_PRIVATE_KEY, value.VAPID_SUBJECT].filter(Boolean).length % 3 === 0, "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be configured together")
     .parse(process.env);

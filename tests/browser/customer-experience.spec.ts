@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 test("booking date choices remain clear across a month boundary on mobile", async ({
   page,
@@ -269,12 +269,12 @@ test("wizard preserves defaults, restores draft and confirms only a persisted su
     .click();
   await expect(page).toHaveURL(/\/bookings$/);
   await expect(
-    page.getByText("Request submitted successfully!", { exact: true }),
+    page.getByText("Request Submitted!", { exact: true }),
   ).toBeVisible();
   expect(state.submissions()).toBe(1);
   await page.reload();
   await expect(
-    page.getByText("Request submitted successfully!", { exact: true }),
+    page.getByText("Request Submitted!", { exact: true }),
   ).toHaveCount(0);
   expect(
     await page.evaluate(
@@ -299,7 +299,7 @@ test("failed submission keeps the review page and never shows a success banner",
   ).toBeVisible();
   await expect(page).toHaveURL(/\/request\/service/);
   await expect(
-    page.getByText("Request submitted successfully!", { exact: true }),
+    page.getByText("Request Submitted!", { exact: true }),
   ).toHaveCount(0);
 });
 test("repeat request prefills appliance and address but clears the old visit", async ({
@@ -407,7 +407,7 @@ test("one-tap support carries the real request reference", async ({ page }) => {
   await setup(page);
   await page.goto(`/requests/${requestId}`);
   await page
-    .getByRole("link", { name: "Contact support", exact: true })
+    .getByRole("link", { name: "Contact Support", exact: true })
     .first()
     .click();
   await expect(page).toHaveURL(new RegExp(`requestId=${requestId}`));

@@ -7,14 +7,20 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      devOptions: { enabled: true, type: "module" },
       registerType: "prompt",
       manifest: {
-        name: "Home Services",
-        short_name: "Home Services",
+        name: "Fixbeez",
+        short_name: "Fixbeez",
         description: "Book appliance care and track your requests",
         theme_color: "#512da8",
-        background_color: "#f7f2ff",
+        background_color: "#ffffff",
         display: "standalone",
+        id: "/",
+        scope: "/",
         start_url: "/",
         icons: [
           {
@@ -29,19 +35,11 @@ export default defineConfig({
             type: "image/png",
             purpose: "any maskable",
           },
-          {
-            src: "/icon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any",
-          },
         ],
       },
-      workbox: {
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [],
-        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,svg,png,webp,avif,woff2}"],
+        globIgnores: ["**/appliances/*.png"],
       },
     }),
   ],
@@ -68,4 +66,3 @@ export default defineConfig({
 });
 
 // Refresh the local module graph after query-key consolidation.
-

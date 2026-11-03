@@ -1,28 +1,51 @@
 :root {
   color-scheme: light;
   --color-primary: #512da8;
-  --color-primary-hover: #43248f;
+  --color-primary-hover: #44238d;
   --color-primary-pressed: #361b78;
-  --color-primary-light: #eee7fa;
-  --color-accent: #ffb6a3;
-  --color-accent-light: #fff0eb;
-  --color-background: #f7f2ff;
+  --color-primary-light: #f2ebff;
+  --color-accent: #ffc928;
+  --color-accent-light: #fff3bd;
+  --color-background: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-subtle: #faf7ff;
-  --color-heading: #252039;
-  --color-text: #443b56;
-  --color-secondary: #655b76;
-  --color-muted: #756a83;
-  --color-border: #e4dced;
+  --color-surface-subtle: #fff8dc;
+  --color-heading: #1f2638;
+  --color-text: #1f2638;
+  --color-secondary: #626c7d;
+  --color-muted: #89909e;
+  --color-border: #ede8e0;
   --color-input-border: #b8acc9;
   --color-disabled: #eee9f4;
   --color-focus: #7855bc;
-  --color-success: #167044;
-  --color-success-light: #edf9f1;
-  --color-warning: #925600;
-  --color-warning-light: #fff6e2;
-  --color-danger: #b42335;
-  --color-danger-light: #fff0f2;
+  --color-success: #179b57;
+  --color-success-light: #e4f8ec;
+  --color-warning: #ad6800;
+  --color-warning-light: #fff2ce;
+  --color-danger: #d94141;
+  --color-danger-light: #ffe6e6;
+  --color-progress: #2563eb;
+  --color-progress-light: #e8f1ff;
+  --fb-purple: var(--color-primary);
+  --fb-yellow: #ffc928;
+  --fb-orange: #ff9500;
+  --fb-gradient-header: linear-gradient(
+    180deg,
+    #ffe58a 0%,
+    #fff2c4 52%,
+    #ffffff 100%
+  );
+  --fb-gradient-cta: linear-gradient(
+    120deg,
+    #ffdd35 0%,
+    #ffc928 52%,
+    #ff9500 100%
+  );
+  --fb-gradient-hero: linear-gradient(
+    120deg,
+    #47228f 0%,
+    #6337be 57%,
+    #7848c8 100%
+  );
   --color-overlay: #25203970;
   --shadow-sm: 0 2px 8px #25203905;
   --shadow-card: 0 8px 24px #512da80a;
@@ -37,9 +60,9 @@
   --space-10: 40px;
   --space-12: 48px;
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --font-family:
     Inter, system-ui, -apple-system, "Segoe UI", "Noto Sans Tamil",
     "Nirmala UI", sans-serif;

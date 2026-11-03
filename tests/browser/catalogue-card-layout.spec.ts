@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 const appliance = "11111111-1111-4111-8111-111111111111";
 const names = [
   "AC repair",

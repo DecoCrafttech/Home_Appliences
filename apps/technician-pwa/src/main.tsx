@@ -1,4 +1,4 @@
-import { OfflineBanner, NavigationScroll } from "@home/ui";
+import { OfflineBanner, NavigationScroll, LaunchExperience } from "@home/ui";
 import { retryTransientRequest } from "@home/ui";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -11,6 +11,7 @@ import { PwaUpdate } from "./PwaUpdate";
 import "./styles.css";
 import "@home/ui/platform.css";
 import "@home/ui/styles.css";
+import "@home/ui/staff.css";
 const client = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,13 +30,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <NavigationScroll />
         <PwaUpdate />
         <AppErrorBoundary>
-          <Routes>
-            <Route path="/technician/*" element={<TechnicianApp />} />
-            <Route path="*" element={<Navigate to="/technician" replace />} />
-          </Routes>
+          <LaunchExperience role="technician">
+            <Routes>
+              <Route path="/technician/*" element={<TechnicianApp />} />
+              <Route path="*" element={<Navigate to="/technician" replace />} />
+            </Routes>
+          </LaunchExperience>
         </AppErrorBoundary>
         <ToastProvider />
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+import "@home/ui/refinements.css";

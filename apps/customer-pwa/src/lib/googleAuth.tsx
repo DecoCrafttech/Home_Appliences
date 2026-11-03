@@ -8,11 +8,12 @@ export function useGoogleConfiguration() {
     queryKey: ["google-configuration"],
     queryFn: async () =>
       (
-        await api.get<{ data: { clientId: string | null } }>(
-          "/auth/customer/config",
-        )
+        await api.get<{
+          data: { clientId: string | null; adminOfficePhone: string | null };
+        }>("/auth/customer/config")
       ).data.data,
     staleTime: 300_000,
+    refetchOnWindowFocus: "always",
     retry: 1,
   });
 }

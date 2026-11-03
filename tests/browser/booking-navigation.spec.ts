@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 const category = "11111111-1111-4111-8111-111111111111",
   service = "22222222-2222-4222-8222-222222222222";
 async function start(page: Page, selectService = true) {
@@ -93,13 +93,15 @@ async function start(page: Page, selectService = true) {
     return route.fulfill({ json: { data: [] } });
   });
   await page.goto("http://localhost:5173/");
-  await page.getByRole("link", { name: "Repair an appliance" }).click();
+  await page
+    .getByRole("navigation", { name: "Quick actions" })
+    .getByRole("link", { name: "Services", exact: true })
+    .click();
   if (!selectService) return;
   await page.getByRole("button", { name: /Air Conditioner/ }).click();
   await page
     .locator(".booking-service-card")
     .filter({ hasText: "Draft Care" })
-    .getByRole("button", { name: "Book now" })
     .click();
   await expect(page.getByLabel(/Short description/)).toBeVisible();
 }
@@ -149,9 +151,13 @@ test("browser Back preserves editing, drafts omit contact details, and discard r
     "Keep this requirement in my draft",
   );
   await page
-    .getByRole("button", { name: "Discard draft", exact: true })
+    .getByLabel(/Short description/)
+    .fill("Discard this changed requirement");
+  await page
+    .getByRole("link", { name: "Services", exact: true })
+    .last()
     .click();
-  dialog = page.getByRole("dialog", { name: "Discard this draft?" });
+  dialog = page.getByRole("dialog", { name: "Leave this request?" });
   await expect(dialog).toBeVisible();
   await dialog
     .getByRole("button", { name: "Discard Changes", exact: true })

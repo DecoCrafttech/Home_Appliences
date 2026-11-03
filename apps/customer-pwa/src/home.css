@@ -1,0 +1,454 @@
+/* Customer home: a flat, airy composition with decoration only at the top. */
+.home-header {
+  background: linear-gradient(180deg, #ffe58a, #fff4c7);
+  border-bottom: 0;
+  backdrop-filter: none;
+}
+.home-header::before,
+.home-header::after {
+  content: "";
+  position: absolute;
+  width: 138px;
+  height: 112px;
+  background: url("../../../packages/ui/src/assets/honeycomb-pattern.svg") right
+    top / 138px 125px no-repeat;
+  mask-image: none;
+  opacity: 0.72;
+  pointer-events: none;
+  z-index: -1;
+}
+.home-header::before {
+  inset: -30px 0 auto auto;
+}
+.home-header::after {
+  inset: -43px auto auto 0;
+  transform: rotate(180deg);
+  opacity: 0.45;
+}
+.home-header .header-inner {
+  min-height: 80px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.home-header .fb-brand-logo {
+  width: 126px;
+  height: 68px;
+}
+body:has(.home-page) #main {
+  background: linear-gradient(180deg, #fff4c7 0, #ffffff 180px);
+}
+.home-page.section {
+  max-width: 1160px;
+  padding-top: 12px;
+  padding-bottom: 24px;
+}
+.home-welcome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 22px;
+}
+.home-welcome .avatar,
+.home-welcome-avatar {
+  width: 46px;
+  height: 46px;
+  border: 3px solid white;
+  box-shadow: 0 3px 12px #1f26380a;
+}
+.home-welcome-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #512da8;
+  background: #f2ebff;
+}
+.home-welcome h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+  color: #1f2638;
+}
+.home-welcome p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #626c7d;
+}
+.home-showcase {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.home-promo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  min-height: 190px;
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 100% 0, #ffffff15, transparent 65%),
+    linear-gradient(115deg, #402078, #512da8 60%, #6c40ba);
+  box-shadow: 0 10px 26px #512da817;
+  color: white;
+}
+.home-promo-copy {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.home-promo-eyebrow {
+  margin: 0 0 6px;
+  color: #ffe58a;
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.home-promo h2 {
+  margin: 0 0 8px;
+  color: white;
+  font-size: 25px;
+  line-height: 1.2;
+  letter-spacing: -0.7px;
+  font-weight: 750;
+}
+.home-promo h2 span {
+  display: block;
+  color: #ffdd55;
+}
+.home-promo-caption {
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0 0 10px;
+  color: #eee5ff;
+}
+.home-promo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(120deg, #ffdd35, #ffc928);
+  color: #1f2638;
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: 0 4px 12px #20103c20;
+}
+.home-promo-cta:hover {
+  background: #ffe58a;
+}
+.home-promo .home-promo-logo {
+  width: 118px;
+  height: 142px;
+  padding: 0;
+  object-fit: contain;
+  position: relative;
+}
+.home-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.home-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 108px;
+  padding: 12px 8px;
+  border: 1px solid #eeeaf2;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 4px 16px #1f263805;
+  text-align: center;
+}
+.home-action:hover {
+  border-color: #c7b4ec;
+  box-shadow: 0 8px 20px #512da80b;
+  transform: translateY(-2px);
+}
+.home-action-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: #fff3c4;
+  color: #b06a00;
+}
+.home-action-icon svg {
+  width: 21px;
+  height: 21px;
+}
+.home-action--installation .home-action-icon {
+  color: #512da8;
+  background: #f2ebff;
+}
+.home-action--support .home-action-icon {
+  color: #2563a3;
+  background: #eaf4ff;
+}
+.home-action strong {
+  max-width: 100px;
+  color: #1f2638;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+.home-action small {
+  display: none;
+}
+.home-discovery {
+  margin: 0 0 24px;
+}
+.home-discovery .section-heading {
+  margin: 0 0 16px;
+  align-items: center;
+  gap: 12px;
+}
+.home-discovery .section-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.home-discovery .section-heading > a {
+  color: #512da8;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 44px;
+}
+.home-discovery .appliance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+}
+.appliance-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 110px;
+  background: #fff;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.appliance-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: white;
+}
+.appliance-photo-missing {
+  font-size: 11px;
+  color: #626c7d;
+}
+.home-discovery .appliance-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-width: 0;
+  min-height: 122px;
+  margin: 0;
+  padding: 8px 4px 12px;
+  border: 1px solid #eeeaf2;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 3px 12px #1f263804;
+  text-align: center;
+}
+.home-discovery .appliance-card .appliance-photo-wrap {
+  height: 70px;
+  flex: none;
+  margin: 0 0 7px;
+}
+.home-discovery .appliance-card h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  color: #1f2638;
+  overflow-wrap: normal;
+}
+.home-discovery .appliance-card:hover {
+  border-color: #bda7e8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px #512da80a;
+}
+.services-discovery .appliance-card .appliance-photo-wrap {
+  height: 130px;
+  margin-bottom: 16px;
+}
+.discovery-card .discovery-icon {
+  width: 100%;
+  height: 100px;
+  padding: 4px;
+  background: white;
+  border-radius: 10px;
+}
+.discovery-card .discovery-icon .appliance-photo {
+  width: 100%;
+  height: 100%;
+}
+.home-support-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin: 24px 0;
+  border: 1px solid #eeeaf2;
+  border-radius: 18px;
+  background: #faf8ff;
+}
+.home-support-note-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #f2ebff;
+  color: #512da8;
+}
+.home-support-note > span:nth-child(2) {
+  flex: 1;
+}
+.home-support-note strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+  color: #1f2638;
+}
+.home-support-note small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #626c7d;
+}
+.home-support-note > svg {
+  color: #512da8;
+}
+.home-page .home-section {
+  margin-top: 28px;
+}
+@media (min-width: 600px) {
+  .home-welcome {
+    margin-top: 12px;
+    margin-bottom: 24px;
+  }
+  .home-welcome h1 {
+    font-size: 25px;
+  }
+  .home-promo {
+    padding: 28px 32px;
+    grid-template-columns: minmax(0, 1fr) 170px;
+  }
+  .home-promo h2 {
+    font-size: 34px;
+  }
+  .home-promo .home-promo-logo {
+    width: 160px;
+    height: 170px;
+  }
+  .home-action {
+    min-height: 140px;
+  }
+  .home-action strong {
+    max-width: 150px;
+    font-size: 14px;
+  }
+  .home-action small {
+    display: block;
+    font-size: 11px;
+    color: #626c7d;
+  }
+  .home-discovery .appliance-card {
+    min-height: 150px;
+    padding: 12px;
+  }
+  .home-discovery .appliance-card .appliance-photo-wrap {
+    height: 94px;
+  }
+  .home-discovery .appliance-card h2 {
+    font-size: 13px;
+  }
+}
+@media (min-width: 1001px) {
+  .home-page.section {
+    padding-top: 20px;
+  }
+  .home-showcase {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .home-promo {
+    grid-template-columns: minmax(0, 1fr) 145px;
+    min-height: 248px;
+  }
+  .home-promo .home-promo-logo {
+    width: 145px;
+    height: 170px;
+  }
+  .home-quick-actions {
+    align-items: stretch;
+    gap: 12px;
+  }
+  .home-action {
+    padding: 24px 12px;
+    gap: 16px;
+  }
+  .home-action strong {
+    font-size: 14px;
+  }
+  .home-action small {
+    line-height: 1.5;
+  }
+  .home-discovery .appliance-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .home-discovery .appliance-card {
+    padding: 12px 6px;
+  }
+  .home-discovery .appliance-card h2 {
+    font-size: 12px;
+  }
+}
+@media (max-width: 374px) {
+  .home-promo {
+    padding: 20px;
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+  .home-promo h2 {
+    font-size: 23px;
+  }
+  .home-promo .home-promo-logo {
+    width: 102px;
+    height: 130px;
+  }
+  .home-discovery .appliance-grid {
+    gap: 8px;
+  }
+  .home-action strong {
+    font-size: 11px;
+  }
+}

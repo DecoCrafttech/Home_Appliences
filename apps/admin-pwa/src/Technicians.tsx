@@ -1,10 +1,10 @@
+import { TechnicianJobsModal } from "./TechnicianJobsModal";
 import { AsyncActionButton as SafeAsyncButton } from "@home/ui";
 import { TechnicianAccount } from "./TechnicianAccount";
 import { TechnicianDocuments } from "./TechnicianOperations";
 import { temporaryPasswordSchema } from "@home/shared";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
 import { api } from "./api";
@@ -39,6 +39,7 @@ export function Technicians({ canManage }: { canManage: boolean }) {
       (await api.get<{ data: Technician[] }>("/technicians")).data.data,
     staleTime: 30000,
   });
+  const [assigned, setAssigned] = useState<Technician | null>(null);
   const [editing, setEditing] = useState<Technician | "new" | null>(null);
   const [archiving, setArchiving] = useState<Technician | null>(null);
   const [accountChange, setAccountChange] = useState<Technician | null>(null);
@@ -161,9 +162,9 @@ export function Technicians({ canManage }: { canManage: boolean }) {
                               : "Freeze account"}
                           </button>
                         )}
-                      <Link to={`/requests?technicianId=${t.id}`}>
-                        <icons.view /> View assigned requests
-                      </Link>
+                      <button onClick={() => setAssigned(t)}>
+                        <icons.view /> View Assigned
+                      </button>
                       {canManage && (
                         <button onClick={() => setArchiving(t)}>
                           <icons.delete /> Remove technician
@@ -176,6 +177,12 @@ export function Technicians({ canManage }: { canManage: boolean }) {
             </tbody>
           </table>
         </DataTable>
+      )}
+      {assigned && (
+        <TechnicianJobsModal
+          technician={assigned}
+          onClose={() => setAssigned(null)}
+        />
       )}
       {editing && (
         <DetailsDrawer

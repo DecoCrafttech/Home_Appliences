@@ -1,4 +1,3 @@
-import { BookedPriceSummary } from "@home/ui";
 import { AsyncActionButton as SafeAsyncButton } from "@home/ui";
 import { EstimateApproval } from "./EstimateApproval";
 import { customerKeys } from "./lib/queryKeys";
@@ -15,12 +14,22 @@ import {
   requestReference,
   cancellationStatuses,
   reviewTags,
+  contactPhone,
 } from "@home/shared";
 import { toast } from "sonner";
 import axios from "axios";
 import { api } from "./lib/api";
+import { useGoogleConfiguration } from "./lib/googleAuth";
+import {
+  FaCalendarDay,
+  FaCircleCheck,
+  FaClock,
+  FaLocationDot,
+  FaPhone,
+  FaScrewdriverWrench,
+} from "react-icons/fa6";
 import type { RequestRecord, Review } from "./lib/types";
-import { useTranslation, statusLabel } from "./lib/language";
+import { useTranslation } from "./lib/language";
 import {
   AppModal,
   EmptyState,
@@ -41,38 +50,10 @@ export function useRequests(enabled = true) {
       (await api.get<{ data: RequestRecord[] }>("/requests")).data.data,
     retry: false,
     refetchInterval: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: true,
     enabled,
   });
-}
-function nextStep(request: RequestRecord): string | undefined {
-  switch (request.status) {
-    case "REQUESTED":
-    case "UNDER_REVIEW":
-      return "We are reviewing your request. Your preferred visit is not confirmed yet.";
-    case "EXECUTIVE_CONTACTED":
-    case "ASSIGNMENT_PENDING":
-    case "TECHNICIAN_ASSIGNED":
-      return "We are arranging your visit. Check request updates for confirmation.";
-    case "APPOINTMENT_CONFIRMED":
-      return "Your visit is confirmed. Please keep your phone available.";
-    case "TECHNICIAN_EN_ROUTE":
-      return "Your technician is on the way. Please be available at the service address.";
-    case "TECHNICIAN_ARRIVED":
-    case "IN_PROGRESS":
-      return "Your technician is handling the job. Any additional estimate needs your approval.";
-    case "ESTIMATE_PENDING_APPROVAL":
-      return "Review the estimate and approve or decline the additional work.";
-    case "ON_HOLD":
-      return "Your request is on hold. Check the latest update or contact support.";
-    case "COMPLETED":
-      return request.review_id
-        ? undefined
-        : "How did we do? Open this request to leave a review.";
-    default:
-      return undefined;
-  }
 }
 export function RequestCard({
   request,
@@ -89,9 +70,6 @@ export function RequestCard({
       <div className="section-actions">
         <span className="eyebrow">{requestReference(request)}</span>
         <StatusBadge status={request.status} />
-        {request.status_source === "ADMIN_OVERRIDE" && (
-          <small>Manual admin status</small>
-        )}
       </div>
       <h2>{t(request.appliance)}</h2>
       <p>
@@ -107,10 +85,14 @@ export function RequestCard({
           )} · {request.confirmed_time_window || request.preferred_time_window}
         </span>
       </div>
-      {(!compact || request.status === "ESTIMATE_PENDING_APPROVAL") &&
-        nextStep(request) && (
-          <p className="request-next-step">{t(nextStep(request)!)}</p>
-        )}
+      {(request.address_snapshot?.area || request.address_snapshot?.city) && (
+        <p className="muted">
+          <FaLocationDot aria-hidden="true" />{" "}
+          {[request.address_snapshot.area, request.address_snapshot.city]
+            .filter(Boolean)
+            .join(", ")}
+        </p>
+      )}
       <Link className="text-button" to={`/requests/${request.id}`}>
         {t(compact ? "Track Request" : "View details")} →
       </Link>
@@ -123,11 +105,11 @@ export function MyRequests() {
   const location = useLocation();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [submission] = useState<RequestRecord | undefined>(
+  const [submission, setSubmission] = useState<RequestRecord | undefined>(
     (location.state as { submitted?: RequestRecord } | null)?.submitted,
   );
   const [filters, setFilters] = useSearchParams();
-  const tab = ["All", "Active", "Completed", "Cancelled"].includes(
+  const tab = ["All", "Pending", "In Progress", "Completed"].includes(
     filters.get("status") || "",
   )
     ? filters.get("status")!
@@ -157,7 +139,7 @@ export function MyRequests() {
   if (query.isPending)
     return (
       <section className="section page">
-        <LoadingSkeleton />
+        <LoadingSkeleton variant="requests" />
       </section>
     );
   if (query.isError)
@@ -169,9 +151,23 @@ export function MyRequests() {
   const filtered = records.filter(
     (r) =>
       (tab === "All" ||
-        (tab === "Active"
-          ? !["COMPLETED", "CANCELLED"].includes(r.status)
-          : r.status === tab.toUpperCase())) &&
+        (tab === "Pending"
+          ? [
+              "REQUESTED",
+              "UNDER_REVIEW",
+              "EXECUTIVE_CONTACTED",
+              "ASSIGNMENT_PENDING",
+            ].includes(r.status)
+          : tab === "In Progress"
+            ? ![
+                "REQUESTED",
+                "UNDER_REVIEW",
+                "EXECUTIVE_CONTACTED",
+                "ASSIGNMENT_PENDING",
+                "COMPLETED",
+                "CANCELLED",
+              ].includes(r.status)
+            : r.status === "COMPLETED")) &&
       (type === "All" || r.request_type === type.toUpperCase()),
   );
   const reminder = query.data.find(
@@ -205,22 +201,29 @@ export function MyRequests() {
         </Link>
       </div>
       {submission && (
-        <article className="confirmation-banner" role="status">
-          <strong>{t("Request submitted successfully!")}</strong>
-          <p>
-            {t(
-              "Our executive will contact you soon to confirm the next steps.",
-            )}
-          </p>
+        <article className="confirmation-banner v6-confirmation" role="status">
+          <div className="v6-success-art" aria-hidden="true">
+            <FaCircleCheck />
+          </div>
+          <h2>Request Submitted!</h2>
+          <p>Our executive will contact you soon.</p>
+          <strong>{requestReference(submission)}</strong>
           <span>
-            {requestReference(submission)} · {t(submission.appliance)} ·{" "}
-            {submission.preferred_date?.slice(0, 10)} ·{" "}
+            {t(submission.appliance)} &middot;{" "}
+            {submission.preferred_date?.slice(0, 10)} &middot;{" "}
             {submission.preferred_time_window}
           </span>
-          <StatusBadge status={submission.status} />
-          <Link to={`/requests/${submission.id}`} className="text-button">
-            {t("View details")}
-          </Link>
+          <div className="v6-confirmation-actions">
+            <button
+              className="primary"
+              onClick={() => setSubmission(undefined)}
+            >
+              View My Requests
+            </button>
+            <Link className="secondary" to="/book">
+              Book Another Service
+            </Link>
+          </div>
         </article>
       )}
       {reminder && (
@@ -251,7 +254,7 @@ export function MyRequests() {
       )}
       <div className="filter-bar">
         <div className="filter-chips" aria-label="Request status">
-          {["All", "Active", "Completed", "Cancelled"].map((value) => (
+          {["All", "Pending", "In Progress", "Completed"].map((value) => (
             <button
               key={value}
               aria-pressed={tab === value}
@@ -281,9 +284,27 @@ export function MyRequests() {
       </div>
       {!filtered.length && (
         <EmptyState
-          title={records.length ? "No matching requests" : "No requests yet"}
+          kind={
+            tab === "Completed"
+              ? "completed"
+              : records.length
+                ? "search"
+                : "requests"
+          }
+          title={
+            tab === "Completed"
+              ? "No completed services yet"
+              : records.length
+                ? "No matching requests"
+                : "No requests yet"
+          }
+          description={
+            tab === "Completed"
+              ? "Completed services will appear here."
+              : "Your appliance care requests will appear here."
+          }
         >
-          {records.length ? (
+          {records.length || tab === "Completed" ? (
             <button
               className="secondary"
               type="button"
@@ -294,11 +315,11 @@ export function MyRequests() {
                 setFilters(next, { replace: true });
               }}
             >
-              {t("Clear filters")}
+              {t(tab === "Completed" ? "View Requests" : "Clear filters")}
             </button>
           ) : (
-            <Link to="/services" className="text-button">
-              {t("Choose your appliance")}
+            <Link to="/book" className="primary">
+              Book a Service
             </Link>
           )}
         </EmptyState>
@@ -308,36 +329,17 @@ export function MyRequests() {
 }
 export function RequestPage() {
   const { id } = useParams();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const qc = useQueryClient();
+  const config = useGoogleConfiguration();
   const [cancel, setCancel] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [copyFallback, setCopyFallback] = useState(false);
   const detail = useQuery({
     queryKey: customerKeys.request(id),
     queryFn: async () =>
       (await api.get<{ data: RequestRecord }>(`/requests/${id}`)).data.data,
     refetchInterval: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: false,
-  });
-  const timeline = useQuery({
-    queryKey: customerKeys.timeline(id),
-    queryFn: async () =>
-      (
-        await api.get<{
-          data: {
-            id: string;
-            status: string;
-            note: string;
-            created_at: string;
-          }[];
-        }>(`/requests/${id}/timeline`)
-      ).data.data,
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: "always",
     retry: false,
   });
   if (detail.isPending)
@@ -349,27 +351,25 @@ export function RequestPage() {
   if (detail.isError)
     return <RequestError error={detail.error} retry={() => detail.refetch()} />;
   const request = detail.data;
+  const address = request.address_snapshot;
+  const technicianPhone = contactPhone(request.assigned_technician_phone);
+  const officePhone = contactPhone(config.data?.adminOfficePhone);
   const eligible = cancellationStatuses.includes(
     request.status as (typeof cancellationStatuses)[number],
   );
-  const address = request.address_snapshot;
   async function confirmCancellation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    const reason = String(
-      new FormData(event.currentTarget).get("reason") || "",
-    );
     setBusy(true);
     try {
       await api.post(`/requests/${id}/cancel`, {
-        reason,
+        reason: String(new FormData(event.currentTarget).get("reason") || ""),
         version: request.version,
       });
       setCancel(false);
       await Promise.all([
         qc.invalidateQueries({ queryKey: customerKeys.request(id) }),
         qc.invalidateQueries({ queryKey: customerKeys.requests }),
-        qc.invalidateQueries({ queryKey: customerKeys.timeline(id) }),
       ]);
       toast.success(t("Cancelled"));
     } catch (error) {
@@ -379,186 +379,173 @@ export function RequestPage() {
       setBusy(false);
     }
   }
+  const formatDate = (value?: string | null) =>
+    value
+      ? new Intl.DateTimeFormat("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          timeZone: "Asia/Kolkata",
+        }).format(
+          new Date(value.length === 10 ? `${value}T12:00:00+05:30` : value),
+        )
+      : "Not scheduled";
   return (
-    <section className="section page">
-      <div className="page-heading">
+    <section className="section page request-details-page">
+      <header className="request-detail-hero">
+        <div className="request-appliance-icon">
+          <FaScrewdriverWrench aria-hidden="true" />
+        </div>
         <div>
           <span className="eyebrow">{requestReference(request)}</span>
           <h1>{t(request.appliance)}</h1>
-          <p>{request.service_name}</p>
+          <p>
+            {request.service_name} ·{" "}
+            {request.request_type === "INSTALLATION"
+              ? "Installation"
+              : "Service"}
+          </p>
         </div>
         <StatusBadge status={request.status} />
+      </header>
+      <div className="request-detail-sections">
+        <article className="request-info-card">
+          <h2>Request overview</h2>
+          <dl>
+            <div>
+              <dt>Request ID</dt>
+              <dd>{requestReference(request)}</dd>
+            </div>
+            <div>
+              <dt>Requested on</dt>
+              <dd>{formatDate(request.created_at)}</dd>
+            </div>
+            <div>
+              <dt>Type</dt>
+              <dd>
+                {request.request_type === "INSTALLATION"
+                  ? "Installation"
+                  : "Service"}
+              </dd>
+            </div>
+          </dl>
+        </article>
+        <article className="request-info-card">
+          <h2>Schedule information</h2>
+          <div className="request-info-row">
+            <FaCalendarDay aria-hidden="true" />
+            <div>
+              <span>
+                {request.confirmed_date ? "Confirmed date" : "Preferred date"}
+              </span>
+              <strong>
+                {formatDate(request.confirmed_date || request.preferred_date)}
+              </strong>
+            </div>
+          </div>
+          <div className="request-info-row">
+            <FaClock aria-hidden="true" />
+            <div>
+              <span>Time slot</span>
+              <strong>
+                {request.confirmed_time_window ||
+                  request.preferred_time_window ||
+                  "Not scheduled"}
+              </strong>
+            </div>
+          </div>
+          <div className="request-info-row">
+            <FaLocationDot aria-hidden="true" />
+            <div>
+              <span>Service address</span>
+              <strong>
+                {[
+                  address.line1,
+                  address.area,
+                  address.city,
+                  address.state,
+                  address.pinCode,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </strong>
+            </div>
+          </div>
+        </article>
+        {contactPhone(address.phone) && (
+          <article className="request-info-card request-contact-card">
+            <h2>Customer contact</h2>
+            <strong>{address.name}</strong>
+            <a href={`tel:${contactPhone(address.phone)}`}>
+              {contactPhone(address.phone)}
+            </a>
+          </article>
+        )}
+        {request.assigned_technician_name && (
+          <article className="request-info-card request-contact-card">
+            <h2>Technician details</h2>
+            <strong>{request.assigned_technician_name}</strong>
+            {technicianPhone && (
+              <a
+                className="primary request-call-action"
+                href={`tel:${technicianPhone}`}
+              >
+                <FaPhone aria-hidden="true" /> Call Technician:{" "}
+                {technicianPhone}
+              </a>
+            )}
+          </article>
+        )}
+        <article className="request-info-card request-contact-card admin-office-card">
+          <h2>Admin Office</h2>
+          {officePhone ? (
+            <>
+              <strong>{officePhone}</strong>
+              <a
+                className="primary request-call-action"
+                href={`tel:${officePhone}`}
+              >
+                <FaPhone aria-hidden="true" /> Call Admin
+              </a>
+            </>
+          ) : (
+            <p role="status">
+              The official office number is being configured. Use Contact
+              Support for help.
+            </p>
+          )}
+          <Link
+            className="secondary"
+            to={`/support?requestId=${request.id}&reference=${encodeURIComponent(requestReference(request))}`}
+          >
+            Contact Support
+          </Link>
+        </article>
       </div>
-      {nextStep(request) && (
-        <p className="inline-note">{t(nextStep(request)!)}</p>
-      )}
       <EstimateApproval
         requestId={request.id}
         closed={["COMPLETED", "CANCELLED"].includes(request.status)}
       />
+      {request.completed_at && request.work_summary && (
+        <article className="request-info-card request-completion-card">
+          <h2>Work completed</h2>
+          <p>{request.work_summary}</p>
+        </article>
+      )}
       <div className="detail-actions">
         <SafeAsyncButton
           className="secondary"
-          pending={detail.isFetching || timeline.isFetching}
+          pending={detail.isFetching}
           pendingLabel="Refreshing..."
-          onClick={async () => {
-            try {
-              await Promise.all([
-                detail.refetch({ cancelRefetch: false, throwOnError: true }),
-                timeline.refetch({ cancelRefetch: false, throwOnError: true }),
-                qc.refetchQueries(
-                  { queryKey: ["customer-estimates", id], exact: true },
-                  { cancelRefetch: false, throwOnError: true },
-                ),
-              ]);
-            } catch (error) {
-              toast.error(errorMessage(error));
-            }
-          }}
+          onClick={() => detail.refetch()}
         >
           {t("Refresh")}
         </SafeAsyncButton>
-        <button
-          className="secondary"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(requestReference(request));
-              toast.success("Request reference copied.");
-            } catch {
-              setCopyFallback(true);
-            }
-          }}
-        >
-          {t("Copy reference")}
-        </button>
-        <Link
-          className="secondary"
-          to={`/support?requestId=${request.id}&reference=${encodeURIComponent(requestReference(request))}`}
-        >
-          {t("Contact support")}
-        </Link>
-        <Link
-          className="secondary"
-          to={`/request/${request.request_type.toLowerCase()}?repeat=${request.id}`}
-        >
-          {t("Repeat request")}
-        </Link>
         {eligible && (
           <button className="danger-button" onClick={() => setCancel(true)}>
             {t("Cancel request")}
           </button>
         )}
-      </div>
-      {!eligible && !["COMPLETED", "CANCELLED"].includes(request.status) && (
-        <p className="inline-note">
-          Online cancellation is no longer available at this stage. Contact
-          support to discuss changes.
-        </p>
-      )}
-      {request.status_source === "ADMIN_OVERRIDE" && (
-        <p className="inline-note">
-          An administrator updated this status. Your visit and technician
-          details are shown below.
-        </p>
-      )}
-      <div className="request-detail-grid">
-        <article className="surface-card">
-          <h2>{t("Location & contact")}</h2>
-          <strong>
-            {address.name} · {address.phone}
-          </strong>
-          <p>
-            {address.line1}, {address.area}
-            <br />
-            {address.city}, {address.state} {address.pinCode}
-          </p>
-          <h2>{t("Visit details")}</h2>
-          {request.assigned_technician_name && (
-            <p>
-              <strong>Technician: {request.assigned_technician_name}</strong>
-              <br />
-              {request.assigned_technician_phone}
-            </p>
-          )}
-          {request.confirmed_date && (
-            <p>
-              <strong>Confirmed appointment</strong>
-              <br />
-              {request.confirmed_date?.slice(0, 10)} ·{" "}
-              {request.confirmed_time_window}
-            </p>
-          )}
-          <p>
-            {request.preferred_date?.slice(0, 10)} ·{" "}
-            {request.preferred_time_window}
-          </p>
-          {request.completed_at && (
-            <section>
-              <h2>{t("Work completed")}</h2>
-              <p>{new Date(request.completed_at).toLocaleString()}</p>
-              <p>
-                {request.work_summary ||
-                  "Completion details are available from support."}
-              </p>
-              {request.completion_notes && <p>{request.completion_notes}</p>}
-            </section>
-          )}
-          {!request.completed_at && (
-            <small>{t("Our executive will confirm availability.")}</small>
-          )}
-          <BookedPriceSummary details={request.details} />
-          {Object.entries(request.details)
-            .filter(
-              ([key]) =>
-                !key.startsWith("_") &&
-                !["optionId", "optionIds"].includes(key),
-            )
-            .filter(([, value]) => value)
-            .map(([key, value]) => (
-              <p key={key}>
-                <strong>
-                  {(
-                    request.details._fieldLabels as
-                      | Record<string, string>
-                      | undefined
-                  )?.[key] || t("Additional details")}
-                </strong>
-                <br />
-                {String(value)}
-              </p>
-            ))}
-        </article>
-        <article className="surface-card">
-          <h2>Request updates</h2>
-          {timeline.isPending ? (
-            <LoadingSkeleton />
-          ) : timeline.isError ? (
-            <p role="alert">
-              Unable to load timeline.{" "}
-              <button onClick={() => timeline.refetch()}>
-                {t("Try again")}
-              </button>
-            </p>
-          ) : (
-            <ol className="progress-timeline">
-              {timeline.data.map((event) => (
-                <li key={event.id}>
-                  <span className="timeline-dot" />
-                  <div>
-                    <strong>{t(statusLabel(event.status))}</strong>
-                    <p>{event.note}</p>
-                    <small>
-                      {new Date(event.created_at).toLocaleString(
-                        locale === "ta" ? "ta-IN" : "en-IN",
-                        { timeZone: "Asia/Kolkata" },
-                      )}
-                    </small>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </article>
       </div>
       {request.status === "COMPLETED" && <ReviewCard requestId={request.id} />}
       {cancel && (
@@ -567,48 +554,26 @@ export function RequestPage() {
           onClose={() => !busy && setCancel(false)}
         >
           <form onSubmit={confirmCancellation} className="workflow-form">
-            <p>
-              Cancellation is allowed before technician assignment. Your reason
-              will be saved in the request timeline.
-            </p>
             <label>
               {t("Cancellation reason")}
               <textarea name="reason" required minLength={3} maxLength={300} />
             </label>
             <SafeAsyncButton
               className="danger-button"
-              disabled={busy}
               pending={busy}
               pendingLabel="Saving..."
             >
-              {busy ? t("Loading…") : t("Confirm cancellation")}
+              {t("Confirm cancellation")}
             </SafeAsyncButton>
-            <SafeAsyncButton
+            <button
               type="button"
               className="secondary"
               disabled={busy}
               onClick={() => setCancel(false)}
-              pending={busy}
-              pendingLabel="Saving..."
             >
               {t("Keep request")}
-            </SafeAsyncButton>
+            </button>
           </form>
-        </AppModal>
-      )}
-      {copyFallback && (
-        <AppModal
-          title={t("Copy reference")}
-          onClose={() => setCopyFallback(false)}
-        >
-          <p>Select and copy your request number:</p>
-          <input
-            readOnly
-            value={requestReference(request)}
-            onFocus={(event) => event.target.select()}
-            autoFocus
-            aria-label="Request reference"
-          />
         </AppModal>
       )}
     </section>
@@ -659,7 +624,7 @@ function ReviewCard({ requestId }: { requestId: string }) {
       setBusy(false);
     }
   }
-  if (query.isPending) return <LoadingSkeleton />;
+  if (query.isPending) return <LoadingSkeleton variant="feedback" />;
   if (query.isError)
     return (
       <p role="alert">
@@ -733,14 +698,23 @@ export function MyReviews() {
       (await api.get<{ data: Review[] }>("/profile/reviews")).data.data,
     retry: false,
   });
-  if (query.isPending) return <LoadingSkeleton />;
+  if (query.isPending) return <LoadingSkeleton variant="feedback" />;
   if (query.isError)
     return <RequestError error={query.error} retry={() => query.refetch()} />;
   return (
     <section className="section page">
       <h1>{t("My reviews")}</h1>
       {!query.data.length ? (
-        <EmptyState title="No reviews yet" />
+        <EmptyState
+          kind="feedback"
+          title="Nothing to review yet"
+          description="You can share feedback after a service is completed."
+          primaryAction={
+            <Link to="/bookings" className="secondary">
+              View My Requests
+            </Link>
+          }
+        />
       ) : (
         query.data.map((review) => (
           <article className="surface-card" key={review.id}>
@@ -763,19 +737,31 @@ function RequestError({ error, retry }: { error: unknown; retry: () => void }) {
   return (
     <section className="section page">
       <h1>{t("My Requests")}</h1>
-      <p role="alert">{errorMessage(error)}</p>
-      {unauthorized ? (
-        <Link
-          to={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-          className="primary"
-        >
-          {t("Sign in")}
-        </Link>
-      ) : (
-        <button className="primary" onClick={retry}>
-          {t("Try again")}
-        </button>
-      )}
+      <div role="alert">
+        <EmptyState
+          kind={unauthorized ? "auth" : "network"}
+          title={
+            unauthorized
+              ? "Sign in to view your requests"
+              : "Unable to load information"
+          }
+          description={errorMessage(error)}
+          primaryAction={
+            unauthorized ? (
+              <Link
+                to={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                className="primary"
+              >
+                {t("Sign in")}
+              </Link>
+            ) : (
+              <button className="primary" onClick={retry}>
+                {t("Try again")}
+              </button>
+            )
+          }
+        />
+      </div>
     </section>
   );
 }

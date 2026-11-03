@@ -11,6 +11,7 @@ import axios from "axios";
 import { api } from "./api";
 import { adminKeys } from "./design";
 export type ManagedAppliance = {
+  kind?: string;
   id: string;
   name: string;
   icon_object_key?: string | null;
@@ -33,14 +34,17 @@ export function ApplianceCatalogueSettings({
     [uploading, setUploading] = useState(false),
     [error, setError] = useState("");
   const qc = useQueryClient();
+  const [categoryName, setCategoryName] = useState(categories[0]?.name || "");
   const [newName, setNewName] = useState("");
+  const [kind, setKind] = useState("APPLIANCE");
   const create = useSafeMutation(async () => {
-    await api.post("/catalogue/appliances", { name: newName.trim() });
+    await api.post("/catalogue/appliances", { name: newName.trim(), kind });
     await qc.invalidateQueries({ queryKey: adminKeys.catalogue });
     return true;
   });
   const save = useSafeMutation(async () => {
     await api.patch(`/catalogue/appliances/${category}`, {
+      name: categoryName,
       iconObjectKey: icon,
       publicationStatus: status,
     });
@@ -49,7 +53,7 @@ export function ApplianceCatalogueSettings({
   });
   return (
     <ConfirmActionDialog
-      title="Manage Appliances"
+      title="Categories"
       pending={save.isPending || uploading || create.isPending}
       onClose={onClose}
     >
@@ -74,7 +78,17 @@ export function ApplianceCatalogueSettings({
         }}
       >
         <label>
-          New appliance name
+          Category type
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value)}
+          >
+            <option value="APPLIANCE">Services &amp; Installation</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </label>
+        <label>
+          New category name
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -89,7 +103,7 @@ export function ApplianceCatalogueSettings({
           disabled={save.isPending || uploading}
           pendingLabel="Adding..."
         >
-          Add appliance
+          Create category
         </AsyncActionButton>
       </form>
       <form
@@ -122,6 +136,7 @@ export function ApplianceCatalogueSettings({
               onChange={(e) => {
                 const a = categories.find((c) => c.id === e.target.value)!;
                 setCategory(a.id);
+                setCategoryName(a.name);
                 setIcon(a.icon_object_key || null);
                 setPreview(a.icon_preview_url || null);
                 setStatus(a.publication_status || "PUBLISHED");
@@ -133,6 +148,16 @@ export function ApplianceCatalogueSettings({
                 </option>
               ))}
             </select>
+          </label>
+          <label>
+            Category name
+            <input
+              value={categoryName}
+              onChange={(event) => setCategoryName(event.target.value)}
+              minLength={2}
+              maxLength={100}
+              required
+            />
           </label>
           {preview && (
             <ImageWithFallback

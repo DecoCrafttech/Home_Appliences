@@ -10,8 +10,12 @@
     "./primitives": "./src/primitives.tsx",
     "./skeletons": "./src/skeletons.tsx",
     "./icons": "./src/icons.tsx",
+    "./applianceImages": "./src/applianceImages.ts",
     "./platform.css": "./src/platform.css",
-    "./calendar": "./src/calendar.tsx"
+    "./staff.css": "./src/staff.css",
+    "./refinements.css": "./src/refinements.css",
+    "./calendar": "./src/calendar.tsx",
+    "./push": "./src/push.tsx"
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.3",

@@ -1,3 +1,9 @@
+import { VisitCalendar } from "./VisitCalendar";
+import {
+  isHiddenCustomerAppliance,
+  appliancePhoto,
+} from "./appliancePresentation";
+import { serviceIcon } from "./servicePresentation";
 import { AppCheckbox, AppInput, AppSelect, AppTextarea } from "@home/ui";
 import { ConfirmActionDialog, AppButton as SafeAsyncButton } from "@home/ui";
 import { customerKeys } from "./lib/queryKeys";
@@ -30,7 +36,7 @@ import type {
 } from "./lib/types";
 import { useTranslation } from "./lib/language";
 import { clearDraft, readDraft, saveDraft } from "./lib/drafts";
-import { LoadingSkeleton } from "./components/ui";
+import { LoadingSkeleton, EmptyState } from "./components/ui";
 
 const emptyValues: BookingFormValues = {
   applianceCategoryId: "",
@@ -124,16 +130,23 @@ function Wizard({
   const [params] = useSearchParams();
   const catalogueSelection =
     !!params.get("serviceId") && !!params.get("applianceCategoryId");
-  const [initialDraft] = useState(() =>
-    params.get("repeat") ? null : readDraft(profile.id, type),
-  );
+  const [initialDraft] = useState(() => {
+    if (params.get("repeat")) return null;
+    const draft = readDraft(profile.id, type);
+    if (
+      catalogueSelection &&
+      draft &&
+      (draft.values.applianceCategoryId !== params.get("applianceCategoryId") ||
+        draft.values.serviceId !== params.get("serviceId"))
+    )
+      return null;
+    return draft;
+  });
   const [step, setStep] = useState(initialDraft?.step || 0);
-  const [detailsServiceId, setDetailsServiceId] = useState<string | null>(null);
+  const [editingAddress, setEditingAddress] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [submissionError, setSubmissionError] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [saved, setSaved] = useState(!!initialDraft);
-  const [discardOpen, setDiscardOpen] = useState(false);
-  const [saveContact, setSaveContact] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
   const keyRef = useRef(initialDraft?.idempotencyKey || crypto.randomUUID());
   const submittingRef = useRef(false);
@@ -201,7 +214,11 @@ function Wizard({
   const categories = useQuery({
     queryKey: customerKeys.appliances,
     queryFn: async () =>
-      (await api.get<{ data: CatalogueItem[] }>("/appliances")).data.data,
+      (
+        await api.get<{ data: CatalogueItem[] }>("/appliances")
+      ).data.data.filter(
+        (appliance) => !isHiddenCustomerAppliance(appliance.name),
+      ),
   });
   const services = useQuery({
     queryKey: customerKeys.catalogue(type, values.applianceCategoryId),
@@ -242,7 +259,14 @@ function Wizard({
   const selected = services.data?.find(
     (service) => service.id === values.serviceId,
   );
+  useEffect(() => {
+    const options =
+      selected?.booking_options?.filter((option) => option.active) || [];
+    if (options.length === 1 && !selectedOptionIds(values.details).length)
+      setValue("details.optionId", options[0]!.id, { shouldDirty: true });
+  }, [selected, values.details, setValue]);
   const selectAddress = (a: Address, dirty = true) => {
+    setEditingAddress(false);
     setValue(
       "address",
       {
@@ -293,9 +317,7 @@ function Wizard({
     if (busy) return;
     const timeout = setTimeout(() => {
       if (form.formState.isDirty) {
-        setSaved(
-          saveDraft(profile.id, type, getValues(), step, keyRef.current),
-        );
+        saveDraft(profile.id, type, getValues(), step, keyRef.current);
       }
     }, 750);
     return () => clearTimeout(timeout);
@@ -402,6 +424,7 @@ function Wizard({
   async function submit(data: BookingFormValues) {
     if (step !== 3 || submittingRef.current) return;
     submittingRef.current = true;
+    setSubmissionError(false);
     setBusy(true);
     try {
       if (!selected) {
@@ -413,20 +436,6 @@ function Wizard({
         idempotencyKey: keyRef.current,
       });
       clearDraft(profile.id, type);
-      if (saveContact) {
-        try {
-          await api.patch("/profile", {
-            fullName: profile.full_name || data.address.name,
-            email: profile.email || "",
-            phone: data.address.phone,
-          });
-          await qc.invalidateQueries({ queryKey: customerKeys.profile });
-        } catch {
-          toast.error(
-            "Request saved, but the contact number could not be saved to your profile.",
-          );
-        }
-      }
       if (saveAddress) {
         try {
           await api.post("/addresses", {
@@ -449,6 +458,7 @@ function Wizard({
         replace: true,
       });
     } catch (error) {
+      setSubmissionError(true);
       if (axios.isAxiosError(error))
         toast.error(
           error.response?.data?.error?.message ||
@@ -463,37 +473,14 @@ function Wizard({
       setBusy(false);
     }
   }
-  const dates = Array.from({ length: 10 }, (_, i) => {
-    const d = new Date(`${businessDate()}T12:00:00+05:30`);
-    d.setUTCDate(d.getUTCDate() + i);
-    return {
-      value: businessDate(d),
-      day: new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", {
-        weekday: "short",
-        timeZone: "Asia/Kolkata",
-      }).format(d),
-      date: d.getUTCDate(),
-      month: new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", {
-        month: "short",
-        timeZone: "Asia/Kolkata",
-      }).format(d),
-      label: new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", {
-        dateStyle: "full",
-        timeZone: "Asia/Kolkata",
-      }).format(d),
-    };
-  });
   return (
     <section className="section page booking-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">
-            {t(type === "service" ? "Service request" : "Installation request")}
-          </span>
           <h1 tabIndex={-1} ref={heading}>
             {t(
               [
-                "Appliance & requirement",
+                type === "service" ? "Service Request" : "Installation Request",
                 "Location & contact",
                 "Preferred visit",
                 "Review & submit",
@@ -504,12 +491,7 @@ function Wizard({
         <span className="step-count">{step + 1} / 4</span>
       </div>
       <ol className="step-progress" aria-label="Booking progress">
-        {[
-          "Appliance & requirement",
-          "Location & contact",
-          "Preferred visit",
-          "Review & submit",
-        ].map((title, index) => (
+        {["Service", "Address", "Visit", "Preview"].map((title, index) => (
           <li
             key={title}
             className={index <= step ? "selected" : ""}
@@ -548,10 +530,16 @@ function Wizard({
                     )?.name
                   }
                 </h2>
+                <img
+                  className="selected-appliance-photo"
+                  src={appliancePhoto(
+                    categories.data?.find(
+                      (c) => c.id === values.applianceCategoryId,
+                    )?.name || "",
+                  )}
+                  alt=""
+                />
                 <p>{selected?.name || "Loading selected service..."}</p>
-                <Link to={`/services/appliances/${values.applianceCategoryId}`}>
-                  Change service
-                </Link>
               </div>
             )}
             {!catalogueSelection && (
@@ -584,16 +572,13 @@ function Wizard({
                           setValue("details", {
                             description: values.details.description,
                           });
-                          setDetailsServiceId(null);
                         }}
                       >
-                        <span className="appliance-glyph">
-                          {appliance.slug === "air-conditioner"
-                            ? "❄"
-                            : appliance.slug === "television"
-                              ? "▣"
-                              : "◉"}
-                        </span>
+                        <img
+                          className="choice-appliance-photo"
+                          src={appliancePhoto(appliance.name)}
+                          alt=""
+                        />
                         {t(appliance.name)}
                       </button>
                     ))}
@@ -632,95 +617,33 @@ function Wizard({
                 ) : (
                   <div className="booking-service-grid">
                     {services.data.map((service) => {
-                      const expanded = detailsServiceId === service.id;
-                      const activeOptions =
-                        service.booking_options?.filter(
-                          (option) => option.active,
-                        ) || [];
+                      const Icon = serviceIcon(
+                        service.name,
+                        type === "service" ? "SERVICE" : "INSTALLATION",
+                      );
                       return (
-                        <article
+                        <button
+                          type="button"
                           className={`booking-service-card ${values.serviceId === service.id ? "is-selected" : ""}`}
                           key={service.id}
+                          aria-pressed={values.serviceId === service.id}
+                          onClick={() => {
+                            setValue("serviceId", service.id, {
+                              shouldDirty: true,
+                            });
+                            setValue(
+                              "details",
+                              { description: values.details.description },
+                              { shouldDirty: true },
+                            );
+                          }}
                         >
-                          <h3>{t(service.name)}</h3>
-                          {service.base_price != null && (
-                            <p className="booking-service-price">
-                              From &#8377;
-                              {Number(service.base_price).toLocaleString(
-                                "en-IN",
-                              )}
-                            </p>
+                          <Icon aria-hidden="true" />
+                          <strong>{t(service.name)}</strong>
+                          {service.description && (
+                            <small>{service.description}</small>
                           )}
-                          <div className="booking-service-actions">
-                            <button
-                              type="button"
-                              className="secondary"
-                              aria-expanded={expanded}
-                              aria-controls={`booking-service-details-${service.id}`}
-                              onClick={() =>
-                                setDetailsServiceId(
-                                  expanded ? null : service.id,
-                                )
-                              }
-                            >
-                              {t(
-                                expanded
-                                  ? "Hide service details"
-                                  : "View service details",
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              className="primary"
-                              aria-pressed={values.serviceId === service.id}
-                              onClick={() => {
-                                setValue("serviceId", service.id, {
-                                  shouldDirty: true,
-                                });
-                                setValue(
-                                  "details",
-                                  { description: values.details.description },
-                                  { shouldDirty: true },
-                                );
-                                setDetailsServiceId(null);
-                              }}
-                            >
-                              {values.serviceId === service.id
-                                ? t("Selected")
-                                : t("Book now")}
-                            </button>
-                          </div>
-                          <div
-                            id={`booking-service-details-${service.id}`}
-                            className="booking-service-details"
-                            hidden={!expanded}
-                          >
-                            {service.description && (
-                              <p>{service.description}</p>
-                            )}
-                            {!!activeOptions.length && (
-                              <>
-                                <h4>{t("Available options")}</h4>
-                                <ul>
-                                  {activeOptions.map((option) => (
-                                    <li key={option.id}>
-                                      <strong>{option.name}</strong>
-                                      {option.description && (
-                                        <span>{option.description}</span>
-                                      )}
-                                      <span>{indicativePrice(option)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </>
-                            )}
-                            {!service.description && !activeOptions.length && (
-                              <p>
-                                {t("Service details are not available yet.")}
-                              </p>
-                            )}
-                          </div>
-                        </article>
+                        </button>
                       );
                     })}
                   </div>
@@ -732,15 +655,16 @@ function Wizard({
                 Choose a service.
               </p>
             )}
-            {!!selected?.booking_options?.some((o) => o.active) && (
+            {(selected?.booking_options?.filter((o) => o.active).length || 0) >
+              1 && (
               <fieldset className="booking-options">
                 <legend>
                   {type === "service"
                     ? "What needs attention?"
                     : "Installation requirement"}
                 </legend>
-                {selected.booking_options
-                  .filter((o) => o.active)
+                {selected?.booking_options
+                  ?.filter((o) => o.active)
                   .map((o) => (
                     <label
                       key={o.id}
@@ -834,7 +758,14 @@ function Wizard({
                   type="button"
                   className="address-option"
                   key={address.id}
-                  onClick={() => selectAddress(address)}
+                  aria-pressed={
+                    values.address.line1 === address.line1 &&
+                    values.address.phone === address.phone.replace(/^\+91/, "")
+                  }
+                  onClick={() => {
+                    selectAddress(address);
+                    setEditingAddress(false);
+                  }}
                 >
                   <strong>
                     {address.label}
@@ -846,153 +777,163 @@ function Wizard({
                 </button>
               ))}
             </div>
-            <p className="helper">
-              Confirm your exact house/door number. You can correct every
-              address field below.
-            </p>
-            <label className="check-label">
-              <AppCheckbox
-                checked={saveContact}
-                onChange={(e) => setSaveContact(e.target.checked)}
-              />
-              Save this contact number to my profile
-            </label>
-            <div className="form-grid">
-              {(
-                [
-                  ["name", "Contact name"],
-                  ["phone", "Mobile number"],
-                  ["line1", "House / street"],
-                  ["area", "Area"],
-                  ["city", "City"],
-                  ["state", "State"],
-                  ["pinCode", "PIN code"],
-                ] as const
-              ).map(([field, label]) => (
-                <label className={`form-field field-${field}`} key={field}>
-                  {t(label)}
-                  <AppInput
-                    {...register(`address.${field}`)}
-                    aria-label={t(label)}
-                    aria-invalid={!!errors.address?.[field]}
-                    aria-describedby={
-                      errors.address?.[field]
-                        ? `address-error-${field}`
-                        : undefined
-                    }
-                    autoComplete={
-                      field === "name"
-                        ? "name"
-                        : field === "phone"
-                          ? "tel-national"
-                          : field === "line1"
-                            ? "street-address"
-                            : field === "pinCode"
-                              ? "postal-code"
-                              : undefined
-                    }
-                    inputMode={
-                      field === "phone" || field === "pinCode"
-                        ? "numeric"
-                        : "text"
-                    }
-                    maxLength={
-                      field === "phone" ? 10 : field === "pinCode" ? 6 : 150
-                    }
+            {values.address.line1 && !editingAddress ? (
+              <article className="selected-address-card">
+                <strong>{values.address.name}</strong>
+                <p>{values.address.phone}</p>
+                <p>
+                  {values.address.line1}, {values.address.area},{" "}
+                  {values.address.city} {values.address.pinCode}
+                </p>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setEditingAddress(true)}
+                >
+                  Edit details
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    setValue(
+                      "address",
+                      {
+                        ...emptyValues.address,
+                        name: profile.full_name || "",
+                        phone: profile.phone_e164?.replace(/^\+91/, "") || "",
+                      },
+                      { shouldDirty: true },
+                    );
+                    setEditingAddress(true);
+                  }}
+                >
+                  Add new address
+                </button>
+              </article>
+            ) : (
+              <>
+                <div className="form-grid">
+                  {(
+                    [
+                      ["name", "Contact name"],
+                      ["phone", "Mobile number"],
+                      ["line1", "House / street"],
+                      ["area", "Area"],
+                      ["city", "City"],
+                      ["state", "State"],
+                      ["pinCode", "PIN code"],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <label className={`form-field field-${field}`} key={field}>
+                      {t(label)}
+                      <AppInput
+                        {...register(`address.${field}`)}
+                        aria-label={t(label)}
+                        aria-invalid={!!errors.address?.[field]}
+                        aria-describedby={
+                          errors.address?.[field]
+                            ? `address-error-${field}`
+                            : undefined
+                        }
+                        autoComplete={
+                          field === "name"
+                            ? "name"
+                            : field === "phone"
+                              ? "tel-national"
+                              : field === "line1"
+                                ? "street-address"
+                                : field === "pinCode"
+                                  ? "postal-code"
+                                  : undefined
+                        }
+                        inputMode={
+                          field === "phone" || field === "pinCode"
+                            ? "numeric"
+                            : "text"
+                        }
+                        maxLength={
+                          field === "phone" ? 10 : field === "pinCode" ? 6 : 150
+                        }
+                      />
+                      {errors.address?.[field] && (
+                        <span
+                          id={`address-error-${field}`}
+                          className="field-error"
+                          role="alert"
+                        >
+                          {locale === "ta"
+                            ? "சரியான விவரத்தை உள்ளிடவும்"
+                            : "Please enter a valid value."}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                <label className="check-label">
+                  <AppCheckbox
+                    checked={saveAddress}
+                    onChange={(event) => setSaveAddress(event.target.checked)}
                   />
-                  {errors.address?.[field] && (
-                    <span
-                      id={`address-error-${field}`}
-                      className="field-error"
-                      role="alert"
-                    >
-                      {locale === "ta"
-                        ? "சரியான விவரத்தை உள்ளிடவும்"
-                        : "Please enter a valid value."}
-                    </span>
-                  )}
+                  {t("Save address")}
                 </label>
-              ))}
-            </div>
-            <label className="check-label">
-              <AppCheckbox
-                checked={saveAddress}
-                onChange={(event) => setSaveAddress(event.target.checked)}
-              />
-              {t("Save address")}
-            </label>
+              </>
+            )}
           </>
         )}
         {step === 2 && (
           <>
             <h2>{t("Preferred date")}</h2>
-            <div className="date-selector">
-              {dates.map((date) => (
-                <button
-                  type="button"
-                  key={date.value}
-                  className={
-                    values.preferredDate === date.value ? "selected" : ""
-                  }
-                  aria-pressed={values.preferredDate === date.value}
-                  aria-label={date.label}
-                  onClick={() =>
-                    setValue("preferredDate", date.value, { shouldDirty: true })
-                  }
-                >
-                  <span>{date.day}</span>
-                  <strong>{date.date}</strong>
-                  <small>
-                    {date.value === businessDate() ? t("Today") : date.month}
-                  </small>
-                </button>
-              ))}
-            </div>
-            <label className="form-field">
-              {t("Later date")}
-              <AppInput
-                type="date"
-                {...register("preferredDate")}
-                min={businessDate()}
-              />
-              {errors.preferredDate && (
-                <span className="field-error" role="alert">
-                  Choose a valid date today or later.
-                </span>
-              )}
-            </label>
+            <VisitCalendar
+              value={values.preferredDate}
+              min={businessDate()}
+              onChange={(date) => {
+                setValue("preferredDate", date, { shouldDirty: true });
+                setValue("preferredTimeWindow", "", { shouldDirty: true });
+              }}
+            />
+            {errors.preferredDate && (
+              <p className="field-error" role="alert">
+                Choose a date today or later.
+              </p>
+            )}
             <h2>{t("Preferred visit window")}</h2>
             <p>{t("Our executive will confirm availability.")}</p>
-            {windows.isPending ? (
-              <LoadingSkeleton variant="slots" count={3} />
-            ) : windows.isError ? (
-              <p role="alert">
-                Unable to load visit windows.{" "}
-                <button type="button" onClick={() => windows.refetch()}>
-                  {t("Try again")}
-                </button>
-              </p>
-            ) : (
-              <div className="time-selector">
-                {windows.data.map((window) => (
-                  <button
-                    type="button"
-                    key={window.id}
-                    className={
-                      values.preferredTimeWindow === window.id ? "selected" : ""
-                    }
-                    aria-pressed={values.preferredTimeWindow === window.id}
-                    onClick={() =>
-                      setValue("preferredTimeWindow", window.id, {
-                        shouldDirty: true,
-                      })
-                    }
-                  >
-                    {t(window.label)}
+            {values.preferredDate &&
+              (windows.isPending ? (
+                <LoadingSkeleton variant="slots" count={3} />
+              ) : windows.isError ? (
+                <p role="alert">
+                  Unable to load visit windows.{" "}
+                  <button type="button" onClick={() => windows.refetch()}>
+                    {t("Try again")}
                   </button>
-                ))}
-              </div>
-            )}
+                </p>
+              ) : (
+                <div className="time-selector">
+                  {windows.data.map((window) => (
+                    <button
+                      type="button"
+                      key={window.id}
+                      aria-label={t(window.label)}
+                      className={
+                        values.preferredTimeWindow === window.id
+                          ? "selected"
+                          : ""
+                      }
+                      aria-pressed={values.preferredTimeWindow === window.id}
+                      onClick={() =>
+                        setValue("preferredTimeWindow", window.id, {
+                          shouldDirty: true,
+                        })
+                      }
+                    >
+                      <strong>{window.id.replace("-", "–")}</strong>
+                      <small>{t(window.label)}</small>
+                    </button>
+                  ))}
+                </div>
+              ))}
             {errors.preferredTimeWindow && (
               <p className="field-error" role="alert">
                 Choose a preferred visit window.
@@ -1082,6 +1023,25 @@ function Wizard({
             ))}
           </div>
         )}
+        {submissionError && step === 3 && (
+          <div role="alert">
+            <EmptyState
+              kind="booking"
+              title="Request couldn't be submitted"
+              description="Your details are still here. Check your connection and try again."
+              primaryAction={
+                <button
+                  className="secondary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void form.handleSubmit(submit)()}
+                >
+                  Try Again
+                </button>
+              }
+            />
+          </div>
+        )}
         <div className="wizard-actions">
           {step > 0 && (
             <SafeAsyncButton
@@ -1090,8 +1050,7 @@ function Wizard({
               className="secondary"
               disabled={busy}
               onClick={() => setStep((current) => current - 1)}
-              pending={busy}
-              pendingLabel="Saving..."
+              pending={false}
             >
               {t("Back")}
             </SafeAsyncButton>
@@ -1124,11 +1083,6 @@ function Wizard({
           onClose={() => blocker.reset()}
         >
           <div className="leave-booking">
-            <p>You have entered some details. What would you like to do?</p>
-            <p className="muted">
-              Drafts expire after seven days on this device. Contact and street
-              address details are not saved.
-            </p>
             <button
               className="primary"
               type="button"
@@ -1158,6 +1112,7 @@ function Wizard({
               Save Draft
             </SafeAsyncButton>
             <button
+              className="discard-outline"
               type="button"
               onClick={() => {
                 clearDraft(profile.id, type);
@@ -1170,76 +1125,6 @@ function Wizard({
           </div>
         </ConfirmActionDialog>
       )}
-      {discardOpen && (
-        <ConfirmActionDialog
-          title="Discard this draft?"
-          onClose={() => setDiscardOpen(false)}
-        >
-          <div className="leave-booking">
-            <p>Your current draft will be cleared.</p>
-            <button type="button" onClick={() => setDiscardOpen(false)}>
-              Continue Editing
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                clearDraft(profile.id, type);
-
-                setSaved(false);
-                keyRef.current = crypto.randomUUID();
-                reset({
-                  ...emptyValues,
-                  address: {
-                    ...emptyValues.address,
-                    name: profile.full_name || "",
-                    phone: profile.phone_e164?.replace(/^\+91/, "") || "",
-                  },
-                });
-                setStep(0);
-                setDiscardOpen(false);
-              }}
-            >
-              Discard Changes
-            </button>
-          </div>
-        </ConfirmActionDialog>
-      )}
-      <div className="draft-actions">
-        <SafeAsyncButton
-          variant="outline"
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            const done = saveDraft(
-              profile.id,
-              type,
-              getValues(),
-              step,
-              keyRef.current,
-            );
-            setSaved(done);
-            if (done) {
-              reset(getValues());
-              toast.success(t("Draft saved on this device"));
-            } else
-              toast.error(
-                "Browser storage is unavailable. Keep this page open.",
-              );
-          }}
-          pending={busy}
-          pendingLabel="Saving..."
-        >
-          {t("Save draft")}
-        </SafeAsyncButton>
-        {saved && (
-          <>
-            <small>{t("Draft saved on this device")}</small>
-            <button type="button" onClick={() => setDiscardOpen(true)}>
-              {t("Discard draft")}
-            </button>
-          </>
-        )}
-      </div>
     </section>
   );
 }

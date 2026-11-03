@@ -1,5 +1,6 @@
 @import "./tokens.css";
 @import "./essentials.css";
+@import "./brand.css";
 button,
 a,
 input,
@@ -656,3 +657,6 @@ button[data-pending] {
 .booked-price > div {
   margin: 16px 0;
 }
+.push-settings { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; border:1px solid var(--ui-border, #ddd); border-radius:12px; margin-block:16px; }
+.push-settings p { margin:4px 0 0; }
+.push-settings-actions { display:flex; flex-wrap:wrap; gap:8px; }

@@ -1,4 +1,4 @@
-import { OfflineBanner, NavigationScroll } from "@home/ui";
+import { OfflineBanner, NavigationScroll, LaunchExperience } from "@home/ui";
 import { customerKeys } from "./lib/queryKeys";
 import { retryTransientRequest } from "@home/ui";
 import React from "react";
@@ -6,8 +6,12 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
+import { useCustomerProfile } from "./lib/profile";
 import "./styles.css";
 import "@home/ui/styles.css";
+import "./fixbeez.css";
+import "./home.css";
+import "./v6.css";
 import { AppErrorBoundary } from "@home/ui";
 import { ToastProvider } from "@home/ui/widgets";
 import { CustomerGoogleProvider } from "./lib/googleAuth";
@@ -20,6 +24,21 @@ client.setQueryDefaults(customerKeys.profile, {
   staleTime: 300_000,
   retry: false,
 });
+function CustomerStartup() {
+  const profile = useCustomerProfile();
+  const [sessionResolved, setSessionResolved] = React.useState(false);
+  React.useEffect(() => {
+    if (!profile.isPending) setSessionResolved(true);
+  }, [profile.isPending]);
+  return (
+    <LaunchExperience
+      role="customer"
+      ready={sessionResolved || !profile.isPending}
+    >
+      <App />
+    </LaunchExperience>
+  );
+}
 const router = createBrowserRouter([
   {
     path: "*",
@@ -28,7 +47,7 @@ const router = createBrowserRouter([
         <OfflineBanner />
         <NavigationScroll />
         <AppErrorBoundary>
-          <App />
+          <CustomerStartup />
         </AppErrorBoundary>
         <ToastProvider />
       </>
@@ -50,3 +69,6 @@ if (window.location.hostname === "127.0.0.1") {
     </React.StrictMode>,
   );
 }
+
+import "@home/ui/refinements.css";
+import "./refinements.css";

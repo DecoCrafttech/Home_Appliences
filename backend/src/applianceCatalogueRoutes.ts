@@ -13,7 +13,7 @@ applianceCatalogueRoutes.get(
   "/catalogue/appliances",
   route(async (_req, res) => {
     const rows =
-      await db()`SELECT a.id,a.name,a.slug,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED') AS service_count FROM appliance_categories a WHERE a.active AND a.publication_status='PUBLISHED' ORDER BY a.name`;
+      await db()`SELECT a.id,a.name,a.slug,a.kind,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED') AS service_count FROM appliance_categories a WHERE a.active AND a.publication_status='PUBLISHED' ORDER BY a.name`;
     res.json({ data: rows });
   }),
 );
@@ -22,12 +22,12 @@ applianceCatalogueRoutes.get(
   route(async (req, res) => {
     const id = z.string().uuid().parse(req.params.id);
     const category = (
-      await db()`SELECT id,name,slug FROM appliance_categories WHERE id=${id} AND active AND publication_status='PUBLISHED'`
+      await db()`SELECT id,name,slug,kind FROM appliance_categories WHERE id=${id} AND active AND publication_status='PUBLISHED'`
     )[0];
     if (!category)
       throw new ApiError(404, "NOT_FOUND", "Appliance is not available");
     const rows =
-      await db()`SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,${category.name}::text AS appliance_name,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s WHERE s.appliance_category_id=${id} AND s.active AND s.publication_status='PUBLISHED' ORDER BY s.display_order,s.name`;
+      await db()`SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,${category.name}::text AS appliance_name,${category.kind}::text AS category_kind,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s WHERE s.appliance_category_id=${id} AND s.active AND s.publication_status='PUBLISHED' ORDER BY s.display_order,s.name`;
     res.json({ data: rows, meta: { appliance: category } });
   }),
 );
@@ -36,8 +36,11 @@ applianceCatalogueRoutes.post(
   requireStaff,
   allow("SUPER_ADMIN", "ADMIN"),
   route(async (req, res) => {
-    const { name } = z
-      .object({ name: z.string().trim().min(2).max(100) })
+    const { name, kind } = z
+      .object({
+        name: z.string().trim().min(2).max(100),
+        kind: z.enum(["APPLIANCE", "MAINTENANCE"]).default("APPLIANCE"),
+      })
       .strict()
       .parse(req.body);
     await db().query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
@@ -58,7 +61,7 @@ applianceCatalogueRoutes.post(
         .replace(/^-|-$/g, "") || "appliance"
     }-${randomUUID().slice(0, 8)}`;
     const rows =
-      await db()`INSERT INTO appliance_categories(name,slug,publication_status) VALUES(${name},${slug},'DRAFT') RETURNING id,name,publication_status`;
+      await db()`INSERT INTO appliance_categories(name,slug,kind,publication_status) VALUES(${name},${slug},${kind},'DRAFT') RETURNING id,name,publication_status`;
     await db()`INSERT INTO audit_logs(actor_staff_id,actor_role,action,entity_type,entity_id,new_value) VALUES(${req.staff!.id},${req.staff!.role},'APPLIANCE_CREATED','APPLIANCE_CATEGORY',${rows[0]!.id},${JSON.stringify({ name })}::jsonb)`;
     res.status(201).json({ data: rows[0] });
   }),
@@ -71,6 +74,7 @@ applianceCatalogueRoutes.patch(
     const id = z.string().uuid().parse(req.params.id);
     const i = z
       .object({
+        name: z.string().trim().min(2).max(100).optional(),
         iconObjectKey: z.string().max(160).nullable(),
         publicationStatus: z.enum(["DRAFT", "PUBLISHED"]),
       })
@@ -88,7 +92,7 @@ applianceCatalogueRoutes.patch(
         "Upload an approved appliance icon first",
       );
     const rows =
-      await db()`UPDATE appliance_categories SET icon_object_key=${i.iconObjectKey},publication_status=${i.publicationStatus} WHERE id=${id} AND active RETURNING id,name,icon_object_key,publication_status`;
+      await db()`UPDATE appliance_categories SET name=COALESCE(${i.name || null},name),icon_object_key=${i.iconObjectKey},publication_status=${i.publicationStatus} WHERE id=${id} AND active RETURNING id,name,icon_object_key,publication_status`;
     if (!rows[0]) throw new ApiError(404, "NOT_FOUND", "Appliance not found");
     await db()`INSERT INTO audit_logs(actor_staff_id,actor_role,action,entity_type,entity_id,new_value) VALUES(${req.staff!.id},${req.staff!.role},'APPLIANCE_UPDATED','APPLIANCE_CATEGORY',${id},${JSON.stringify(i)}::jsonb)`;
     res.json({ data: rows[0] });

@@ -1,4 +1,11 @@
-import { AppErrorBoundary } from "@home/ui";
+import {
+  JobFilters,
+  useJobFilters,
+  jobFilterQuery,
+  jobFilterLabel,
+  jobViews,
+} from "./JobFilters";
+import { AppErrorBoundary, BrandLogo } from "@home/ui";
 import {
   AppInput,
   AppCheckbox,
@@ -13,8 +20,12 @@ import { activeRecordRefresh } from "@home/ui";
 import { contactPhone } from "@home/shared";
 import { requestReference } from "@home/shared";
 import { api } from "./api";
+import {
+  PushNotificationSettings,
+  removeCurrentPushSubscription,
+} from "@home/ui/push";
 import { TechSchedule } from "./TechSchedule";
-import { RescheduleRequest } from "./RescheduleRequest";
+import { CompleteJobButton } from "./CompleteJobButton";
 import {
   NotificationCenter,
   notificationInbox,
@@ -39,7 +50,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 import { icons } from "./design";
-import { FaHouse, FaLocationDot, FaPhone, FaUser } from "react-icons/fa6";
+import { FaLocationDot, FaPhone, FaUser } from "react-icons/fa6";
 import {
   PageHeader,
   StatusBadge,
@@ -168,6 +179,7 @@ export function TechnicianApp() {
       return (
         <main className="tech-login">
           <section className="panel">
+            <BrandLogo />
             <h1>Account access paused</h1>
             <p>
               Your technician account has been frozen. Contact an administrator
@@ -196,11 +208,12 @@ export function TechnicianApp() {
     <div className="tech-shell">
       <aside className="tech-sidebar">
         <Link className="tech-brand" to="/technician">
-          Home Services <small>Technician workspace</small>
+          <BrandLogo />
+          <small>Technician workspace</small>
         </Link>
         <nav aria-label="Technician navigation">
           {links.map(([path, label, Icon]) => (
-            <NavLink end key={path} to={"/technician" + path}>
+            <NavLink end={path === ""} key={path} to={"/technician" + path}>
               <Icon />
               {label}
             </NavLink>
@@ -209,6 +222,7 @@ export function TechnicianApp() {
         <button
           onClick={async () => {
             try {
+              await removeCurrentPushSubscription(api).catch(() => undefined);
               await api.post("/auth/logout");
               qc.clear();
               locationReplace("/technician/login");
@@ -225,14 +239,9 @@ export function TechnicianApp() {
           <Link
             to="/technician"
             className="tech-header-brand"
-            aria-label="Home Services technician home"
+            aria-label="Fixbeez technician home"
           >
-            <span className="tech-brand-mark">
-              <FaHouse aria-hidden="true" />
-            </span>
-            <span>
-              Home Services<small>Technician</small>
-            </span>
+            <BrandLogo />
           </Link>
           <NotificationCenter
             query={notices}
@@ -298,7 +307,7 @@ export function TechnicianApp() {
       </div>
       <nav className="tech-bottom" aria-label="Mobile technician navigation">
         {links.map(([path, label, Icon]) => (
-          <NavLink end key={path} to={"/technician" + path}>
+          <NavLink end={path === ""} key={path} to={"/technician" + path}>
             <Icon />
             <span>{label}</span>
           </NavLink>
@@ -351,7 +360,8 @@ function TechnicianLogin({ activate = false }: { activate?: boolean }) {
   return (
     <main className="tech-login">
       <section className="panel">
-        <span className="eyebrow">Home Services Operations</span>
+        <BrandLogo />
+        <span className="eyebrow">Fixbeez Operations</span>
         <h1>
           {activate ? "Activate technician account" : "Technician sign in"}
         </h1>
@@ -437,6 +447,7 @@ function FirstPasswordChange() {
   return (
     <main className="tech-login">
       <section className="panel">
+        <BrandLogo />
         <h1>Choose your own password</h1>
         <p>Replace your temporary password before opening your assignments.</p>
         <form
@@ -507,6 +518,7 @@ function FirstPasswordChange() {
         </form>
         <AsyncActionButton
           onClick={async () => {
+            await removeCurrentPushSubscription(api).catch(() => undefined);
             await api.post("/auth/logout");
             qc.clear();
             locationReplace("/technician/login");
@@ -541,9 +553,7 @@ function JobCardSummary({
             (job.request_type === "INSTALLATION" ? "Installation" : "Service")}
         </p>
       </div>
-      {job.status_source === "ADMIN_OVERRIDE" && (
-        <small>Manual admin status</small>
-      )}
+
       <div className="tech-job-facts">
         <div>
           <icons.calendar aria-hidden="true" />
@@ -585,7 +595,65 @@ function JobCardSummary({
     </>
   );
 }
+function TechnicianJobCard({
+  job,
+  actionLabel = "View job",
+}: {
+  job: Job;
+  actionLabel?: string;
+}) {
+  const phone = contactPhone(job.customer_phone || job.customer?.phone_e164);
+  const onHold = job.status === "ON_HOLD";
+  return (
+    <AppCard variant="job" className="panel tech-job-card">
+      <JobCardSummary job={job} showArea={!job.address_snapshot} />
+      {phone && (
+        <a href={`tel:${phone}`} aria-label="Call Customer">
+          <FaPhone aria-hidden="true" /> Call Customer: {phone}
+        </a>
+      )}
+      {job.address_snapshot && (
+        <div className="tech-card-location">
+          <p>
+            {[
+              job.address_snapshot.line1,
+              job.address_snapshot.area,
+              job.address_snapshot.city,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+          </p>
+          <LocationActions address={job.address_snapshot} directions compact />
+        </div>
+      )}
+      <div className="tech-card-actions">
+        <CompleteJobButton job={job} />
+        {onHold ? (
+          <span className="tech-action-disabled" aria-disabled="true">
+            Job on hold
+          </span>
+        ) : (
+          <Link
+            className="primary tech-job-open"
+            to={`/technician/jobs/${job.id}`}
+          >
+            {actionLabel}
+          </Link>
+        )}
+        {onHold && (
+          <Link className="secondary" to={`/technician/jobs/${job.id}`}>
+            View details
+          </Link>
+        )}
+      </div>
+    </AppCard>
+  );
+}
 function TechHome() {
+  const { filters, apply } = useJobFilters();
+  const filtered =
+    filters.view !== "active" || !!filters.type || !!filters.date;
+  const profile = useQueryClient().getQueryData<Profile>(["technician", "me"]);
   const q = useQuery({
     queryKey: ["technician", "dashboard"],
     queryFn: async () =>
@@ -600,202 +668,255 @@ function TechHome() {
           };
         }>("/dashboard")
       ).data.data,
+    enabled: !filtered,
     refetchInterval: false,
     refetchOnMount: "always",
   });
+  const matching = useQuery({
+    queryKey: [
+      "technician",
+      "jobs",
+      { tab: filters.view, type: filters.type, page: 1, date: filters.date },
+    ],
+    queryFn: async () =>
+      (
+        await api.get<{ data: Job[]; meta: { total: number } }>("/jobs", {
+          params: {
+            tab: filters.view,
+            type: filters.type || undefined,
+            date: filters.date || undefined,
+            page: 1,
+            limit: 20,
+          },
+        })
+      ).data,
+    enabled: filtered,
+    refetchInterval: false,
+  });
+  const pending = filtered ? matching.isPending : q.isPending;
+  const error = filtered ? matching.isError : q.isError;
+  const fetching = filtered ? matching.isFetching : q.isFetching;
+  const jobs = filtered ? matching.data?.data || [] : q.data?.next_jobs || [];
+  const refresh = () => (filtered ? matching.refetch() : q.refetch());
+  const jobsUrl = `/technician/jobs${jobFilterQuery(filters)}`;
   return (
-    <>
+    <section className="staff-workday">
       <PageHeader
         title="Your workday"
+        description="A clear view of your visits and the work ahead."
         actions={
-          <button
-            className="secondary"
-            aria-label="Refresh workday"
-            disabled={q.isFetching}
-            onClick={() => q.refetch()}
-          >
-            <icons.refresh aria-hidden="true" /> <span>Refresh workday</span>
-          </button>
+          <>
+            <button
+              className="secondary staff-refresh"
+              aria-label="Refresh workday"
+              disabled={fetching}
+              onClick={refresh}
+            >
+              <icons.refresh aria-hidden="true" />
+              <span>Refresh</span>
+            </button>
+            <JobFilters value={filters} onApply={apply} />
+          </>
         }
       />
-      {q.isPending ? (
+      {pending ? (
         <LoadingSkeleton title="Loading workday..." variant="workday" />
-      ) : q.isError ? (
-        <ErrorState
-          title="Unable to load your workday"
-          retry={() => q.refetch()}
-        />
+      ) : error ? (
+        <ErrorState title="Unable to load your workday" retry={refresh} />
       ) : (
         <>
-          <div className="workday-summary">
-            <span>
-              <icons.calendar aria-hidden="true" />
-              {new Intl.DateTimeFormat("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "short",
-                timeZone: "Asia/Kolkata",
-              }).format(new Date())}
-            </span>
-            <span>
-              <icons.success aria-hidden="true" /> {q.data.completed_today}{" "}
-              completed today
-            </span>
+          <div className="staff-dashboard-hero staff-technician-hero">
+            <div>
+              <p className="staff-eyebrow">YOUR DAY, SIMPLIFIED</p>
+              <h2>
+                {profile?.full_name
+                  ? `Good to see you, ${profile.full_name.split(" ")[0]}.`
+                  : "A clear plan for your day."}
+              </h2>
+              <p>
+                {filtered
+                  ? jobFilterLabel(filters)
+                  : "Keep your next visit, customer details and job updates together."}
+              </p>
+              <Link className="primary" to={jobsUrl}>
+                Open My Jobs <icons.next aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="staff-hero-signal">
+              <span>
+                <icons.calendar aria-hidden="true" />
+                {filtered ? "Matching jobs" : "Completed today"}
+              </span>
+              <strong>
+                {filtered
+                  ? (matching.data?.meta.total ?? "--")
+                  : (q.data?.completed_today ?? "--")}
+              </strong>
+              <small>
+                {filtered
+                  ? "Across this filtered view"
+                  : new Intl.DateTimeFormat("en-IN", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "short",
+                      timeZone: "Asia/Kolkata",
+                    }).format(new Date())}
+              </small>
+            </div>
           </div>
           <div className="stat-grid workday-stats">
-            {(
-              [
-                ["pending", "Assigned jobs", "pending"],
-                ["today", "Today's jobs", "today"],
-                ["in_progress", "In progress", "in-progress"],
-              ] as const
-            ).map(([key, label, view]) =>
-              view ? (
+            {filtered ? (
+              <>
+                <Link className="stat-card" to={jobsUrl}>
+                  <span>Showing now</span>
+                  <strong>{jobs.length}</strong>
+                  <small>
+                    of {matching.data?.meta.total ?? 0} matching jobs
+                  </small>
+                </Link>
+                <article className="stat-card staff-context-stat">
+                  <span>Work view</span>
+                  <strong>{jobViews[filters.view]}</strong>
+                </article>
+                <article className="stat-card staff-context-stat">
+                  <span>Request type</span>
+                  <strong>
+                    {filters.type === "SERVICE"
+                      ? "Service"
+                      : filters.type === "INSTALLATION"
+                        ? "Installation"
+                        : "All types"}
+                  </strong>
+                </article>
+              </>
+            ) : (
+              (
+                [
+                  ["pending", "Assigned jobs", "pending"],
+                  ["today", "Today's jobs", "today"],
+                  ["in_progress", "In progress", "in-progress"],
+                ] as const
+              ).map(([key, label, view]) => (
                 <Link
                   className="stat-card"
                   key={key}
                   to={`/technician/jobs?view=${view}`}
                 >
                   <span>{label}</span>
-                  <strong>{q.data[key]}</strong>
+                  <strong>{q.data?.[key] ?? "--"}</strong>
                   <icons.next
                     className="workday-stat-arrow"
                     aria-hidden="true"
                   />
                 </Link>
-              ) : (
-                <article className="stat-card" key={key}>
-                  <span>{label}</span>
-                  <strong>{q.data[key]}</strong>
-                </article>
-              ),
+              ))
             )}
           </div>
           <div className="section-heading">
-            <h2>Up next</h2>
-            <Link to="/technician/jobs">My jobs</Link>
+            <h2>{filtered ? "Filtered jobs" : "Up next"}</h2>
+            <Link to={jobsUrl}>
+              My jobs <icons.next aria-hidden="true" />
+            </Link>
           </div>
-          {!q.data.next_jobs?.length ? (
+          {!jobs.length ? (
             <EmptyState
-              title="No upcoming work"
-              description="Jobs assigned by an administrator will appear here."
+              title={
+                filtered ? "No jobs match these filters" : "No upcoming work"
+              }
+              description={
+                filtered
+                  ? "Try another work view or request type."
+                  : "Jobs assigned by an administrator will appear here."
+              }
+              primaryAction={
+                filtered ? (
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      apply({ view: "active", type: "", date: "" })
+                    }
+                  >
+                    Clear filters
+                  </button>
+                ) : undefined
+              }
             />
           ) : (
             <div className="tech-job-grid">
-              {q.data.next_jobs.map((j) => (
-                <AppCard
-                  variant="job"
-                  className="panel tech-job-card"
-                  key={j.id}
-                >
-                  <JobCardSummary job={j} />
-                  <div className="tech-card-actions">
-                    <Link
-                      className="primary tech-job-open"
-                      to={`/technician/jobs/${j.id}`}
-                    >
-                      Continue job
-                    </Link>
-                  </div>
-                </AppCard>
+              {jobs.map((job) => (
+                <TechnicianJobCard
+                  job={job}
+                  actionLabel={
+                    ["COMPLETED", "CANCELLED"].includes(job.status)
+                      ? "View job"
+                      : "Continue job"
+                  }
+                  key={job.id}
+                />
               ))}
             </div>
           )}
+          {filtered && (matching.data?.meta.total || 0) > jobs.length && (
+            <p className="staff-result-caption">
+              Showing {jobs.length} of {matching.data?.meta.total} matching
+              jobs. <Link to={jobsUrl}>View all matching jobs</Link>
+            </p>
+          )}
         </>
       )}
-    </>
+    </section>
   );
 }
 function TechJobs() {
-  const views = [
-    "active",
-    "pending",
-    "today",
-    "upcoming",
-    "in-progress",
-    "completed",
-  ];
+  const { filters, apply } = useJobFilters();
+  const tab = filters.view,
+    type = filters.type;
   const [params, setParams] = useSearchParams();
-  const requestedView = params.get("view") || "active";
-  const tab = views.includes(requestedView) ? requestedView : "active";
-  const requestedType = params.get("type") || "";
-  const type = ["SERVICE", "INSTALLATION"].includes(requestedType)
-    ? requestedType
-    : "";
   const requestedPage = Number(params.get("page") || 1);
   const page =
     Number.isSafeInteger(requestedPage) && requestedPage > 0
       ? requestedPage
       : 1;
-  function filter(key: "view" | "type", value: string) {
-    const next = new URLSearchParams(window.location.search);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    next.delete("page");
-    setParams(next, { replace: true });
-  }
   function setPage(value: number) {
     const next = new URLSearchParams(window.location.search);
     next.set("page", String(value));
     setParams(next);
   }
   const q = useQuery({
-    queryKey: ["technician", "jobs", { tab, type, page }],
+    queryKey: ["technician", "jobs", { tab, type, page, date: filters.date }],
     queryFn: async () =>
       (
         await api.get<{ data: Job[]; meta: { total: number } }>("/jobs", {
-          params: { tab, type: type || undefined, page, limit: 20 },
+          params: {
+            tab,
+            type: type || undefined,
+            date: filters.date || undefined,
+            page,
+            limit: 20,
+          },
         })
       ).data,
     refetchInterval: false,
   });
   return (
     <section>
-      <PageHeader title="My jobs" />
-      <div className="tech-toolbar">
-        <label>
-          View
-          <AppSelect
-            value={tab}
-            onChange={(e) => {
-              filter("view", e.target.value);
-            }}
-          >
-            {views.map((value) => (
-              <option key={value} value={value}>
-                {
-                  (
-                    {
-                      active: "Active jobs",
-                      pending: "Assigned jobs",
-                      today: "Today",
-                      upcoming: "Upcoming",
-                      "in-progress": "In progress",
-                      completed: "Completed",
-                    } as Record<string, string>
-                  )[value]
-                }
-              </option>
-            ))}
-          </AppSelect>
-        </label>
-        <label>
-          Request type
-          <AppSelect
-            value={type}
-            onChange={(e) => {
-              filter("type", e.target.value);
-            }}
-          >
-            <option value="">All types</option>
-            <option value="SERVICE">Service</option>
-            <option value="INSTALLATION">Installation</option>
-          </AppSelect>
-        </label>
-        <button disabled={q.isFetching} onClick={() => q.refetch()}>
-          <icons.refresh aria-hidden="true" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="My jobs"
+        description={jobFilterLabel(filters)}
+        actions={
+          <>
+            <button
+              className="secondary staff-refresh"
+              disabled={q.isFetching}
+              onClick={() => q.refetch()}
+            >
+              <icons.refresh aria-hidden="true" />
+              <span>Refresh</span>
+            </button>
+            <JobFilters value={filters} onApply={apply} />
+          </>
+        }
+      />
       {q.isPending ? (
         <LoadingSkeleton title="Loading jobs..." />
       ) : q.isError ? (
@@ -808,45 +929,7 @@ function TechJobs() {
       ) : (
         <div className="tech-job-grid">
           {q.data.data.map((job) => (
-            <AppCard
-              variant="job"
-              className="panel tech-job-card"
-              key={job.assignment_id}
-            >
-              <JobCardSummary job={job} showArea={!job.address_snapshot} />
-              {contactPhone(job.customer_phone) && (
-                <a
-                  href={`tel:${contactPhone(job.customer_phone)}`}
-                  aria-label="Call Customer"
-                >
-                  <FaPhone aria-hidden="true" /> Call Customer:{" "}
-                  {contactPhone(job.customer_phone)}
-                </a>
-              )}
-              {job.address_snapshot && (
-                <div className="tech-card-location">
-                  <p>
-                    {[
-                      job.address_snapshot.line1,
-                      job.address_snapshot.area,
-                      job.address_snapshot.city,
-                    ]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </p>
-                  <LocationActions
-                    address={job.address_snapshot}
-                    directions
-                    compact
-                  />
-                </div>
-              )}
-              <div className="tech-card-actions">
-                <Link className="primary" to={`/technician/jobs/${job.id}`}>
-                  View job
-                </Link>
-              </div>
-            </AppCard>
+            <TechnicianJobCard job={job} key={job.assignment_id} />
           ))}
         </div>
       )}
@@ -1043,16 +1126,13 @@ function TechJob() {
           )}
           <LocationActions address={j.address_snapshot} directions compact />
         </div>
-        {["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED"].includes(
-          j.status,
-        ) && (
-          <RescheduleRequest
-            id={j.id}
-            version={j.version}
-            date={j.confirmed_date || j.preferred_date}
-            timeWindow={j.confirmed_time_window || j.preferred_time_window}
-          />
+        {j.status === "ON_HOLD" && (
+          <p className="tech-hold-notice" role="status">
+            This job is on hold. You can view customer and location details, but
+            work-progress actions are paused until operations resumes it.
+          </p>
         )}
+        <JobProgressAction job={j} onUpdated={() => q.refetch()} />
         {j.status === "TECHNICIAN_ASSIGNED" && (
           <p>Assigned by admin. Operations will complete this request.</p>
         )}
@@ -1068,6 +1148,7 @@ function TechJob() {
             <icons.success aria-hidden="true" /> Job completed
           </p>
         )}
+        <CompleteJobButton job={j} />
       </section>
       {j.assignment_state === "ACCEPTED" && (
         <>
@@ -1238,6 +1319,50 @@ function TechJob() {
     </>
   );
 }
+
+function JobProgressAction({
+  job,
+  onUpdated,
+}: {
+  job: Pick<Job, "id" | "status" | "version">;
+  onUpdated: () => Promise<unknown>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const action =
+    job.status === "APPOINTMENT_CONFIRMED"
+      ? ["on-the-way", "Start visit"]
+      : job.status === "TECHNICIAN_EN_ROUTE"
+        ? ["arrived", "Mark arrived"]
+        : job.status === "TECHNICIAN_ARRIVED"
+          ? ["start", "Start job"]
+          : null;
+  if (!action) return null;
+  const [actionName, actionLabel] = action;
+  async function advance() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await api.post(`/jobs/${job.id}/${actionName}`, { version: job.version });
+      await onUpdated();
+      toast.success(actionLabel + " updated.");
+    } catch (error) {
+      toast.error(message(error));
+      await onUpdated();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <SafeAsyncButton
+      className="primary tech-progress-action"
+      pending={busy}
+      pendingLabel="Updating..."
+      onClick={advance}
+    >
+      {actionLabel}
+    </SafeAsyncButton>
+  );
+}
 function TechProfile({ profile: p }: { profile: Profile }) {
   const qc = useQueryClient(),
     busyRef = useRef(false),
@@ -1261,10 +1386,11 @@ function TechProfile({ profile: p }: { profile: Profile }) {
     <>
       <PageHeader title="My profile" />
       <div className="ui-actions">
-        <Link to="/technician/history">Job history</Link>
+
         <button
           onClick={async () => {
             try {
+              await removeCurrentPushSubscription(api).catch(() => undefined);
               await api.post("/auth/logout");
               qc.clear();
               window.location.assign("/technician/login");
@@ -1277,6 +1403,7 @@ function TechProfile({ profile: p }: { profile: Profile }) {
         </button>
       </div>
       <section className="panel tech-profile-card">
+        <PushNotificationSettings api={api} />
         <div className="tech-profile-identity">
           <TechAvatar name={p.full_name} />
           <div>

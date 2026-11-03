@@ -134,6 +134,24 @@
 .tech-card-actions .tech-complete-action:hover {
   background: #dcfce7;
 }
+.tech-action-disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-secondary);
+  font-weight: 700;
+}
+.tech-hold-notice {
+  padding: 14px 16px;
+  border: 1px solid #f0c36a;
+  border-radius: var(--radius-md);
+  background: #fff8e7;
+  color: #6d4c00;
+}
 @media (max-width: 600px) {
   .tech-completion-callout {
     align-items: stretch;
@@ -735,5 +753,108 @@
   .tech-shell .tech-card-actions > * {
     flex: none;
     min-height: 44px;
+  }
+}
+.schedule-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.schedule-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(76px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 14px;
+}
+.schedule-strip button {
+  display: grid;
+  gap: 4px;
+  min-width: 76px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.schedule-strip button.is-selected {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+  color: #fff;
+}
+.schedule-strip strong {
+  font-size: 1.35rem;
+}
+.schedule-day-group > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 14px;
+}
+.schedule-day-group h2 {
+  margin: 2px 0 0;
+}
+.schedule-job-list {
+  display: grid;
+  gap: 12px;
+}
+.schedule-job-card {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.35fr) minmax(240px, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-left: 5px solid var(--brand-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.schedule-job-card.status-on_hold {
+  border-left-color: #d99b00;
+}
+.schedule-job-card.status-completed {
+  border-left-color: #238636;
+  opacity: 0.82;
+}
+.schedule-job-card.status-in_progress {
+  border-left-color: #2563eb;
+}
+.schedule-job-time {
+  display: grid;
+  gap: 8px;
+  color: var(--brand-primary);
+}
+.schedule-job-time strong {
+  font-size: 1.05rem;
+}
+.schedule-job-main h3 {
+  margin: 8px 0 4px;
+}
+.schedule-job-main p {
+  margin: 5px 0;
+}
+.schedule-job-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 720px) {
+  .schedule-toolbar strong {
+    width: 100%;
+    order: -1;
+  }
+  .schedule-job-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .schedule-job-actions {
+    justify-content: stretch;
+  }
+  .schedule-job-actions > * {
+    flex: 1;
   }
 }

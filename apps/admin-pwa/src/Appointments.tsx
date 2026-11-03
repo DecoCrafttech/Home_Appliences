@@ -37,6 +37,26 @@ type Proposal = {
   request_version: number;
 };
 export function Appointments({ canManage }: { canManage: boolean }) {
+  const [incomingPage, setIncomingPage] = useState(1);
+  const incoming = useQuery({
+    queryKey: ["admin-requests", "appointments-list", incomingPage],
+    queryFn: async () =>
+      (
+        await api.get<{
+          data: {
+            id: string;
+            request_number: string;
+            customer_name: string;
+            appliance: string;
+            service_name: string;
+            status: string;
+            preferred_date: string;
+            confirmed_date?: string;
+          }[];
+          meta: { total: number };
+        }>("/requests", { params: { page: incomingPage, limit: 20 } })
+      ).data,
+  });
   const [range, setRange] = useState({ from: "", to: "" }),
     [selected, setSelected] = useState<{
       booking: CalendarBooking;
@@ -94,13 +114,14 @@ export function Appointments({ canManage }: { canManage: boolean }) {
     <section>
       <PageHeader
         title="Appointments"
-        description="Confirmed visits in India Standard Time. Proposed changes require approval."
+        description="All requests and planned visits."
         actions={
           <AsyncActionButton
             pending={q.isFetching || proposals.isFetching}
             onClick={async () => {
               await Promise.all([
                 q.refetch({ cancelRefetch: false }),
+                incoming.refetch({ cancelRefetch: false }),
                 proposals.refetch({ cancelRefetch: false }),
               ]);
             }}
@@ -109,6 +130,84 @@ export function Appointments({ canManage }: { canManage: boolean }) {
           </AsyncActionButton>
         }
       />
+      <section className="ui-panel incoming-appointments">
+        <h2>Incoming requests</h2>
+        {incoming.isPending ? (
+          <LoadingSkeleton />
+        ) : incoming.isError ? (
+          <ErrorState
+            title="Unable to load incoming requests"
+            retry={() => incoming.refetch()}
+          />
+        ) : incoming.data.data.length ? (
+          <>
+            <div className="incoming-appointment-list">
+              {incoming.data.data.map((r) => (
+                <Link
+                  className="incoming-appointment-row"
+                  key={r.id}
+                  to={`/requests/${r.id}`}
+                >
+                  <div>
+                    <small>{requestReference(r)}</small>
+                    <strong>{r.customer_name}</strong>
+                  </div>
+                  <div>
+                    <strong>{r.appliance}</strong>
+                    <span>{r.service_name}</span>
+                  </div>
+                  <span>
+                    {(r.confirmed_date || r.preferred_date)?.slice(0, 10)}
+                  </span>
+                  <span
+                    className={`appointment-state state-${r.status.toLowerCase()}`}
+                  >
+                    {r.status === "COMPLETED"
+                      ? "Completed"
+                      : r.status === "CANCELLED"
+                        ? "Cancelled"
+                        : [
+                              "TECHNICIAN_ASSIGNED",
+                              "APPOINTMENT_CONFIRMED",
+                              "TECHNICIAN_EN_ROUTE",
+                              "TECHNICIAN_ARRIVED",
+                              "IN_PROGRESS",
+                            ].includes(r.status)
+                          ? "Technician Assigned"
+                          : [
+                                "REQUESTED",
+                                "UNDER_REVIEW",
+                                "EXECUTIVE_CONTACTED",
+                                "ASSIGNMENT_PENDING",
+                              ].includes(r.status)
+                            ? "New"
+                            : r.status.replaceAll("_", " ")}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            {incoming.data.meta?.total > 20 && (
+              <nav className="ui-actions">
+                <button
+                  disabled={incomingPage === 1}
+                  onClick={() => setIncomingPage(incomingPage - 1)}
+                >
+                  Previous
+                </button>
+                <span>Page {incomingPage}</span>
+                <button
+                  disabled={incomingPage * 20 >= incoming.data.meta.total}
+                  onClick={() => setIncomingPage(incomingPage + 1)}
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
+        ) : (
+          <p>No requests yet.</p>
+        )}
+      </section>
       {q.isError && (
         <ErrorState
           title="Unable to load appointments"
@@ -303,7 +402,8 @@ function AppointmentDetails({
         <LocationActions address={booking.address_snapshot} />
         <p>Technician: {booking.technician_name || "Unassigned"}</p>
         <p>
-          Confirmed: {booking.confirmed_date.slice(0, 10)} ·{" "}
+          {booking.visit_confirmed === false ? "Preferred:" : "Confirmed:"}{" "}
+          {booking.confirmed_date.slice(0, 10)} ·{" "}
           {booking.confirmed_time_window}
         </p>
         <p>{booking.status.replaceAll("_", " ")}</p>

@@ -1,4 +1,4 @@
-import { PasswordInput, AppCheckbox } from "@home/ui";
+import { PasswordInput } from "@home/ui";
 import { AsyncActionButton as SafeAsyncButton } from "@home/ui";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import axios from "axios";
 import { api } from "./api";
+import { PushNotificationSettings } from "@home/ui/push";
 import { icons, adminKeys } from "./design";
 import {
   PageHeader,
@@ -51,11 +52,23 @@ export function OperationsPage({ kind }: { kind: "reports" | "settings" }) {
       ).data.data,
     staleTime: 30000,
   });
-  const [compact, setCompact] = useState(
-    () => localStorage.getItem("admin-compact") === "true",
-  );
   const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
+  const business = useQuery({
+    queryKey: ["admin", "business-settings"],
+    queryFn: async () =>
+      (
+        await api.get<{
+          data: {
+            adminOfficePhone: string | null;
+            workingHours: string;
+            serviceAreas: string;
+            supportContact: string;
+          };
+        }>("/settings/business")
+      ).data.data,
+    enabled: kind === "settings",
+  });
   const error = (err: unknown) =>
     toast.error(
       axios.isAxiosError(err)
@@ -75,6 +88,106 @@ export function OperationsPage({ kind }: { kind: "reports" | "settings" }) {
             <icons.reports /> View reports and export
           </Link>
         </p>
+        <article className="ui-panel">
+          <PushNotificationSettings api={api} />
+        </article>
+        <article className="ui-panel" id="business-contact">
+          <h2>Business settings</h2>
+          <p>
+            These public support details appear in customer support views. They
+            do not change booking availability or historical appointments.
+          </p>
+          {business.isPending ? (
+            <LoadingSkeleton title="Loading business contact..." />
+          ) : business.isError ? (
+            <ErrorState
+              title="Unable to load business contact"
+              retry={() => business.refetch()}
+            />
+          ) : (
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (busy) return;
+                setBusy(true);
+                try {
+                  const phone = String(
+                    new FormData(event.currentTarget).get("adminOfficePhone") ||
+                      "",
+                  ).replace(/[\s()-]/g, "");
+                  await api.patch("/settings/business", {
+                    adminOfficePhone: phone,
+                    workingHours: String(
+                      new FormData(event.currentTarget).get("workingHours") ||
+                        "",
+                    ).trim(),
+                    serviceAreas: String(
+                      new FormData(event.currentTarget).get("serviceAreas") ||
+                        "",
+                    ).trim(),
+                    supportContact: String(
+                      new FormData(event.currentTarget).get("supportContact") ||
+                        "",
+                    ).trim(),
+                  });
+                  await Promise.all([
+                    business.refetch(),
+                    qc.invalidateQueries({
+                      queryKey: ["google-configuration"],
+                    }),
+                  ]);
+                  toast.success("Admin Office contact updated.");
+                } catch (failure) {
+                  error(failure);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <label>
+                Official phone number
+                <input
+                  name="adminOfficePhone"
+                  type="tel"
+                  required
+                  pattern="\+91[6-9][0-9]{9}"
+                  placeholder="+919876543210"
+                  defaultValue={business.data.adminOfficePhone || ""}
+                />
+              </label>
+              <label>
+                Working hours
+                <input
+                  name="workingHours"
+                  maxLength={200}
+                  placeholder="Mon-Sat, 9:00 AM-6:00 PM"
+                  defaultValue={business.data.workingHours}
+                />
+              </label>
+              <label>
+                Supported service areas
+                <textarea
+                  name="serviceAreas"
+                  maxLength={2000}
+                  placeholder="Chennai, Tambaram, Avadi"
+                  defaultValue={business.data.serviceAreas}
+                />
+              </label>
+              <label>
+                Support contact
+                <input
+                  name="supportContact"
+                  maxLength={254}
+                  placeholder="support@example.com"
+                  defaultValue={business.data.supportContact}
+                />
+              </label>
+              <SafeAsyncButton pending={busy} pendingLabel="Saving...">
+                Save contact
+              </SafeAsyncButton>
+            </form>
+          )}
+        </article>
         <div className="detail">
           <article id="profile">
             <h2>My Profile</h2>
@@ -129,29 +242,6 @@ export function OperationsPage({ kind }: { kind: "reports" | "settings" }) {
                 </form>
               </>
             )}
-          </article>
-          <article>
-            <h2>Display preferences</h2>
-            <label className="admin-check">
-              <AppCheckbox
-                checked={compact}
-                onChange={(e) => {
-                  setCompact(e.target.checked);
-                  localStorage.setItem(
-                    "admin-compact",
-                    String(e.target.checked),
-                  );
-                  document.body.classList.toggle("compact", e.target.checked);
-                }}
-              />{" "}
-              Compact tables on this device
-            </label>
-            <p className="muted">
-              Your display preference applies only to this browser.
-            </p>
-            <Link to="/catalogue">
-              <icons.catalogue /> Manage services, pricing and forms
-            </Link>
           </article>
         </div>
         <article className="ui-panel" id="security">
