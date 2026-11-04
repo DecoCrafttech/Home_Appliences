@@ -57,6 +57,16 @@ The package does not migrate or seed production automatically. Verify the produc
 
 ## Upload the three PWAs
 
+### GitHub deployment
+
+Create three Vite applications from `DecoCrafttech/Home_Appliences`, branch `main`. Select roots `apps/customer-pwa`, `apps/admin-pwa` and `apps/technician-pwa` respectively. For each, use Node 24, npm, build command `npm run build`, output `dist`, and no server entry file. The repository's shared packages and `scripts/build-pwa.mjs` must remain available during the workspace build.
+
+Each PWA explicitly declares TypeScript, Vite and its build plugins as production dependencies so production-only hosting installs can build it. The shared build runner invokes compiler/Vite JavaScript entry files through Node rather than relying on shell `.bin` executables. It also includes `.htaccess` in the static output for HTML/PHP hosting. There is no frontend Node server to start after the build.
+
+Set `VITE_API_ORIGIN=https://api.fixbeez.in` for all three and `VITE_TECHNICIAN_ORIGIN=https://technician.fixbeez.in` for Admin. These public values also live in the committed `.env.production` files. No backend secrets belong in PWA build settings. For GitHub hosting, verify the platform's SPA fallback by refreshing a nested route; `.htaccess` is used only when the serving web server supports it.
+
+### Static ZIP upload
+
 Create/configure each domain as a static/PHP website. In each domain's own document root shown by hPanel, extract the matching PWA zip so `index.html`, `.htaccess`, `sw.js`, `manifest.webmanifest` and `assets/` sit directly in that root. Do not upload the outer staging folder or mix app archives. Ensure `.htaccess` was extracted, including SPA route fallback and service-worker revalidation. Enable SSL and HTTPS for all four domains.
 
 The apps call `https://api.fixbeez.in` directly with credentials; no frontend `/api` proxy is required. Cookies remain host-only on the API and use the existing secure and SameSite settings. All four origins use the same HTTPS site. API CORS explicitly permits the three configured app origins, and catalogue media allows same-site embedding.
