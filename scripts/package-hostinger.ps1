@@ -19,7 +19,7 @@ $apiStage = Join-Path $artifactRoot 'backend-source'
 New-Item -ItemType Directory -Path $apiStage | Out-Null
 # Explicit allowlist: no local environment files, credentials, node_modules or logs.
 $files = @('package.json', 'package-lock.json', 'tsconfig.base.json', 'server.mjs',
-    'backend/package.json', 'backend/tsconfig.json', 'backend/start.mjs', 'backend/build.mjs',
+    'backend/package.json', 'backend/tsconfig.json', 'backend/tsconfig.build.json', 'backend/start.mjs', 'backend/build.mjs',
     'packages/shared/package.json', 'packages/shared/tsconfig.json',
     'packages/ui/package.json', 'apps/customer-pwa/package.json',
     'apps/admin-pwa/package.json', 'apps/technician-pwa/package.json',

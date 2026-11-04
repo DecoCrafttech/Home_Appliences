@@ -30,7 +30,7 @@ In hPanel, open the Node.js application for `api.fixbeez.in`. Upload `backend-so
 - Node.js: **24.x** (required for the runtime WebSocket used by database transactions).
 - Framework: Express, or Other if entry settings must be entered manually.
 - Application root for the source ZIP: archive root. For the GitHub monorepo picker, select `backend` while retaining the full repository checkout and npm workspaces. The adjacent `packages/shared` source must remain available during installation and at runtime.
-- Install: `npm ci` (include development dependencies for the TypeScript build).
+- Install: `npm ci`. A production-only `npm ci --omit=dev` also includes the backend compiler and required type declarations.
 - Build at archive/repository root: `npm run build -w @home/api`. When the selected root is `backend`, use `npm run build`.
 - Output directory: `.` (retain source, workspace files and installed dependencies).
 - Entry file at archive/repository root: `server.mjs`. When the selected root is `backend`, use `start.mjs`.
@@ -38,7 +38,7 @@ In hPanel, open the Node.js application for `api.fixbeez.in`. Upload `backend-so
 
 The entry uses the production `tsx` dependency because `@home/shared` exports TypeScript. Uploading only `backend/dist` cannot run this application. Install native dependencies on Hostinger's Linux build environment; do not upload Windows `node_modules`.
 
-The backend build invokes its explicitly declared TypeScript dependency through Node (`node build.mjs`) instead of executing a `.bin/tsc` shim. If an older deployment fails with `tsc: Permission denied`, first publish the removal of tracked `node_modules`, then perform a fresh dependency install/rebuild in Hostinger. Preserve `package-lock.json` and use a clean `npm ci`; changing executable bits on uploaded Windows dependencies is not a reliable deployment fix. Ensure development dependencies are installed for the build.
+The backend build invokes its explicitly declared TypeScript dependency through Node (`node build.mjs`) instead of executing a `.bin/tsc` shim. TypeScript and required type declarations are production dependencies because Hostinger may omit development packages. The production compiler configuration excludes test files; the separate typecheck still checks tests with a full development installation. If an older deployment fails with `tsc: Permission denied`, first publish the removal of tracked `node_modules`, then perform a fresh dependency install/rebuild in Hostinger. Preserve `package-lock.json` and use a clean `npm ci`; changing executable bits on uploaded Windows dependencies is not a reliable deployment fix.
 
 Set backend environment variables in hPanel using `deploy/backend.env.example`. Fill in the production Neon connection string and Google Web application client ID. Set all four origin values exactly as shown. Preserve the existing technician MFA encryption key if the database already has enrolled accounts. Configure S3 storage and its browser upload CORS for the three HTTPS PWA origins; preserve existing VAPID keys when push subscriptions already exist. Never put these secrets in `VITE_*` variables or public uploads. Leave `PORT` to Hostinger. Confirm the trusted proxy hop count with Hostinger before overriding `TRUST_PROXY_HOPS`; trusting an incorrect count can undermine IP-based limits.
 
