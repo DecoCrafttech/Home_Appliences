@@ -25,6 +25,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "drizzle-orm": "^0.45.4",
+    "esbuild": "^0.25.12",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "google-auth-library": "^10.3.0",
