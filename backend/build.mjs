@@ -57,6 +57,17 @@ if (!process.argv.includes("--noEmit")) {
     }
   }
   const runtimeDir = fileURLToPath(new URL("./dist/", import.meta.url));
+  // Bundled imports resolve relative to server.js; unbundled imports retain
+  // security/password.js's directory. Support both production entry forms.
+  for (const target of [
+    "./dist/passwordWorker.mjs",
+    "./dist/security/passwordWorker.mjs",
+  ]) {
+    copyFileSync(
+      new URL("./src/security/passwordWorker.mjs", import.meta.url),
+      new URL(target, import.meta.url),
+    );
+  }
   for (const file of ["package.json", "package-lock.json"]) {
     copyFileSync(
       new URL(`./runtime/${file}`, import.meta.url),
