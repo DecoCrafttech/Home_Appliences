@@ -9,8 +9,8 @@
     "typecheck": "node build.mjs --typecheck"
   },
   "dependencies": {
-    "@home/shared": "*",
-    "@home/ui": "^0.1.0",
+    "@home/shared": "file:../../packages/shared",
+    "@home/ui": "file:../../packages/ui",
     "@hookform/resolvers": "^3.10.0",
     "@react-oauth/google": "^0.13.4",
     "@tailwindcss/vite": "^4.1.0",

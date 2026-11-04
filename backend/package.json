@@ -14,7 +14,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1155.0",
     "@aws-sdk/s3-request-presigner": "^3.1155.0",
-    "@home/shared": "*",
+    "@home/shared": "file:../packages/shared",
     "@neondatabase/serverless": "^1.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

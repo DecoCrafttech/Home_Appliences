@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.3",
-    "@home/shared": "*",
+    "@home/shared": "file:../shared",
     "axios": "^1.12.0",
     "react-icons": "^5.5.0",
     "sonner": "^2.0.7",
