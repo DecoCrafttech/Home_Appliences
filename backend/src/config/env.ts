@@ -25,6 +25,9 @@ export const env = z
       .enum(["development", "test", "production"])
       .default("development"),
     CUSTOMER_ORIGIN: z.string().url().default("http://localhost:5173"),
+    ADMIN_ORIGIN: z.string().url().default("http://localhost:5174"),
+    TECHNICIAN_ORIGIN: z.string().url().default("http://localhost:5175"),
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
     DATABASE_URL: z.string().url().optional(),
     OTP_PROVIDER: z
       .enum(["development", "sms", "whatsapp"])

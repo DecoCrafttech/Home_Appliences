@@ -1,0 +1,24 @@
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  <FilesMatch "^(index\.html|sw\.js|manifest\.webmanifest)$">
+    Header always set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  # Missing API/assets must stay errors rather than becoming the app shell.
+  RewriteRule ^(?:api|assets)/ - [L]
+  RewriteRule \.(?:js|css|json|webmanifest|png|svg|webp|avif|ico|woff2)$ - [L,NC]
+  RewriteRule ^ index.html [L]
+</IfModule>

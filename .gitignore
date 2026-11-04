@@ -1,8 +1,12 @@
 node_modules/
 dist/
+.vite/
+*.tsbuildinfo
 .env
 .env.*
 !.env.example
+!apps/*/.env.production
+deployment-artifacts/
 coverage/
 playwright-report/
 test-results/

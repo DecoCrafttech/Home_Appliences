@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "node server.mjs",
     "dev": "concurrently -k -n customer,admin,technician,api \"npm run dev -w @home/customer\" \"npm run dev -w @home/admin\" \"npm run dev -w @home/technician\" \"npm run dev -w @home/api\"",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

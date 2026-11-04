@@ -33,17 +33,29 @@ import {
   adminCalendarRoutes,
   technicianCalendarRoutes,
 } from "./calendarRoutes.js";
-import { customerPushRoutes, adminPushRoutes, technicianPushRoutes } from "./pushRoutes.js";
+import {
+  customerPushRoutes,
+  adminPushRoutes,
+  technicianPushRoutes,
+} from "./pushRoutes.js";
 export const logger = pino({
   level: env.NODE_ENV === "test" ? "silent" : "info",
   redact: ["req.headers.cookie", "req.headers.authorization"],
 });
 export const app = express();
 app.disable("x-powered-by");
-app.use(helmet());
+if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
+app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 app.use(
   cors({
-    origin: [...new Set([env.CUSTOMER_ORIGIN, env.CUSTOMER_APP_ORIGIN])],
+    origin: [
+      ...new Set([
+        env.CUSTOMER_ORIGIN,
+        env.CUSTOMER_APP_ORIGIN,
+        env.ADMIN_ORIGIN,
+        env.TECHNICIAN_ORIGIN,
+      ]),
+    ],
     credentials: true,
   }),
 );

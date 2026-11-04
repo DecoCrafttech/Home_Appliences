@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "node start.mjs",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "node build.mjs",
+    "typecheck": "node build.mjs --noEmit",
     "db:migrate": "tsx src/migrate.ts",
     "admin:bootstrap": "tsx src/bootstrapAdmin.ts"
   },
@@ -26,6 +27,7 @@
     "otpauth": "^9.5.2",
     "pino": "^9.9.0",
     "sanitize-html": "^2.18.1",
+    "tsx": "^4.20.0",
     "web-push": "^3.6.7",
     "zod": "^3.25.0"
   },
@@ -35,6 +37,6 @@
     "@types/sanitize-html": "^2.16.2",
     "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.0",
-    "tsx": "^4.20.0"
+    "typescript": "^5.9.3"
   }
 }
