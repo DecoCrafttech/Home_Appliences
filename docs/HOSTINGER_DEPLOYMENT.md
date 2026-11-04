@@ -73,7 +73,17 @@ The apps call `https://api.fixbeez.in` directly with credentials; no frontend `/
 
 In Google Cloud, add `https://fixbeez.in` to the OAuth Web client's authorized JavaScript origins. Use the same client ID in the backend. Add any additional origin only if it is intentionally supported; `www.fixbeez.in` should redirect to `fixbeez.in`.
 
+## Connect the Neon development branch
+
+In the Neon Console, open the project and click **Connect**. Select the development branch you intend to use, its database, and the application role. Copy the full PostgreSQL connection string without editing the hostname or removing its SSL parameters. In Hostinger, open the **api.fixbeez.in** backend's environment settings and add or replace **DATABASE_URL** with that connection string (no surrounding quotes in the value field). Keep **NODE_ENV=production**: selecting a development database branch does not change how the public server should handle secure cookies. Save and restart/redeploy the backend.
+
+Check `https://api.fixbeez.in/api/v1/ready`. HTTP 200 with `database: connected` confirms a successful database query; a JSON 503 means the connection is still missing, invalid or unavailable. Do not put this connection string in the PWA environments or commit it to GitHub. The hosted apps will read and write the same development-branch data used locally; this does not create a separate copy. No migration or database reset is performed by these instructions.
+
+See [Neon's connection instructions](https://neon.com/docs/get-started/connect-neon).
+
 ## Live verification
+
+The shared UI declares React, React DOM, React Router and React Query as peer dependencies; each PWA's Vite configuration deduplicates these context providers. This prevents a shared component's router hooks from reading a different context instance than the app's router. After building all three PWAs, run `npm run test:pwa-render` for production Chrome rendering and nested-route checks with mocked API responses. The checker also accepts a separate build root: `node scripts/check-pwa-render.mjs PATH_TO_BUILD_ROOT`. This checks UI rendering independently of database connectivity; it does not verify real sign-in or database-backed workflows.
 
 Open all three apps, refresh a nested route (including `/technician`), and check that API requests target `api.fixbeez.in` and return JSON. Verify customer Google sign-in and sign-out, admin login, technician login and CSRF-protected writes, catalogue images, file uploads and push registration where configured. Check no browser CORS, mixed-content or blocked-cookie errors occur. Verify each manifest and service worker and run the existing PWA checker with:
 

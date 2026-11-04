@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:pwa-render": "node scripts/check-pwa-render.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

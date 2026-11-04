@@ -3,6 +3,15 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
+  resolve: {
+    dedupe: [
+      "react",
+      "react-dom",
+      "react-router",
+      "react-router-dom",
+      "@tanstack/react-query",
+    ],
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -12,7 +21,9 @@ export default defineConfig({
       filename: "sw.ts",
       devOptions: { enabled: true, type: "module" },
       registerType: "prompt",
-      injectManifest: { globPatterns: ["**/*.{js,css,html,svg,png,webp,woff2}"] },
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,svg,png,webp,woff2}"],
+      },
       manifest: {
         name: "Fixbeez Operations",
         short_name: "Fixbeez Admin",
