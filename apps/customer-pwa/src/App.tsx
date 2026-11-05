@@ -345,6 +345,9 @@ function Home() {
             <h1 className="home-promo-title">
               Appliance care <span>at your doorstep</span>
             </h1>
+            <p className="home-promo-description">
+              Repairs, installation and upkeep. Book a home visit in a few taps.
+            </p>
             <p className="home-promo-caption">
               <span>
                 <FaScrewdriverWrench aria-hidden="true" /> Repair
@@ -380,7 +383,11 @@ function Home() {
             ["Quality Services", FaAward],
           ].map(([label, Icon]) => (
             <div key={String(label)}>
-              {typeof Icon !== "string" && Icon && <Icon aria-hidden="true" />}
+              <span className="home-benefit-icon">
+                {typeof Icon !== "string" && Icon && (
+                  <Icon aria-hidden="true" />
+                )}
+              </span>
               <span>{String(label)}</span>
             </div>
           ))}

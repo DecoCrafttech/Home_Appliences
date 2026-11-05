@@ -30,17 +30,41 @@
   min-width: 0;
   padding: 8px;
 }
+.home-benefit-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  background: #fff;
+  border-radius: 10px;
+}
 @media (min-width: 761px) {
   .home-showcase .home-benefits > div + div {
     border-inline-start: 1px solid #ded4f2;
   }
 }
 @media (max-width: 760px) {
-  .home-showcase .home-benefits > div:nth-child(even) {
+  .home-showcase .home-benefits {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 10px 4px;
+    margin: 10px 0;
+  }
+  .home-showcase .home-benefits > div {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 2px 5px;
+    font-size: 10px;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .home-showcase .home-benefits > div + div {
     border-inline-start: 1px solid #ded4f2;
   }
-  .home-showcase .home-benefits > div:nth-child(n + 3) {
-    border-top: 1px solid #ded4f2;
+  .home-showcase .home-benefits > div > span:last-child {
+    max-width: 80px;
+    text-wrap: balance;
   }
 }
 .home-showcase .home-benefits svg {
@@ -53,6 +77,13 @@
   line-height: 1.23;
   margin: 0 0 12px;
   letter-spacing: -0.6px;
+}
+.home-promo-description {
+  max-width: 360px;
+  margin: 0 0 14px;
+  color: #655977;
+  font-size: 14px;
+  line-height: 1.6;
 }
 .customer-empty-state {
   width: 100%;
@@ -195,9 +226,9 @@
     margin-bottom: 16px;
   }
   .home-promo {
-    min-height: 132px;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    padding: 14px;
+    min-height: 190px;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    padding: 16px;
     border-radius: 16px;
   }
   .home-promo h2 {
@@ -205,8 +236,17 @@
     line-height: 1.2;
   }
   .home-promo-title {
-    font-size: 18px;
+    font-size: 21px;
     line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .home-promo-title span {
+    display: block;
+  }
+  .home-promo-description {
+    margin-bottom: 0;
+    font-size: 12px;
+    line-height: 1.5;
   }
   .home-promo-eyebrow {
     margin-bottom: 6px;
@@ -224,6 +264,8 @@
   .home-promo .v6-hero-art {
     min-height: 100px;
     width: 100%;
+    align-self: center;
+    height: 150px;
   }
   .home-quick-actions {
     margin-top: 10px;
@@ -284,5 +326,10 @@
   .services-maintenance.section {
     padding: 8px 16px 24px;
     scroll-margin-top: 76px;
+  }
+}
+@media (max-width: 350px) {
+  .home-promo-title {
+    font-size: 19px;
   }
 }
