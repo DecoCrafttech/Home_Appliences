@@ -20,10 +20,10 @@
 }
 .home-showcase .home-benefits {
   margin: 12px 0;
-  padding: 8px 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
+  padding: 12px;
+  background: #f6f2ff;
+  border: 1px solid #eee7fb;
+  border-radius: 14px;
 }
 .home-showcase .home-benefits svg {
   width: 18px;
