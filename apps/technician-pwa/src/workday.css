@@ -1,3 +1,21 @@
+.safe-dialog:has(.tech-complete-dialog) {
+  width: min(480px, calc(100vw - 24px));
+  padding: 0;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.tech-shell .tech-job-card .tech-card-actions > dialog {
+  flex: none;
+  min-height: 0;
+  padding: 0;
+  font-size: 14px;
+}
+.tech-complete-dialog h3,
+.tech-complete-dialog label,
+.tech-complete-dialog p {
+  text-align: left;
+}
+
 .tech-appointments {
   min-width: 0;
 }

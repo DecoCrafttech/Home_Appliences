@@ -48,8 +48,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       await job(other, "ACCEPTED");
     });
     afterAll(async () => {
-      for (const id of jobs)
+      for (const id of jobs) {
+        await db()`DELETE FROM completion_reports WHERE request_id=${id}`;
+        await db()`DELETE FROM request_status_events WHERE request_id=${id}`;
+        await db()`DELETE FROM audit_logs WHERE entity_id=${id}`;
         await db()`DELETE FROM service_requests WHERE id=${id}`;
+      }
       for (const id of [technician, other]) {
         await db()`DELETE FROM technician_sessions WHERE technician_id=${id}`;
         await db()`DELETE FROM technician_accounts WHERE technician_id=${id}`;
@@ -102,6 +106,121 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       expect(response.body.data.map((r: { id: string }) => r.id)).toEqual([
         jobs[3],
       ]);
+    });
+    const checks = [
+      "Reported issue assessed",
+      "Work and safety checks completed",
+      "Customer informed of outcome",
+    ];
+    const finish = (id: string, body: Record<string, unknown>, value = token) =>
+      request(app)
+        .post(`/api/v1/technician/jobs/${id}/complete`)
+        .set("Cookie", "technician_session=" + value)
+        .set("X-CSRF-Token", "a".repeat(43))
+        .send(body);
+    for (const status of [
+      "TECHNICIAN_ASSIGNED",
+      "APPOINTMENT_CONFIRMED",
+      "IN_PROGRESS",
+    ])
+      it(`technician can directly complete an owned ${status} job`, async () => {
+        const id = await job(technician, "ACCEPTED", status);
+        const result = await finish(id, {
+          version: 1,
+          workSummary: "Repaired and tested the unit",
+          checklist: checks,
+        });
+        expect(result.status, JSON.stringify(result.body)).toBe(200);
+        expect(result.body.data.status).toBe("COMPLETED");
+        expect(
+          (
+            await db()`SELECT previous_status,status FROM request_status_events WHERE request_id=${id}`
+          )[0],
+        ).toMatchObject({ previous_status: status, status: "COMPLETED" });
+        expect(
+          (
+            await db()`SELECT state,reviewed_by_technician_id FROM technician_work_reports WHERE request_id=${id}`
+          )[0],
+        ).toMatchObject({
+          state: "APPROVED",
+          reviewed_by_technician_id: technician,
+        });
+        expect(
+          (
+            await db()`SELECT completed_by_technician_id FROM completion_reports WHERE request_id=${id}`
+          )[0]?.completed_by_technician_id,
+        ).toBe(technician);
+        expect(
+          (
+            await finish(id, {
+              version: 1,
+              workSummary: "Repaired and tested the unit",
+              checklist: checks,
+            })
+          ).status,
+        ).toBe(200);
+        expect(
+          await db()`SELECT id FROM completion_reports WHERE request_id=${id}`,
+        ).toHaveLength(1);
+      });
+    it("rejects stale, incomplete, held and foreign completions without creating reports", async () => {
+      const id = await job(technician, "ACCEPTED");
+      expect(
+        (
+          await finish(id, {
+            version: 2,
+            workSummary: "Repair completed",
+            checklist: checks,
+          })
+        ).status,
+      ).toBe(409);
+      expect(
+        (
+          await finish(id, {
+            version: 1,
+            workSummary: "Repair completed",
+            checklist: [],
+          })
+        ).status,
+      ).toBe(422);
+      expect(
+        (
+          await finish(
+            id,
+            { version: 1, workSummary: "Repair completed", checklist: checks },
+            otherToken,
+          )
+        ).status,
+      ).toBe(404);
+      await db()`UPDATE service_requests SET status='ON_HOLD' WHERE id=${id}`;
+      expect(
+        (
+          await finish(id, {
+            version: 1,
+            workSummary: "Repair completed",
+            checklist: checks,
+          })
+        ).status,
+      ).toBe(409);
+      expect(
+        await db()`SELECT id FROM technician_work_reports WHERE request_id=${id}`,
+      ).toHaveLength(0);
+    });
+    it("keeps estimate approval required for direct completion", async () => {
+      const id = await job(technician, "ACCEPTED");
+      await db()`INSERT INTO technician_estimates(request_id,technician_id,version,state,diagnosis,items,subtotal_paise,tax_paise,total_paise) VALUES(${id},${technician},1,'AWAITING_CUSTOMER_APPROVAL','Parts required','[]'::jsonb,10000,0,10000)`;
+      expect(
+        (
+          await finish(id, {
+            version: 1,
+            workSummary: "Repair completed",
+            checklist: checks,
+          })
+        ).status,
+      ).toBe(409);
+      expect(
+        await db()`SELECT id FROM technician_work_reports WHERE request_id=${id}`,
+      ).toHaveLength(0);
     });
   },
 );

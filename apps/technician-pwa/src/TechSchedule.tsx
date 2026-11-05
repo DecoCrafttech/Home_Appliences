@@ -16,6 +16,7 @@ import {
   StatusBadge,
 } from "./components";
 import { api } from "./api";
+import { canCompleteJob, CompleteJobDialog } from "./CompleteJobButton";
 
 const ScheduleCalendar = lazy(() =>
   import("@home/ui/calendar").then((module) => ({
@@ -26,6 +27,7 @@ const ScheduleCalendar = lazy(() =>
 export function TechSchedule() {
   const [range, setRange] = useState({ from: "", to: "" });
   const [selected, setSelected] = useState<CalendarBooking | null>(null);
+  const [completion, setCompletion] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ["technician", "schedule", range],
     queryFn: async () =>
@@ -98,6 +100,16 @@ export function TechSchedule() {
         <AppointmentDetails
           booking={selected}
           onClose={() => setSelected(null)}
+          onComplete={() => {
+            setCompletion(selected.id);
+            setSelected(null);
+          }}
+        />
+      )}
+      {completion && (
+        <CompleteJobDialog
+          id={completion}
+          onClose={() => setCompletion(null)}
         />
       )}
     </section>
@@ -107,9 +119,11 @@ export function TechSchedule() {
 function AppointmentDetails({
   booking,
   onClose,
+  onComplete,
 }: {
   booking: CalendarBooking;
   onClose: () => void;
+  onComplete: () => void;
 }) {
   const phone = contactPhone(booking.customer_phone);
   const date = booking.confirmed_date.slice(0, 10);
@@ -172,6 +186,11 @@ function AppointmentDetails({
         >
           View job
         </Link>
+        {canCompleteJob(booking.status) && (
+          <button className="tech-complete-action" onClick={onComplete}>
+            Complete job
+          </button>
+        )}
       </div>
     </ConfirmActionDialog>
   );

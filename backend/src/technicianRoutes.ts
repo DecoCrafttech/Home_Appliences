@@ -476,7 +476,11 @@ technicianRoutes.post(
   "/jobs/:id/complete",
   route(async (req, res) => {
     const i = z
-        .object({ version: z.number().int().positive() })
+        .object({
+          version: z.number().int().positive(),
+          workSummary: z.string().trim().min(3).max(2000).optional(),
+          checklist: z.array(z.string().max(300)).max(50).optional(),
+        })
         .strict()
         .parse(req.body),
       j = await ownedJob(req);
@@ -484,14 +488,61 @@ technicianRoutes.post(
       res.json({ data: j, alreadyCompleted: true });
       return;
     }
+    const locked = (
+      await db()`SELECT version FROM service_requests WHERE id=${j.id} FOR UPDATE`
+    )[0];
+    if (locked?.version !== j.version) throw conflict();
     if (
-      j.status !== "IN_PROGRESS" ||
+      !["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED", "IN_PROGRESS"].includes(
+        String(j.status),
+      ) ||
       j.version !== i.version ||
       !["SERVICE", "INSTALLATION"].includes(String(j.request_type))
     )
       throw conflict();
+    if (i.workSummary !== undefined) {
+      const previous = (
+        await db()`SELECT state,outcome,technician_id FROM technician_work_reports WHERE request_id=${j.id} ORDER BY version DESC LIMIT 1`
+      )[0];
+      const ready =
+        previous?.state === "SUBMITTED_FOR_REVIEW" &&
+        previous.outcome === "RESOLVED" &&
+        previous.technician_id === req.technician!.id;
+      if (!ready) {
+        if (previous && previous.state !== "CHANGES_REQUESTED")
+          throw new ApiError(
+            409,
+            "REPORT_PENDING",
+            "Review the existing work report before completing this job.",
+          );
+        const configured =
+          await db()`SELECT items FROM technician_checklists WHERE lower(appliance)=lower(${j.appliance})`;
+        if (
+          checklist(
+            String(j.appliance),
+            String(j.request_type),
+            configured[0]?.items,
+          ).some((item) => !i.checklist?.includes(item))
+        )
+          throw new ApiError(
+            422,
+            "CHECKLIST_INCOMPLETE",
+            "Complete every applicable checklist item.",
+          );
+        const estimates =
+          await db()`SELECT id FROM technician_estimates WHERE request_id=${j.id} AND state IN ('AWAITING_CUSTOMER_APPROVAL','REJECTED','SUBMITTED')`;
+        if (estimates.length)
+          throw new ApiError(
+            409,
+            "ESTIMATE_PENDING",
+            "Resolve the estimate approval before completing this job.",
+          );
+        await db()`UPDATE technician_work_reports SET state='SUPERSEDED' WHERE request_id=${j.id} AND state='CHANGES_REQUESTED'`;
+        await db()`INSERT INTO technician_work_reports(request_id,technician_id,version,work_summary,checklist,outcome,notes,parts,unresolved_issues) VALUES(${j.id},${req.technician!.id},COALESCE((SELECT max(version) FROM technician_work_reports WHERE request_id=${j.id}),0)+1,${i.workSummary},${JSON.stringify(i.checklist || [])}::jsonb,'RESOLVED','','','')`;
+      }
+    }
     const rows =
-      await db()`WITH changed AS (UPDATE service_requests SET status_source='WORKFLOW',status='COMPLETED',completed_at=now(),version=version+1,updated_at=now() WHERE id=${j.id} AND version=${i.version} AND status='IN_PROGRESS' AND assigned_technician_id=${req.technician!.id} AND EXISTS(SELECT 1 FROM technician_assignments a WHERE a.request_id=service_requests.id AND a.technician_id=${req.technician!.id} AND a.state='ACCEPTED') AND EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=service_requests.id AND w.technician_id=${req.technician!.id} AND w.state='SUBMITTED_FOR_REVIEW' AND w.outcome='RESOLVED' AND w.version=(SELECT max(latest.version) FROM technician_work_reports latest WHERE latest.request_id=service_requests.id)) AND NOT EXISTS(SELECT 1 FROM technician_estimates e WHERE e.request_id=service_requests.id AND e.state IN ('AWAITING_CUSTOMER_APPROVAL','REJECTED','SUBMITTED')) RETURNING *),report AS (UPDATE technician_work_reports SET state='APPROVED',reviewed_by_technician_id=${req.technician!.id} WHERE request_id IN (SELECT id FROM changed) AND state='SUBMITTED_FOR_REVIEW' AND outcome='RESOLVED' AND version=(SELECT max(latest.version) FROM technician_work_reports latest WHERE latest.request_id=technician_work_reports.request_id) RETURNING request_id,work_summary,notes),completion AS (INSERT INTO completion_reports(request_id,completed_by_technician_id,work_summary,completion_notes,completed_at) SELECT c.id,${req.technician!.id},r.work_summary,r.notes,c.completed_at FROM changed c JOIN report r ON r.request_id=c.id ON CONFLICT(request_id) DO NOTHING RETURNING request_id),event AS (INSERT INTO request_status_events(request_id,status,previous_status,note,actor_role,actor_technician_id) SELECT c.id,'COMPLETED','IN_PROGRESS',r.work_summary,'TECHNICIAN',${req.technician!.id} FROM changed c JOIN report r ON r.request_id=c.id RETURNING id),audit AS (INSERT INTO audit_logs(actor_role,action,entity_type,entity_id,previous_value,new_value,reason) SELECT 'TECHNICIAN','REQUEST_COMPLETED','SERVICE_REQUEST',c.id::text,'{"status":"IN_PROGRESS"}'::jsonb,jsonb_build_object('status','COMPLETED','technicianId',${req.technician!.id}::text,'version',c.version),r.work_summary FROM changed c JOIN report r ON r.request_id=c.id RETURNING id),notification AS (INSERT INTO customer_notifications(customer_id,request_id,kind,title,message) SELECT customer_id,id,'COMPLETION','Service completed','Your technician marked the work complete. Share your experience when you are ready.' FROM changed ON CONFLICT(request_id,kind) DO NOTHING RETURNING id) SELECT changed.* FROM changed WHERE EXISTS(SELECT 1 FROM completion) AND EXISTS(SELECT 1 FROM event)`;
+      await db()`WITH changed AS (UPDATE service_requests SET status_source='WORKFLOW',status='COMPLETED',completed_at=now(),version=version+1,updated_at=now() WHERE id=${j.id} AND version=${i.version} AND status IN ('TECHNICIAN_ASSIGNED','APPOINTMENT_CONFIRMED','IN_PROGRESS') AND assigned_technician_id=${req.technician!.id} AND EXISTS(SELECT 1 FROM technician_assignments a WHERE a.request_id=service_requests.id AND a.technician_id=${req.technician!.id} AND a.state='ACCEPTED') AND EXISTS(SELECT 1 FROM technician_work_reports w WHERE w.request_id=service_requests.id AND w.technician_id=${req.technician!.id} AND w.state='SUBMITTED_FOR_REVIEW' AND w.outcome='RESOLVED' AND w.version=(SELECT max(latest.version) FROM technician_work_reports latest WHERE latest.request_id=service_requests.id)) AND NOT EXISTS(SELECT 1 FROM technician_estimates e WHERE e.request_id=service_requests.id AND e.state IN ('AWAITING_CUSTOMER_APPROVAL','REJECTED','SUBMITTED')) RETURNING *),report AS (UPDATE technician_work_reports SET state='APPROVED',reviewed_by_technician_id=${req.technician!.id} WHERE request_id IN (SELECT id FROM changed) AND state='SUBMITTED_FOR_REVIEW' AND outcome='RESOLVED' AND version=(SELECT max(latest.version) FROM technician_work_reports latest WHERE latest.request_id=technician_work_reports.request_id) RETURNING request_id,work_summary,notes),completion AS (INSERT INTO completion_reports(request_id,completed_by_technician_id,work_summary,completion_notes,completed_at) SELECT c.id,${req.technician!.id},r.work_summary,r.notes,c.completed_at FROM changed c JOIN report r ON r.request_id=c.id ON CONFLICT(request_id) DO NOTHING RETURNING request_id),event AS (INSERT INTO request_status_events(request_id,status,previous_status,note,actor_role,actor_technician_id) SELECT c.id,'COMPLETED',${j.status},r.work_summary,'TECHNICIAN',${req.technician!.id} FROM changed c JOIN report r ON r.request_id=c.id RETURNING id),audit AS (INSERT INTO audit_logs(actor_role,action,entity_type,entity_id,previous_value,new_value,reason) SELECT 'TECHNICIAN','REQUEST_COMPLETED','SERVICE_REQUEST',c.id::text,jsonb_build_object('status',${j.status}::text),jsonb_build_object('status','COMPLETED','technicianId',${req.technician!.id}::text,'version',c.version),r.work_summary FROM changed c JOIN report r ON r.request_id=c.id RETURNING id),notification AS (INSERT INTO customer_notifications(customer_id,request_id,kind,title,message) SELECT customer_id,id,'COMPLETION','Service completed','Your technician marked the work complete. Share your experience when you are ready.' FROM changed ON CONFLICT(request_id,kind) DO NOTHING RETURNING id) SELECT changed.* FROM changed WHERE EXISTS(SELECT 1 FROM completion) AND EXISTS(SELECT 1 FROM event)`;
     if (!rows[0]) throw conflict();
     res.json({ data: rows[0] });
   }),

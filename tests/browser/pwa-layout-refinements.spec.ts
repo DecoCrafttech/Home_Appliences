@@ -126,7 +126,7 @@ test("technician workday is compact and job actions stay usable", async ({
       page.getByRole("link", { name: "Call Customer", exact: true }).first(),
     ).toHaveAttribute("href", "tel:+919876543210");
     await expect(
-      page.getByRole("button", { name: "Complete job", exact: true }),
+      page.getByRole("button", { name: "Complete job", exact: true }).first(),
     ).toBeVisible();
     expect(
       await page.evaluate(

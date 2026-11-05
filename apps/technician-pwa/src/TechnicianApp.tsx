@@ -1100,7 +1100,10 @@ function TechJob() {
         )}
         <JobProgressAction job={j} onUpdated={() => q.refetch()} />
         {j.status === "TECHNICIAN_ASSIGNED" && (
-          <p>Assigned by admin. Operations will complete this request.</p>
+          <p>
+            Appointment not confirmed yet. You can complete this job once the
+            work is finished.
+          </p>
         )}
         {estimateBlocked && (
           <p className="tech-completion-hint">

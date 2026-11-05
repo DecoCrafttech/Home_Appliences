@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "./fixtures";
+import process from "node:process";
+const technicianOrigin =
+  process.env.TECHNICIAN_PREVIEW_ORIGIN || "http://127.0.0.1:5175";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const assignment = "22222222-2222-4222-8222-222222222222";
@@ -178,7 +181,10 @@ async function setup(page: Page, initial: Partial<State> = {}) {
   };
 }
 async function tripleClick(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).evaluate((node) => {
+  const scope = (await page.getByRole("dialog").count())
+    ? page.getByRole("dialog")
+    : page;
+  await scope.getByRole("button", { name, exact: true }).evaluate((node) => {
     for (let i = 0; i < 3; i++) (node as HTMLButtonElement).click();
   });
 }
@@ -192,38 +198,38 @@ for (const width of [360, 1440])
       status: "IN_PROGRESS",
       assignmentState: "ACCEPTED",
     });
-    await page.goto("http://127.0.0.1:5175/technician/jobs?view=in-progress");
+    await page.goto(`${technicianOrigin}/technician/jobs?view=in-progress`);
     await page
       .getByRole("button", { name: "Complete job", exact: true })
       .click();
     const dialog = page.getByRole("dialog", {
-      name: "Complete this job?",
+      name: "Complete job",
       exact: true,
     });
     await expect(
-      dialog.getByLabel("Work performed", { exact: true }),
+      dialog.getByLabel("Work completed", { exact: true }),
     ).toBeVisible();
     expect(writes).toHaveLength(0);
     await dialog
-      .getByLabel("Work performed", { exact: true })
+      .getByLabel("Work completed", { exact: true })
       .fill("Cleaned filters and verified cooling.");
     for (const check of await dialog.getByRole("checkbox").all())
       await check.check();
-    await tripleClick(page, "Confirm completion");
+    await tripleClick(page, "Complete job");
     await expect(dialog).toHaveCount(0);
     expect(state.status).toBe("COMPLETED");
     expect(
       writes.filter((write) => write.path.endsWith("/work-report")),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     expect(
       writes.filter((write) => write.path.endsWith("/complete")),
     ).toHaveLength(1);
     expect(
       writes.find((write) => write.path.endsWith("/complete"))!.body.version,
-    ).toBe(2);
+    ).toBe(1);
   });
 
-test("card completion retry retains the saved report and does not submit it twice", async ({
+test("card completion retry retains the summary and saves atomically", async ({
   page,
 }) => {
   const { writes, failCompletion } = await setup(page, {
@@ -231,26 +237,26 @@ test("card completion retry retains the saved report and does not submit it twic
     assignmentState: "ACCEPTED",
   });
   failCompletion();
-  await page.goto("http://127.0.0.1:5175/technician/jobs?view=in-progress");
+  await page.goto(`${technicianOrigin}/technician/jobs?view=in-progress`);
   await page.getByRole("button", { name: "Complete job", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog
-    .getByLabel("Work performed", { exact: true })
+    .getByLabel("Work completed", { exact: true })
     .fill("Checked cooling and completed repair.");
   for (const check of await dialog.getByRole("checkbox").all())
     await check.check();
-  await tripleClick(page, "Confirm completion");
+  await tripleClick(page, "Complete job");
   await expect(dialog.getByRole("alert")).toContainText(
     "Completion interrupted",
   );
   await expect(
-    dialog.getByLabel("Work performed", { exact: true }),
-  ).toHaveCount(0);
-  await tripleClick(page, "Confirm completion");
+    dialog.getByLabel("Work completed", { exact: true }),
+  ).toHaveValue("Checked cooling and completed repair.");
+  await tripleClick(page, "Complete job");
   await expect(dialog).toHaveCount(0);
   expect(
     writes.filter((write) => write.path.endsWith("/work-report")),
-  ).toHaveLength(1);
+  ).toHaveLength(0);
   const completion = writes.filter((write) => write.path.endsWith("/complete"));
   expect(completion).toHaveLength(2);
   expect(completion[0]!.key).toBe(completion[1]!.key);
@@ -260,7 +266,7 @@ for (const width of [390, 1440])
   test(`workday and profile stay compact at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await setup(page, { status: "IN_PROGRESS", assignmentState: "ACCEPTED" });
-    await page.goto("http://127.0.0.1:5175/technician");
+    await page.goto(`${technicianOrigin}/technician`);
     await expect(
       page.getByRole("button", { name: "Complete job", exact: true }),
     ).toBeVisible();
@@ -273,7 +279,7 @@ for (const width of [390, 1440])
       path: `test-results/request-simple/tech-home-${width}.png`,
       fullPage: true,
     });
-    await page.goto("http://127.0.0.1:5175/technician/profile");
+    await page.goto(`${technicianOrigin}/technician/profile`);
     await expect(
       page.getByRole("button", { name: "Save availability", exact: true }),
     ).toBeHidden();
@@ -297,7 +303,7 @@ for (const width of [360, 1440])
   }) => {
     await page.setViewportSize({ width, height: 900 });
     const { state, writes } = await setup(page);
-    await page.goto(`http://127.0.0.1:5175/technician/jobs/${id}`);
+    await page.goto(`${technicianOrigin}/technician/jobs/${id}`);
     await expect(
       page.getByRole("button", { name: "Accept job", exact: true }),
     ).toHaveCount(0);
@@ -319,12 +325,15 @@ for (const width of [360, 1440])
     );
     expect(writes).toHaveLength(0);
     await expect(
-      page.getByText("Awaiting appointment confirmation by operations.", {
-        exact: true,
-      }),
+      page.getByText(
+        "Appointment not confirmed yet. You can complete this job once the work is finished.",
+        {
+          exact: true,
+        },
+      ),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "On the way", exact: true }),
+      page.getByRole("button", { name: "Start visit", exact: true }),
     ).toHaveCount(0);
     state.status = "APPOINTMENT_CONFIRMED";
     state.version++;
@@ -342,9 +351,9 @@ for (const width of [360, 1440])
       page.getByText("The air conditioner is not cooling.", { exact: true }),
     ).toHaveCount(0);
     for (const [label, suffix] of [
-      ["On the way", "on-the-way"],
-      ["I have arrived", "arrived"],
-      ["Start work", "start"],
+      ["Start visit", "on-the-way"],
+      ["Mark arrived", "arrived"],
+      ["Start job", "start"],
     ]) {
       await expect(
         page.getByRole("button", { name: label!, exact: true }),
@@ -364,7 +373,7 @@ for (const width of [360, 1440])
       .getByRole("button", { name: "Complete job", exact: true })
       .click();
     await expect(
-      page.getByRole("dialog").getByLabel("Work performed", { exact: true }),
+      page.getByRole("dialog").getByLabel("Work completed", { exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(
@@ -416,7 +425,7 @@ for (const width of [360, 1440])
     await page
       .getByRole("button", { name: "Complete job", exact: true })
       .click();
-    await tripleClick(page, "Confirm completion");
+    await tripleClick(page, "Complete job");
     await expect(
       page.getByText("Job completed", { exact: true }),
     ).toBeVisible();
@@ -449,7 +458,7 @@ test("legacy estimate approval blocks completion without exposing the removed ed
       },
     ],
   });
-  await page.goto(`http://127.0.0.1:5175/technician/jobs/${id}`);
+  await page.goto(`${technicianOrigin}/technician/jobs/${id}`);
   await expect(
     page.getByText(
       "Waiting for customer approval. Additional work and completion are paused.",
@@ -479,7 +488,7 @@ test("legacy estimate approval blocks completion without exposing the removed ed
 
 test("assigned job has no accept or decline actions", async ({ page }) => {
   const { writes } = await setup(page);
-  await page.goto(`http://127.0.0.1:5175/technician/jobs/${id}`);
+  await page.goto(`${technicianOrigin}/technician/jobs/${id}`);
   await expect(
     page.getByRole("button", { name: /Accept|Decline job/ }),
   ).toHaveCount(0);
@@ -510,7 +519,7 @@ test("resolved reports cannot expose completion while an estimate blocks the bac
       },
     ],
   });
-  await page.goto(`http://127.0.0.1:5175/technician/jobs/${id}`);
+  await page.goto(`${technicianOrigin}/technician/jobs/${id}`);
   await expect(
     page.getByText(
       "This job is paused until the admin resolves the declined estimate.",
@@ -530,7 +539,7 @@ test("profile omits availability and account-security controls", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
-  await page.goto("http://127.0.0.1:5175/technician/profile");
+  await page.goto(`${technicianOrigin}/technician/profile`);
   await expect(
     page.getByRole("link", { name: /Earnings|Support/ }),
   ).toHaveCount(0);
@@ -586,7 +595,7 @@ test("frozen technicians are told to contact an administrator", async ({
       },
     }),
   );
-  await page.goto("http://127.0.0.1:5175/technician");
+  await page.goto(`${technicianOrigin}/technician`);
   await expect(
     page.getByRole("heading", { name: "Account access paused" }),
   ).toBeVisible();

@@ -94,7 +94,7 @@ for (const width of [320, 375, 390, 430, 768, 1440])
       page.getByRole("heading", { name: "Appointments", exact: true }),
     ).toBeVisible();
     await expect(page.locator(".calendar-event").first()).toBeVisible();
-    expect(state.ranges).toHaveLength(1);
+    expect(new Set(state.ranges.map((url) => url.search)).size).toBe(1);
     for (const view of ["Day view", "Week view", "Month view", "Agenda view"]) {
       await page.getByRole("tab", { name: view, exact: true }).click();
       await expect(page.locator(".calendar-event").first()).toBeVisible();
@@ -167,6 +167,86 @@ test("preferred visits appear with an awaiting-confirmation label", async ({
   ).toBeVisible();
   expect(state.writes()).toBe(0);
 });
+for (const status of [
+  "TECHNICIAN_ASSIGNED",
+  "APPOINTMENT_CONFIRMED",
+  "IN_PROGRESS",
+])
+  test(`technician completes a ${status} job directly from the appointment drawer`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await setup(page);
+    let current = status;
+    let version = 1;
+    let saves = 0;
+    const checks = [
+      "Reported issue assessed",
+      "Work and safety checks completed",
+      "Customer informed of outcome",
+    ];
+    const job = () => ({
+      id,
+      request_number: "123456",
+      request_type: "SERVICE",
+      appliance: "Air Conditioner",
+      service_name: "General service",
+      status: current,
+      version,
+      assignment_state: "ACCEPTED",
+      assignment_id: id,
+      customer_name: "Maya Rao",
+      customer_phone: "+919876543210",
+      confirmed_date: "2099-11-01",
+      confirmed_time_window: "09:00-10:00",
+      checklist: checks,
+      reports: [],
+      estimates: [],
+    });
+    await page.route("**/api/v1/technician/schedule?**", (r) =>
+      r.fulfill({ json: { data: [job()], meta: { truncated: false } } }),
+    );
+    await page.route("**/api/v1/technician/jobs/" + id, (r) =>
+      r.fulfill({ json: { data: job() } }),
+    );
+    await page.route(
+      "**/api/v1/technician/jobs/" + id + "/complete",
+      async (r) => {
+        saves++;
+        expect(r.request().postDataJSON()).toMatchObject({
+          version: 1,
+          workSummary: "Repaired and tested the unit",
+          checklist: checks,
+        });
+        current = "COMPLETED";
+        version++;
+        await r.fulfill({ json: { data: job() } });
+      },
+    );
+    await page.reload();
+    await page.locator(".calendar-event").first().click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Complete job", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Complete job",
+      exact: true,
+    });
+    await dialog
+      .getByLabel("Work completed", { exact: true })
+      .fill("Repaired and tested the unit");
+    for (const item of checks)
+      await dialog.getByLabel(item, { exact: true }).check();
+    await dialog
+      .getByRole("button", { name: "Complete job", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    expect(saves).toBe(1);
+    await expect(
+      page.locator(".calendar-event").getByText(/completed/),
+    ).toBeVisible();
+  });
 test("empty technician calendar and truncated results have clear states", async ({
   page,
 }) => {

@@ -33,6 +33,10 @@ const blocked = (job: CompletionJob) =>
 const ready = (job: CompletionJob) =>
   job.reports?.[0]?.state === "SUBMITTED_FOR_REVIEW" &&
   job.reports[0].outcome === "RESOLVED";
+export const canCompleteJob = (status: string) =>
+  ["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED", "IN_PROGRESS"].includes(
+    status,
+  );
 
 export function CompleteJobButton({
   job,
@@ -48,7 +52,7 @@ export function CompleteJobButton({
         hold
       </button>
     );
-  if (job.status !== "IN_PROGRESS") return null;
+  if (!canCompleteJob(job.status)) return null;
   return (
     <>
       <button
@@ -63,7 +67,7 @@ export function CompleteJobButton({
   );
 }
 
-function CompleteJobDialog({
+export function CompleteJobDialog({
   id,
   onClose,
 }: {
@@ -82,9 +86,9 @@ function CompleteJobDialog({
     retry: false,
   });
   const mutation = useSafeMutation(async () => {
-    let job = query.data!;
+    const job = query.data!;
     if (job.status === "COMPLETED") return true;
-    if (job.status !== "IN_PROGRESS" || blocked(job))
+    if (!canCompleteJob(job.status) || blocked(job))
       throw new Error("This job is not ready for completion.");
     if (!ready(job)) {
       if (job.reports?.[0] && job.reports[0].state !== "CHANGES_REQUESTED")
@@ -103,9 +107,12 @@ function CompleteJobDialog({
         throw new Error(
           report.error.issues[0]?.message || "Check the work details.",
         );
-      await api.post(`/jobs/${id}/work-report`, report.data);
-      job = (await api.get<{ data: CompletionJob }>(`/jobs/${id}`)).data.data;
-      qc.setQueryData(["technician", "job", id], job);
+      await api.post(`/jobs/${id}/complete`, {
+        version: job.version,
+        workSummary: report.data.workSummary,
+        checklist: report.data.checklist,
+      });
+      return true;
     }
     if (!ready(job) || blocked(job))
       throw new Error("Review the job before completing it.");
@@ -133,12 +140,12 @@ function CompleteJobDialog({
     (!job.reports?.[0] || job.reports[0].state === "CHANGES_REQUESTED");
   const canComplete =
     job &&
-    job.status === "IN_PROGRESS" &&
+    canCompleteJob(job.status) &&
     !blocked(job) &&
     (ready(job) || needsReport);
   return (
     <ConfirmActionDialog
-      title="Complete this job?"
+      title="Complete job"
       pending={mutation.isPending}
       onClose={onClose}
     >
@@ -189,13 +196,16 @@ function CompleteJobDialog({
                   {needsReport ? (
                     <>
                       <label>
-                        Work performed
+                        Work completed
                         <AppTextarea
+                          aria-label="Work completed"
                           value={summary}
                           onChange={(event) => setSummary(event.target.value)}
                           minLength={3}
                           maxLength={2000}
                           required
+                          rows={3}
+                          placeholder="A short summary of the work"
                         />
                       </label>
                       <div className="tech-complete-checks">
@@ -245,7 +255,7 @@ function CompleteJobDialog({
                     pending={mutation.isPending}
                     pendingLabel="Completing..."
                   >
-                    <FaCircleCheck aria-hidden="true" /> Confirm completion
+                    <FaCircleCheck aria-hidden="true" /> Complete job
                   </AsyncActionButton>
                 </footer>
               </form>
