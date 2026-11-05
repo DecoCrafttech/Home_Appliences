@@ -10,7 +10,7 @@ const draftSchema = z.object({
   values: z.object({
     applianceCategoryId: z.string().max(36),
     serviceId: z.string().max(36),
-    details: z.record(z.string().max(2000)),
+    details: z.record(z.string(), z.string().max(2000)),
     address: z.object({
       name: z.string().max(100),
       phone: z.string().max(15),
