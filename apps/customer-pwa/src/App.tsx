@@ -375,7 +375,7 @@ function Home() {
           <div className="home-promo-copy">
             <p className="home-promo-eyebrow">We fit it. We fix it.</p>
             <h2>
-              Appliance Service &amp; Installation <span>at Your Home</span>
+              Appliance care <span>at your doorstep</span>
             </h2>
             <p className="home-promo-caption">
               <span>
@@ -443,6 +443,7 @@ function Home() {
           ))}
         </nav>
       </div>
+      <ServiceDiscovery compact />
       <div className="home-benefits" aria-label="Our service promise">
         {[
           ["Verified Technicians", FaShieldHalved],
@@ -470,7 +471,6 @@ function Home() {
           <FaArrowRight />
         </Link>
       )}
-      <ServiceDiscovery compact />
 
       {active && (
         <section className="home-section">
@@ -548,29 +548,20 @@ function Protected({ children }: { children: ReactNode }) {
 }
 function Services() {
   const location = useLocation();
-  const maintenance =
-    new URLSearchParams(location.search).get("tab") === "maintenance";
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("tab") === "maintenance") {
+      document
+        .getElementById("maintenance")
+        ?.scrollIntoView({ block: "start" });
+    }
+  }, [location.search]);
   return (
-    <section className="services-tabs-page">
-      <nav className="service-type-tabs" aria-label="Service categories">
-        <Link className={!maintenance ? "selected" : ""} to="/services">
-          Services &amp; Installation
-        </Link>
-        <Link
-          className={maintenance ? "selected" : ""}
-          to="/services?tab=maintenance"
-        >
-          Maintenance
-        </Link>
-      </nav>
-      {maintenance ? (
-        <div className="section page">
-          <Maintenance />
-        </div>
-      ) : (
-        <ServiceDiscovery />
-      )}
-    </section>
+    <div className="services-catalogue-page">
+      <ServiceDiscovery />
+      <div className="section services-maintenance" id="maintenance">
+        <Maintenance />
+      </div>
+    </div>
   );
 }
 function BookingEntry() {

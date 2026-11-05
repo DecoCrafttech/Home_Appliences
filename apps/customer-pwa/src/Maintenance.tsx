@@ -1,18 +1,57 @@
-import { FaBolt, FaFaucetDrip, FaPaintRoller } from "react-icons/fa6";
 import { ServiceCard, usePublishedCatalogue } from "./PublishedServices";
 import { LoadingSkeleton, EmptyState } from "./components/ui";
 
-export function Maintenance({ compact = false }: { compact?: boolean }) {
+const categories = [
+  {
+    name: "Electrical",
+    description: "Switches, lights & electrical repairs",
+    photo: "/maintenance/electrical.webp",
+    alt: "Electrician working on a wall switch",
+    match: /electric|wiring|switch|lighting/i,
+  },
+  {
+    name: "Plumbing",
+    description: "Taps, leaks & bathroom fittings",
+    photo: "/maintenance/plumbing.webp",
+    alt: "Plumber repairing a bathroom faucet",
+    match: /plumb|faucet|tap|pipe|drain|leak/i,
+  },
+  {
+    name: "Painting",
+    description: "Fresh walls & careful touch-ups",
+    photo: "/maintenance/painting.webp",
+    alt: "Painter applying a fresh coat to an interior wall",
+    match: /paint|wall finish/i,
+  },
+];
+
+export function Maintenance() {
   const query = usePublishedCatalogue();
   const rows = (query.data || []).filter(
     (service) =>
       service.category_kind === "MAINTENANCE" ||
       /home maintenance/i.test(service.appliance_name),
   );
+  const groups = categories.map((category) => ({
+    ...category,
+    services: rows.filter((service) =>
+      category.match.test(`${service.appliance_name} ${service.name}`),
+    ),
+  }));
+  const other = rows.filter(
+    (service) => !groups.some((group) => group.services.includes(service)),
+  );
   return (
-    <section className="maintenance-section">
+    <section
+      className="maintenance-section"
+      aria-labelledby="maintenance-heading"
+    >
       <div className="section-heading">
-        <h2>Home Maintenance</h2>
+        <div>
+          <span className="eyebrow">CARE BEYOND APPLIANCES</span>
+          <h2 id="maintenance-heading">Home maintenance</h2>
+          <p>Find the right help for the rest of your home.</p>
+        </div>
       </div>
       {query.isPending ? (
         <LoadingSkeleton variant="services" count={3} />
@@ -25,26 +64,48 @@ export function Maintenance({ compact = false }: { compact?: boolean }) {
             </button>
           }
         />
-      ) : rows.length ? (
-        <div className="discovery-grid">
-          {(compact ? rows.slice(0, 3) : rows).map((service) => (
-            <ServiceCard service={service} key={service.id} />
-          ))}
-        </div>
       ) : (
-        <div className="maintenance-coming">
-          {[
-            ["Plumbing", FaFaucetDrip],
-            ["Electrical", FaBolt],
-            ["Painting", FaPaintRoller],
-          ].map(([label, Icon]) => (
-            <div key={String(label)}>
-              {typeof Icon !== "string" && Icon && <Icon aria-hidden="true" />}
-              <strong>{String(label)}</strong>
-              <small>Not available yet</small>
+        <>
+          <div className="maintenance-category-grid">
+            {groups.map((category) => (
+              <article className="maintenance-category" key={category.name}>
+                <img
+                  src={category.photo}
+                  alt={category.alt}
+                  width={640}
+                  height={480}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="maintenance-category-copy">
+                  <h3>{category.name}</h3>
+                  <p>{category.description}</p>
+                  {category.services.length ? (
+                    <div className="maintenance-service-list">
+                      {category.services.map((service) => (
+                        <ServiceCard service={service} key={service.id} />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="maintenance-unavailable">
+                      Not available yet
+                    </span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+          {other.length > 0 && (
+            <div className="maintenance-other">
+              <h3>More home maintenance</h3>
+              <div className="discovery-grid">
+                {other.map((service) => (
+                  <ServiceCard service={service} key={service.id} />
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </section>
   );

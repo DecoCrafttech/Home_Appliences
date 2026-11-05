@@ -130,9 +130,22 @@ for (const width of [360, 390, 430, 1440])
       await expect(
         page.getByRole("link", { name: `Book ${name}`, exact: true }),
       ).toBeVisible();
-    await page
-      .getByRole("link", { name: "Services & Installation", exact: true })
-      .click();
+    await expect(page.locator(".service-type-tabs")).toHaveCount(0);
+    await expect(page.locator(".maintenance-category > img")).toHaveCount(3);
+    for (const photo of await page
+      .locator(".maintenance-category > img")
+      .all()) {
+      await photo.scrollIntoViewIfNeeded();
+      await expect(photo).toHaveAttribute(
+        "src",
+        /\/maintenance\/(electrical|plumbing|painting)\.webp$/,
+      );
+      await expect
+        .poll(() =>
+          photo.evaluate((image) => (image as HTMLImageElement).naturalWidth),
+        )
+        .toBeGreaterThan(0);
+    }
     await expect(page.locator(".appliance-card")).toHaveCount(11);
     await expect(
       page.getByRole("link", {

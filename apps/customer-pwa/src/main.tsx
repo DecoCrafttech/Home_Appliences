@@ -74,3 +74,4 @@ if (window.location.hostname === "127.0.0.1") {
 
 import "@home/ui/refinements.css";
 import "./refinements.css";
+import "./mobile-layout.css";

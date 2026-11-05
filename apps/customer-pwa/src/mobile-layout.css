@@ -1,0 +1,261 @@
+/* Compact mobile chrome leaves more room for service discovery. */
+.services-catalogue-page {
+  min-width: 0;
+}
+.services-maintenance.section {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-top: 8px;
+  scroll-margin-top: 88px;
+}
+.maintenance-section .section-heading p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.maintenance-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.maintenance-category {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #eaecf0;
+  border-radius: 18px;
+  background: #fff;
+}
+.maintenance-category > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #f4f0fa;
+}
+.maintenance-category-copy {
+  min-width: 0;
+  padding: 18px;
+}
+.maintenance-category-copy > h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+}
+.maintenance-category-copy > p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.maintenance-unavailable {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: #f6f3fa;
+  color: #626c7d;
+  font-size: 12px;
+}
+.maintenance-service-list {
+  display: grid;
+  gap: 8px;
+}
+.maintenance-service-list .service-option {
+  grid-template-columns: minmax(0, 1fr) 14px;
+  min-height: 44px;
+  padding: 12px;
+  gap: 10px;
+  box-shadow: none;
+}
+.maintenance-service-list .service-option-icon {
+  display: none;
+}
+.maintenance-service-list .service-option-copy h3 {
+  font-size: 14px;
+}
+.maintenance-service-list .service-option-copy p {
+  display: none;
+}
+.maintenance-other {
+  margin-top: 24px;
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding-top: env(safe-area-inset-top, 0px);
+    border-bottom: 1px solid #f0ecf5;
+  }
+  .app-header .header-inner,
+  .home-header .header-inner {
+    min-height: 60px;
+    padding: 4px 16px;
+    gap: 10px;
+  }
+  .app-header::before {
+    inset: 0 0 auto auto;
+    height: 100%;
+    width: 100px;
+    background-size: 100px 70px;
+  }
+  .app-header .brand .fb-brand-logo {
+    width: 100px;
+    height: 48px;
+  }
+  .header-actions {
+    gap: 6px;
+    min-width: 0;
+  }
+  .header-actions .language-selector {
+    min-height: 44px;
+    max-width: 92px;
+    padding: 6px;
+    font-size: 12px;
+  }
+  .header-actions .profile-shortcut > span:last-child {
+    display: none;
+  }
+  .home-page.section {
+    padding: 8px 16px 24px;
+  }
+  .home-welcome {
+    min-height: 40px;
+    gap: 10px;
+    margin: 4px 0 12px;
+  }
+  .home-welcome h1 {
+    font-size: 17px;
+  }
+  .home-welcome p {
+    margin: 3px 0 0;
+    font-size: 12px;
+  }
+  .home-welcome .avatar,
+  .home-welcome-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  .v6-home-search {
+    margin-bottom: 12px;
+  }
+  .v6-home-search .discovery-search,
+  .v6-home-search input {
+    min-height: 44px;
+  }
+  .v6-home-search input {
+    padding-block: 8px;
+  }
+  .home-showcase {
+    margin-bottom: 16px;
+  }
+  .home-promo {
+    min-height: 132px;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    padding: 14px;
+    border-radius: 16px;
+  }
+  .home-promo h2 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+  .home-promo-eyebrow {
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .home-promo-caption {
+    display: none;
+  }
+  .home-promo-cta {
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .home-promo .v6-hero-art {
+    min-height: 100px;
+    width: 100%;
+  }
+  .home-quick-actions {
+    margin-top: 10px;
+    gap: 8px;
+  }
+  .home-quick-actions .home-action {
+    min-height: 80px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 12px;
+  }
+  .home-quick-actions .home-action-photo {
+    width: 100%;
+    height: 46px;
+    object-fit: contain;
+  }
+  .home-quick-actions .home-action strong {
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .home-discovery .section-heading {
+    margin-bottom: 10px;
+  }
+  .home-discovery .section-heading h2 {
+    font-size: 18px;
+  }
+  .home-discovery .appliance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .home-discovery .appliance-card .appliance-photo-wrap {
+    aspect-ratio: 3 / 2;
+    height: auto;
+  }
+  .home-discovery .appliance-card-footer {
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+  .home-benefits {
+    margin-top: 8px;
+  }
+  .services-discovery.section {
+    padding: 16px 16px 24px;
+  }
+  .services-discovery .page-heading {
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .services-discovery .page-heading h1 {
+    font-size: 23px;
+    margin-bottom: 0;
+  }
+  .services-discovery .discovery-search {
+    margin-bottom: 16px;
+  }
+  .services-maintenance.section {
+    padding: 8px 16px 24px;
+    scroll-margin-top: 76px;
+  }
+  .maintenance-category-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .maintenance-category {
+    display: grid;
+    grid-template-columns: 105px minmax(0, 1fr);
+    align-items: start;
+  }
+  .maintenance-category > img {
+    height: 100%;
+    min-height: 124px;
+    aspect-ratio: auto;
+  }
+  .maintenance-category-copy {
+    padding: 14px;
+  }
+  .maintenance-category-copy > h3 {
+    font-size: 17px;
+  }
+  .maintenance-category-copy > p {
+    font-size: 12px;
+  }
+}

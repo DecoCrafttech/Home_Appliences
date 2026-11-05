@@ -185,7 +185,7 @@ for (const width of [320, 360, 768, 1440]) {
   });
 }
 
-test("first launch is skippable and completion retains a deep link", async ({
+test("first launch opens the app directly and retains a deep link", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -196,16 +196,13 @@ test("first launch is skippable and completion retains a deep link", async ({
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/book");
   await expect(
-    page.getByRole("heading", { name: "A little help. A happier home." }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Skip intro" }).click();
-  await expect(
     page.getByRole("heading", { name: "Book a visit", exact: true }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/book$/);
+  await expect(page.locator(".fb-launch__guide")).toHaveCount(0);
   expect(
     await page.evaluate(() =>
-      localStorage.getItem("fixbeez.customer.onboarding.v1"),
+      sessionStorage.getItem("fixbeez.customer.launched.v1"),
     ),
   ).toBe("complete");
 });
