@@ -222,5 +222,69 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
         await db()`SELECT id FROM technician_work_reports WHERE request_id=${id}`,
       ).toHaveLength(0);
     });
+    it("completes a reopened job with an earlier administrative completion record", async () => {
+      const id = await job(technician, "ACCEPTED");
+      const prior = (
+        await db()`INSERT INTO completion_reports(request_id,work_summary,completed_at) VALUES(${id},'Earlier administrative completion',now()-interval '1 day') RETURNING id`
+      )[0]!;
+      await db()`UPDATE service_requests SET status_source='ADMIN_OVERRIDE',version=3 WHERE id=${id}`;
+      const result = await finish(id, {
+        version: 3,
+        workSummary: "Completed the reopened repair",
+        checklist: checks,
+      });
+      expect(result.status, JSON.stringify(result.body)).toBe(200);
+      const saved = (
+        await db()`SELECT * FROM completion_reports WHERE request_id=${id}`
+      )[0]!;
+      expect(saved).toMatchObject({
+        id: prior.id,
+        work_summary: "Completed the reopened repair",
+        completed_by: null,
+        completed_by_technician_id: technician,
+      });
+      const audit = (
+        await db()`SELECT previous_value FROM audit_logs WHERE entity_id=${id} AND action='REQUEST_COMPLETED'`
+      )[0]!;
+      expect(audit.previous_value.previousCompletion.work_summary).toBe(
+        "Earlier administrative completion",
+      );
+    });
+    it("creates a new report version when a technician-completed job is reopened", async () => {
+      const id = await job(technician, "ACCEPTED");
+      expect(
+        (
+          await finish(id, {
+            version: 1,
+            workSummary: "Completed first visit",
+            checklist: checks,
+          })
+        ).status,
+      ).toBe(200);
+      await db()`UPDATE service_requests SET status='TECHNICIAN_ASSIGNED',status_source='ADMIN_OVERRIDE',completed_at=NULL,version=3 WHERE id=${id}`;
+      const result = await finish(id, {
+        version: 3,
+        workSummary: "Completed the follow-up visit",
+        checklist: checks,
+      });
+      expect(result.status, JSON.stringify(result.body)).toBe(200);
+      expect(
+        await db()`SELECT id FROM completion_reports WHERE request_id=${id}`,
+      ).toHaveLength(1);
+      const reports =
+        await db()`SELECT version,state,work_summary FROM technician_work_reports WHERE request_id=${id} ORDER BY version`;
+      expect(reports).toMatchObject([
+        {
+          version: 1,
+          state: "APPROVED",
+          work_summary: "Completed first visit",
+        },
+        {
+          version: 2,
+          state: "APPROVED",
+          work_summary: "Completed the follow-up visit",
+        },
+      ]);
+    });
   },
 );

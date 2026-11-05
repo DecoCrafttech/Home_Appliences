@@ -91,7 +91,10 @@ export function CompleteJobDialog({
     if (!canCompleteJob(job.status) || blocked(job))
       throw new Error("This job is not ready for completion.");
     if (!ready(job)) {
-      if (job.reports?.[0] && job.reports[0].state !== "CHANGES_REQUESTED")
+      if (
+        job.reports?.[0] &&
+        !["CHANGES_REQUESTED", "APPROVED"].includes(job.reports[0].state)
+      )
         throw new Error("The work report needs review before completion.");
       const report = technicianWorkReportSchema.safeParse({
         version: job.version,
@@ -137,7 +140,8 @@ export function CompleteJobDialog({
   const needsReport =
     job &&
     !ready(job) &&
-    (!job.reports?.[0] || job.reports[0].state === "CHANGES_REQUESTED");
+    (!job.reports?.[0] ||
+      ["CHANGES_REQUESTED", "APPROVED"].includes(job.reports[0].state));
   const canComplete =
     job &&
     canCompleteJob(job.status) &&

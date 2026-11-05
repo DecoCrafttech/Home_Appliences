@@ -171,13 +171,14 @@ for (const status of [
   "TECHNICIAN_ASSIGNED",
   "APPOINTMENT_CONFIRMED",
   "IN_PROGRESS",
+  "REOPENED",
 ])
   test(`technician completes a ${status} job directly from the appointment drawer`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 900 });
     await setup(page);
-    let current = status;
+    let current = status === "REOPENED" ? "TECHNICIAN_ASSIGNED" : status;
     let version = 1;
     let saves = 0;
     const checks = [
@@ -200,7 +201,16 @@ for (const status of [
       confirmed_date: "2099-11-01",
       confirmed_time_window: "09:00-10:00",
       checklist: checks,
-      reports: [],
+      reports:
+        status === "REOPENED"
+          ? [
+              {
+                state: "APPROVED",
+                outcome: "RESOLVED",
+                work_summary: "Earlier completed visit",
+              },
+            ]
+          : [],
       estimates: [],
     });
     await page.route("**/api/v1/technician/schedule?**", (r) =>
