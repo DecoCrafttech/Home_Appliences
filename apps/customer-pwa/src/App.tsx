@@ -38,7 +38,6 @@ import {
 } from "react-icons/fa6";
 import { api } from "./lib/api";
 import axios from "axios";
-import { PwaUpdate } from "./components/PwaUpdate";
 import { useTranslation } from "./lib/language";
 import type { Notification } from "./lib/types";
 import { readDraft } from "./lib/drafts";
@@ -95,7 +94,6 @@ export function App() {
   const navigate = useNavigate();
   return (
     <>
-      <PwaUpdate />
       <a className="skip" href="#main">
         Skip to content
       </a>

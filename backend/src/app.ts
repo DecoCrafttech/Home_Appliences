@@ -18,6 +18,12 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { createApiRateLimit } from "./apiRateLimit.js";
 import pino from "pino";
+import {
+  trustedBrowserOrigins,
+  verifyBrowserOrigin,
+} from "./security/browserOrigin.js";
+import { safeError } from "./security/safeError.js";
+import { limitJsonComplexity } from "./security/jsonComplexity.js";
 import { randomUUID } from "node:crypto";
 import { env } from "./config/env.js";
 import { ApiError, customerRoutes } from "./customerRoutes.js";
@@ -48,14 +54,7 @@ if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 app.use(
   cors({
-    origin: [
-      ...new Set([
-        env.CUSTOMER_ORIGIN,
-        env.CUSTOMER_APP_ORIGIN,
-        env.ADMIN_ORIGIN,
-        env.TECHNICIAN_ORIGIN,
-      ]),
-    ],
+    origin: [...trustedBrowserOrigins],
     credentials: true,
   }),
 );
@@ -72,8 +71,10 @@ app.use((req, res, next) => {
   next();
 });
 app.use(createApiRateLimit(env.NODE_ENV === "production" ? 300 : 1000));
+app.use(verifyBrowserOrigin);
 app.use("/api/v1/admin/catalogue/media", express.json({ limit: "512kb" }));
 app.use(express.json({ limit: "32kb" }));
+app.use(limitJsonComplexity);
 app.use(idempotentMutations);
 app.use(
   [
@@ -129,10 +130,31 @@ app.use((_req, res) =>
 );
 const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
   const malformed = error instanceof SyntaxError && "body" in error;
-  logger.error({ err: error }, "request failed");
+  logger.error(
+    { ...safeError(error), requestId: res.getHeader("X-Request-Id") },
+    "request failed",
+  );
   const apiError = error instanceof ApiError;
   const validationError = error instanceof ZodError;
   const conflict = error?.code === "23505";
+  if (error?.code === "PASSWORD_HASH_BUSY") {
+    res.status(503).json({
+      error: {
+        code: "AUTH_BUSY",
+        message: "Sign-in is busy. Please try again shortly.",
+      },
+    });
+    return;
+  }
+  if (error?.type === "entity.too.large") {
+    res.status(413).json({
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
+        message: "The submitted content is too large.",
+      },
+    });
+    return;
+  }
   if (error?.code === "23P01") {
     res.status(409).json({
       error: {

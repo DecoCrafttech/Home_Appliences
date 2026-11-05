@@ -100,7 +100,10 @@ for (const width of [360, 390, 768, 1024, 1440])
     });
     await page.goto("http://localhost:5173/services");
     await expect(
-      page.getByRole("heading", { name: "Appliances", exact: true }),
+      page.getByRole("heading", {
+        name: "Services & Installation",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "AC Repair", exact: true }),
@@ -131,17 +134,10 @@ for (const width of [360, 390, 768, 1024, 1440])
     const repair = page
       .locator(".booking-service-card")
       .filter({ hasText: "AC Repair" });
-    await repair
-      .getByRole("button", { name: "View service details", exact: true })
-      .click();
     await expect(repair.getByText(item.description)).toBeVisible();
-    await repair.getByRole("button", { name: "Book now" }).click();
-    await page
-      .getByRole("checkbox", { name: /Cooling inspection/ })
-      .check();
-    await page
-      .getByRole("checkbox", { name: /Filter cleaning/ })
-      .check();
+    await repair.click();
+    await page.getByRole("checkbox", { name: /Cooling inspection/ }).check();
+    await page.getByRole("checkbox", { name: /Filter cleaning/ }).check();
     await expect(
       page.getByRole("checkbox", { name: /Cooling inspection/ }),
     ).toBeChecked();

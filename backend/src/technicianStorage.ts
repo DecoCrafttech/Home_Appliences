@@ -28,6 +28,7 @@ const route =
       ),
     );
 export const bucket = process.env.TECHNICIAN_STORAGE_BUCKET || "uploads";
+let storageClient: S3Client | undefined;
 export function storage() {
   if (
     !process.env.AWS_ENDPOINT_URL_S3 ||
@@ -39,11 +40,13 @@ export function storage() {
       "STORAGE_UNAVAILABLE",
       "Photo storage is not configured. Your report can still be submitted without optional photos.",
     );
-  return new S3Client({
+  return (storageClient ??= new S3Client({
     endpoint: process.env.AWS_ENDPOINT_URL_S3,
     region: process.env.AWS_REGION || "auto",
     forcePathStyle: true,
-  });
+    maxAttempts: 2,
+    requestHandler: { connectionTimeout: 5000, requestTimeout: 10000 },
+  }));
 }
 export const technicianStorageRoutes = Router(),
   adminStorageRoutes = Router();

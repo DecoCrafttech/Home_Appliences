@@ -89,20 +89,31 @@ for (const width of [360, 768, 1440])
         ),
       ).toBe(true);
     await page.goto("http://127.0.0.1:5174/catalogue");
-    await expect(page.locator(".catalogue-management-card")).toHaveCount(3);
+    await expect(page.locator(".catalogue-category-tile")).toHaveCount(1);
+    await page
+      .locator(".catalogue-category-tile")
+      .getByRole("button", { name: "Edit", exact: true })
+      .click();
+    await expect(page.locator(".catalogue-service-tile")).toHaveCount(3);
     await fits();
-    for (const card of await page.locator(".catalogue-management-card").all()) {
+    for (const card of await page.locator(".catalogue-service-tile").all()) {
       await expect(
-        card.getByRole("button", { name: "Change icon", exact: true }),
+        card.getByRole("button", { name: "Edit", exact: true }),
       ).toBeVisible();
     }
     if (width === 1440) {
-      const bounds = await page
-        .locator(".catalogue-management-card .workflow-actions")
-        .evaluateAll((nodes) =>
-          nodes.map((n) => n.getBoundingClientRect().bottom),
+      const clipped = await page
+        .locator(".catalogue-service-tile")
+        .evaluateAll((cards) =>
+          cards.some((card) => {
+            const bounds = card.getBoundingClientRect();
+            const footer = card
+              .querySelector("footer")!
+              .getBoundingClientRect();
+            return footer.bottom > bounds.bottom + 1 || footer.top < bounds.top;
+          }),
         );
-      expect(Math.max(...bounds) - Math.min(...bounds)).toBeLessThan(2);
+      expect(clipped).toBe(false);
     }
     await page.screenshot({
       path: `test-results/card-design/admin-${width}.png`,
@@ -142,7 +153,12 @@ for (const width of [360, 768, 1440])
       .click();
     await expect(page.locator(".discovery-card")).toHaveCount(3);
     await page.goto("http://localhost:5173/services");
-    await expect(page.locator(".appliance-card")).toHaveCount(3);
+    await expect(
+      page.locator(".appliance-card").filter({ hasText: "Air Conditioner" }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator(".appliance-card").filter({ hasText: "Washing Machine" }),
+    ).toHaveCount(1);
     await fits();
     await page.screenshot({
       path: `test-results/card-design/appliances-${width}.png`,

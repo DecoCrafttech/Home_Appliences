@@ -50,8 +50,9 @@ export function useRequests(enabled = true) {
       (await api.get<{ data: RequestRecord[] }>("/requests")).data.data,
     retry: false,
     refetchInterval: false,
-    refetchOnWindowFocus: "always",
-    refetchOnReconnect: true,
+    staleTime: 15000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     enabled,
   });
 }
@@ -339,7 +340,8 @@ export function RequestPage() {
     queryFn: async () =>
       (await api.get<{ data: RequestRecord }>(`/requests/${id}`)).data.data,
     refetchInterval: false,
-    refetchOnWindowFocus: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: false,
   });
   if (detail.isPending)
@@ -537,7 +539,15 @@ export function RequestPage() {
           className="secondary"
           pending={detail.isFetching}
           pendingLabel="Refreshing..."
-          onClick={() => detail.refetch()}
+          onClick={() =>
+            Promise.all([
+              detail.refetch(),
+              qc.refetchQueries({
+                queryKey: ["customer-estimates", request.id],
+                exact: true,
+              }),
+            ])
+          }
         >
           {t("Refresh")}
         </SafeAsyncButton>

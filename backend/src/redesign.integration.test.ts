@@ -77,7 +77,7 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
         )
       )[0];
       expect(identity?.project_id).toBe("snowy-hill-87120042");
-      expect(identity?.branch_id).toBe("br-gentle-wind-b4tsvt43");
+      expect(identity?.branch_id).toBe(process.env.TEST_NEON_BRANCH_ID);
       staff = String(
         (
           await db()`INSERT INTO staff_profiles(email,username,full_name,password_hash,role,must_change_password) VALUES(${suffix + "@example.com"},${"qa" + suffix.slice(0, 8)},'Redesign QA','unused','ADMIN',false) RETURNING id`

@@ -65,7 +65,7 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       )[0];
       expect(identity).toEqual({
         project: "snowy-hill-87120042",
-        branch: "br-gentle-wind-b4tsvt43",
+        branch: process.env.TEST_NEON_BRANCH_ID,
       });
       for (const [role, token] of [
         ["ADMIN", st],

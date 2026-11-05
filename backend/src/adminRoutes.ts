@@ -6,7 +6,7 @@ import {
 import { checkTechnicianSchedule } from "./technicianScheduling.js";
 import { completeRequest } from "./completion.js";
 import { Router, type RequestHandler } from "express";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "./db.js";
 import { env } from "./config/env.js";
@@ -24,6 +24,9 @@ router.param("id", (_req, _res, next, id) => {
   );
 });
 const hash = (v: string) => createHash("sha256").update(v).digest("hex");
+// Public dummy fixture: keeps missing-account checks on the password-hash path.
+const dummyPasswordHash =
+  "$argon2id$v=19$m=19456,t=2,p=1$MDEyMzQ1Njc4OWFiY2RlZg$MTqsk1JTq6d4GIgVb+Q/uEIy7lmruC3AWzkG8w06GrI";
 const asyncRoute =
   (h: RequestHandler): RequestHandler =>
   (req, res, next) =>
@@ -50,13 +53,24 @@ declare global {
 }
 export const requireStaff: RequestHandler = asyncRoute(
   async (req, _res, next) => {
+    if (req.staff) return next();
     const token = cookie(req.headers.cookie, "staff_session");
     if (!token)
       throw new ApiError(401, "UNAUTHORIZED", "Admin sign in required");
     const rows =
-      await db()`SELECT s.id,s.role FROM staff_sessions x JOIN staff_profiles s ON s.id=x.staff_id WHERE x.token_hash=${hash(token)} AND x.revoked_at IS NULL AND x.expires_at>now() AND s.active=true`;
+      await db()`SELECT s.id,s.role,s.must_change_password FROM staff_sessions x JOIN staff_profiles s ON s.id=x.staff_id WHERE x.token_hash=${hash(token)} AND x.revoked_at IS NULL AND x.expires_at>now() AND s.active=true`;
     if (!rows[0])
       throw new ApiError(401, "SESSION_EXPIRED", "Your session has expired");
+    if (
+      rows[0].must_change_password &&
+      !/\/auth\/(me|password|logout)$/.test(req.path)
+    ) {
+      throw new ApiError(
+        403,
+        "PASSWORD_CHANGE_REQUIRED",
+        "Change your temporary password before opening administration.",
+      );
+    }
     req.staff = { id: String(rows[0].id), role: rows[0].role as Role };
     next();
   },
@@ -80,7 +94,7 @@ router.post(
     const input = z
       .object({
         username: z.string().trim().min(3).max(50),
-        password: z.string().min(10),
+        password: z.string().min(10).max(128),
       })
       .safeParse(req.body);
     if (!input.success)
@@ -88,21 +102,29 @@ router.post(
     const rows =
       await db()`SELECT id,username,full_name,password_hash,role,active,must_change_password,locked_until FROM staff_profiles WHERE lower(username)=lower(${input.data.username})`;
     const staff = rows[0];
+    const correctPassword = await verifyPassword(
+      input.data.password,
+      String(staff?.password_hash || dummyPasswordHash),
+    );
     if (
       !staff ||
       !staff.active ||
       (staff.locked_until &&
         new Date(String(staff.locked_until)) > new Date()) ||
-      !(await verifyPassword(input.data.password, String(staff.password_hash)))
-    )
+      !correctPassword
+    ) {
+      if (staff?.active && !correctPassword)
+        await db()`UPDATE staff_profiles SET failed_attempts=failed_attempts+1,locked_until=CASE WHEN failed_attempts>=4 THEN now()+interval '15 minutes' ELSE locked_until END WHERE id=${staff.id} AND (locked_until IS NULL OR locked_until<=now())`;
       throw new ApiError(
         401,
         "INVALID_CREDENTIALS",
         "Invalid username or password",
       );
+    }
+    await db()`UPDATE staff_profiles SET failed_attempts=0,locked_until=NULL WHERE id=${staff.id}`;
     const code =
       env.NODE_ENV === "production"
-        ? String(Math.floor(100000 + Math.random() * 900000))
+        ? String(randomInt(100000, 1000000))
         : "123456";
     const challenge =
       await db()`INSERT INTO staff_login_challenges(staff_id,code_hash,expires_at) VALUES(${staff.id},${hash(code)},now()+interval '5 minutes') RETURNING id`;
@@ -138,16 +160,22 @@ router.post(
       challenge.code_hash !== hash(input.data.code)
     ) {
       if (challenge)
-        await db()`UPDATE staff_login_challenges SET attempts=attempts+1 WHERE id=${input.data.challengeId}`;
+        await db()`UPDATE staff_login_challenges SET attempts=attempts+1 WHERE id=${input.data.challengeId} AND consumed_at IS NULL AND expires_at>now() AND attempts<5`;
       throw new ApiError(
         401,
         "INVALID_MFA",
         "Invalid or expired verification code",
       );
     }
-    await db()`UPDATE staff_login_challenges SET consumed_at=now() WHERE id=${input.data.challengeId}`;
     const token = randomUUID() + randomUUID();
-    await db()`INSERT INTO staff_sessions(staff_id,token_hash,expires_at) VALUES(${challenge.staff_id},${hash(token)},now()+interval '12 hours')`;
+    const accepted =
+      await db()`WITH accepted AS (UPDATE staff_login_challenges SET consumed_at=now() WHERE id=${input.data.challengeId} AND consumed_at IS NULL AND expires_at>now() AND attempts<5 AND code_hash=${hash(input.data.code)} RETURNING staff_id) INSERT INTO staff_sessions(staff_id,token_hash,expires_at) SELECT staff_id,${hash(token)},now()+interval '12 hours' FROM accepted RETURNING id`;
+    if (!accepted.length)
+      throw new ApiError(
+        401,
+        "INVALID_MFA",
+        "Invalid or expired verification code",
+      );
     res
       .cookie("staff_session", token, {
         httpOnly: true,
@@ -262,7 +290,7 @@ router.post(
     const passwordHash = await hashPassword(input.data.newPassword);
     const currentToken = hash(cookie(req.headers.cookie, "staff_session")!);
     const changed =
-      await db()`WITH changed AS(UPDATE staff_profiles SET password_hash=${passwordHash},must_change_password=false WHERE id=${req.staff!.id} AND password_hash=${String(rows[0].password_hash)} RETURNING id),revoked AS(UPDATE staff_sessions SET revoked_at=now() WHERE staff_id IN(SELECT id FROM changed) AND token_hash!=${currentToken} RETURNING id) SELECT id FROM changed`;
+      await db()`WITH changed AS(UPDATE staff_profiles SET password_hash=${passwordHash},must_change_password=false,password_changed_at=now() WHERE id=${req.staff!.id} AND password_hash=${String(rows[0].password_hash)} RETURNING id),revoked AS(UPDATE staff_sessions SET revoked_at=now() WHERE staff_id IN(SELECT id FROM changed) AND token_hash!=${currentToken} RETURNING id),challenges AS(UPDATE staff_login_challenges SET consumed_at=now() WHERE staff_id IN(SELECT id FROM changed) AND consumed_at IS NULL RETURNING id) SELECT id FROM changed`;
     if (!changed[0])
       throw new ApiError(
         409,
@@ -560,6 +588,14 @@ router.post(
         409,
         "TECHNICIAN_REQUIRED",
         "Assign a technician before completing this request",
+      );
+    const account =
+      await db()`SELECT technician_id FROM technician_accounts WHERE technician_id=${current.assigned_technician_id}`;
+    if (account.length)
+      throw new ApiError(
+        409,
+        "TECHNICIAN_WORKFLOW_REQUIRED",
+        "Account-based technicians must complete their resolved work report, or operations must use the report review workflow.",
       );
     if (
       input.data.version !== undefined &&

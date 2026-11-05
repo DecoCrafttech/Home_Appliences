@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    setupFiles: ["./tests/setup.ts"],
     include: [
       "backend/src/**/*.test.ts",
       "packages/shared/src/**/*.test.ts",

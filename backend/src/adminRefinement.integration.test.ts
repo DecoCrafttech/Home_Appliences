@@ -37,7 +37,7 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       ])
         await db()`INSERT INTO customer_sessions(customer_id,token_hash,expires_at) VALUES(${id},${hash(token!)},now()+interval '1 hour')`;
       const staff =
-        await db()`INSERT INTO staff_profiles(email,username,full_name,password_hash,role,must_change_password) VALUES(${`${randomUUID()}@example.com`},${`refine_${randomUUID().slice(0, 8)}`},'Refinement Admin',${await hashPassword("Original-Test-Password-42")},'ADMIN',true) RETURNING id`;
+        await db()`INSERT INTO staff_profiles(email,username,full_name,password_hash,role,must_change_password) VALUES(${`${randomUUID()}@example.com`},${`refine_${randomUUID().slice(0, 8)}`},'Refinement Admin',${await hashPassword("Original-Test-Password-42")},'ADMIN',false) RETURNING id`;
       staffId = String(staff[0]!.id);
       for (const token of [staffToken, otherStaffToken])
         await db()`INSERT INTO staff_sessions(staff_id,token_hash,expires_at) VALUES(${staffId},${hash(token)},now()+interval '1 hour')`;
@@ -65,6 +65,25 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       if (operationsStaffId) {
         await db()`DELETE FROM staff_sessions WHERE staff_id=${operationsStaffId}`;
         await db()`DELETE FROM staff_profiles WHERE id=${operationsStaffId}`;
+      }
+    });
+    it("blocks business access for a temporary staff password", async () => {
+      await db()`UPDATE staff_profiles SET must_change_password=true WHERE id=${staffId}`;
+      try {
+        const denied = await request(app)
+          .get("/api/v1/admin/dashboard/summary")
+          .set("Cookie", staffCookie);
+        expect(denied.status).toBe(403);
+        expect(denied.body.error.code).toBe("PASSWORD_CHANGE_REQUIRED");
+        expect(
+          (
+            await request(app)
+              .get("/api/v1/admin/auth/me")
+              .set("Cookie", staffCookie)
+          ).status,
+        ).toBe(200);
+      } finally {
+        await db()`UPDATE staff_profiles SET must_change_password=false WHERE id=${staffId}`;
       }
     });
     it("serves real dashboard trends and separate new-request counts", async () => {

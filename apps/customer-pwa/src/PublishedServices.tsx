@@ -39,7 +39,7 @@ export function usePublishedCatalogue(enabled = true) {
         (service) => !isHiddenCustomerAppliance(service.appliance_name),
       ),
     enabled,
-    refetchOnMount: "always",
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
     staleTime: 300_000,
   });
@@ -130,8 +130,8 @@ export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
       (await api.get<{ data: PublishedAppliance[] }>("/catalogue/appliances"))
         .data.data,
     staleTime: 300_000,
-    refetchOnWindowFocus: "always",
-    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
   const curated = homeAppliances.map((presentation) => ({
     presentation,
@@ -280,7 +280,7 @@ export function ApplianceServices() {
       ).data,
     enabled: !unlisted,
     staleTime: 300_000,
-    refetchOnMount: "always",
+    refetchOnMount: true,
   });
   if (unlisted)
     return (

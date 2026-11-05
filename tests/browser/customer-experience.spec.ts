@@ -15,16 +15,17 @@ test("booking date choices remain clear across a month boundary on mobile", asyn
   await page.getByLabel("State", { exact: true }).fill("Tamil Nadu");
   await page.getByLabel("PIN code", { exact: true }).fill("600020");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Next month", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "November 2026", exact: true }),
+  ).toBeVisible();
   const tomorrow = page.getByRole("button", {
-    name: "Sunday, 1 November 2026",
+    name: "2026-11-01",
     exact: true,
   });
-  await expect(tomorrow).toContainText("Nov");
+  await expect(tomorrow).toHaveText("1");
   await tomorrow.click();
   await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByLabel("Later date", { exact: true })).toHaveValue(
-    "2026-11-01",
-  );
   await page.locator(".time-selector button").first().click();
   const formBounds = await page.locator(".wizard-form").boundingBox();
   for (const action of await page.locator(".wizard-actions button").all()) {
@@ -216,10 +217,7 @@ async function requirement(page: Page) {
   await page.goto(`/request/service?applianceCategoryId=${categoryId}`);
   await page
     .locator(".booking-service-card")
-    .filter({
-      has: page.getByRole("heading", { name: "General Service", exact: true }),
-    })
-    .getByRole("button", { name: "Book now", exact: true })
+    .filter({ hasText: "General Service" })
     .click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(
@@ -235,13 +233,18 @@ async function location(page: Page) {
   await page.getByLabel("State", { exact: true }).fill("Tamil Nadu");
   await page.getByLabel("PIN code", { exact: true }).fill("600020");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.getByLabel("Later date", { exact: true }).fill("2099-10-25");
+  await page
+    .getByRole("region", { name: "Preferred date calendar" })
+    .locator("button[aria-label]:not([disabled])")
+    .filter({ hasText: /^\d+$/ })
+    .first()
+    .click();
   await page
     .getByRole("button", { name: "Morning · 9 AM to 12 PM", exact: true })
     .click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
 }
-test("wizard preserves defaults, restores draft and confirms only a persisted submission", async ({
+test("wizard preserves defaults, excludes private draft addresses and confirms only a persisted submission", async ({
   page,
 }) => {
   const state = await setup(page);
@@ -255,8 +258,9 @@ test("wizard preserves defaults, restores draft and confirms only a persisted su
   await page
     .getByLabel("House / street", { exact: true })
     .fill("Saved draft street");
-  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  page.once("dialog", (dialog) => dialog.accept());
   await page.reload();
+  await requirement(page);
   await expect(page.getByLabel("House / street", { exact: true })).toHaveValue(
     "",
   );
@@ -310,20 +314,18 @@ test("repeat request prefills appliance and address but clears the old visit", a
   await expect(
     page
       .locator(".booking-service-card")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "General Service",
-          exact: true,
-        }),
-      })
-      .getByRole("button", { name: "Selected", exact: true }),
+      .filter({ hasText: "General Service" }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByLabel("House / street", { exact: true })).toHaveValue(
     "12 Garden Street",
   );
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByLabel("Later date", { exact: true })).toHaveValue("");
+  await expect(
+    page
+      .getByRole("region", { name: "Preferred date calendar" })
+      .locator('button[aria-pressed="true"]'),
+  ).toHaveCount(0);
 });
 test("location permission denial falls back to manual entry", async ({
   page,

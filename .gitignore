@@ -7,6 +7,8 @@ dist/
 !.env.example
 !apps/*/.env.production
 deployment-artifacts/
+audit-private/
+backups/
 coverage/
 playwright-report/
 test-results/

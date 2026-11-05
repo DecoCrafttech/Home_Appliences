@@ -1,4 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+vi.mock("./db.js", () => ({
+  db: () => Object.assign(async () => [], { query: async () => [] }),
+  transactionConnection: vi.fn(),
+  inTransaction: vi.fn(),
+}));
 import request from "supertest";
 import { app } from "./app.js";
 import { env } from "./config/env.js";

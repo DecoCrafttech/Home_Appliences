@@ -8,4 +8,6 @@
 - Automatic legacy-account merging is intentionally absent.
 - Legacy OTP endpoints are retired by default outside tests.
 
-Open findings: admin passwords require Argon2id migration; development MFA is not TOTP; CSRF tokens, customer account linking, full login rate-limit tests, dedicated auth error pages, and Playwright coverage remain incomplete.
+The November 2026 release audit adds portable Argon2id hashing, browser-origin checks on writes, technician CSRF checks, server-side temporary-password restrictions, bounded password work, and expanded authorization tests. See [the release audit](FINAL_RELEASE_AUDIT_2026-11-05.md) for current verification results and launch blockers.
+
+Open findings include production staff MFA delivery, exposed-credential rotation, the remaining Zod dependency advisory, real Google-provider login verification, and unresolved browser-suite failures. Development MFA codes must never be enabled in production. Customer account linking remains intentionally unavailable.

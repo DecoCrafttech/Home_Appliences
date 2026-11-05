@@ -71,15 +71,14 @@ declare global {
 }
 export const requireAuth: RequestHandler = asyncRoute(
   async (req, _res, next) => {
+    if (req.customerId) return next();
     const token = getCookie(req.headers.cookie, "customer_session");
     if (!token) throw new ApiError(401, "UNAUTHORIZED", "Please log in");
     const rows =
-      await db()`SELECT customer_id FROM customer_sessions WHERE token_hash=${hash(token)} AND revoked_at IS NULL AND expires_at > now() LIMIT 1`;
+      await db()`SELECT s.customer_id,c.account_status FROM customer_sessions s JOIN customers c ON c.id=s.customer_id WHERE s.token_hash=${hash(token)} AND s.revoked_at IS NULL AND s.expires_at > now() LIMIT 1`;
     if (!rows[0])
       throw new ApiError(401, "SESSION_EXPIRED", "Your session has expired");
-    const account =
-      await db()`SELECT account_status FROM customers WHERE id=${rows[0].customer_id}`;
-    if (!account[0] || account[0].account_status !== "ACTIVE")
+    if (rows[0].account_status !== "ACTIVE")
       throw new ApiError(
         403,
         "ACCOUNT_UNAVAILABLE",
@@ -424,9 +423,10 @@ router.patch(
   "/addresses/:id/default",
   requireAuth,
   asyncRoute(async (req, res) => {
-    const rows = await db()`WITH owned AS (SELECT id FROM customer_addresses WHERE id=${req.params.id} AND customer_id=${req.customerId!}), changed AS (UPDATE customer_addresses SET is_default=(id=${req.params.id}::uuid),updated_at=now() WHERE customer_id=${req.customerId!} AND EXISTS(SELECT 1 FROM owned) RETURNING id,is_default) SELECT * FROM changed WHERE is_default`;
-    if (!rows[0]) throw new ApiError(404,"NOT_FOUND","Address not found");
-    res.json({data:rows[0]});
+    const rows =
+      await db()`WITH owned AS (SELECT id FROM customer_addresses WHERE id=${req.params.id} AND customer_id=${req.customerId!}), changed AS (UPDATE customer_addresses SET is_default=(id=${req.params.id}::uuid),updated_at=now() WHERE customer_id=${req.customerId!} AND EXISTS(SELECT 1 FROM owned) RETURNING id,is_default) SELECT * FROM changed WHERE is_default`;
+    if (!rows[0]) throw new ApiError(404, "NOT_FOUND", "Address not found");
+    res.json({ data: rows[0] });
   }),
 );
 router.delete(

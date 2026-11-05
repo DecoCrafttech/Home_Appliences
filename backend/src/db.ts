@@ -8,6 +8,7 @@ import {
 } from "@neondatabase/serverless";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { env } from "./config/env.js";
+import { createDatabasePool } from "./databasePool.js";
 
 export type Sql = NeonQueryFunction<false, false>;
 let client: Sql | undefined;
@@ -16,12 +17,16 @@ let pool: Pool | undefined;
 neonConfig.webSocketConstructor = WebSocket;
 
 export async function transactionConnection(): Promise<PoolClient> {
-  pool ??= new Pool({
-    connectionString: env.DATABASE_URL,
+  pool ??= createDatabasePool(env.DATABASE_URL, {
     max: 6,
     idleTimeoutMillis: 10000,
   });
   return pool.connect();
+}
+export async function closeDatabase() {
+  const current = pool;
+  pool = undefined;
+  await current?.end();
 }
 
 export function inTransaction<T>(connection: PoolClient, work: () => T): T {

@@ -1,5 +1,21 @@
 import { defineConfig } from "@playwright/test";
+// Browser suites must not inherit the shared launch database from local files.
+process.env.NODE_ENV = "test";
+if (
+  process.env.RUN_DB_INTEGRATION === "true" &&
+  process.env.TEST_DATABASE_URL
+) {
+  const target = new URL(process.env.TEST_DATABASE_URL);
+  if (!/^\/fixbeez_audit_[a-f0-9]{12}$/.test(target.pathname))
+    throw new Error(
+      "Browser database tests require a newly created audit database",
+    );
+  process.env.DATABASE_URL = target.href;
+} else {
+  delete process.env.DATABASE_URL;
+}
 export default defineConfig({
+  globalSetup: "./tests/browser/globalSetup.ts",
   testDir: "./tests/browser",
   workers: 1,
   timeout: 120000,
@@ -20,7 +36,8 @@ export default defineConfig({
     {
       command: "npm run dev -w @home/api",
       url: "http://localhost:3001/api/v1/health",
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
+      env: { NODE_ENV: "test" },
     },
     {
       command: "npm run dev -w @home/admin",

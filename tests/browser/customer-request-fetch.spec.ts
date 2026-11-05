@@ -121,30 +121,30 @@ for (const path of ["/", "/bookings"])
     await expect.poll(() => calls.list).toBe(before + 1);
   });
 
-test("Customer detail, timeline and estimates stay idle and refresh together once per click", async ({
+test("Customer detail and estimates stay idle and refresh together without fetching unused timeline", async ({
   page,
 }) => {
   const { calls } = await fixture(page);
   await page.goto(`/requests/${id}`);
   await expect
     .poll(() => ({ ...calls }))
-    .toEqual({ list: 0, detail: 1, timeline: 1, estimates: 1 });
+    .toEqual({ list: 0, detail: 1, timeline: 0, estimates: 1 });
   await expect(
-    page.getByText("Request received", { exact: true }),
+    page.getByRole("heading", { name: "Air Conditioner", exact: true }),
   ).toBeVisible();
   await idleAndFocus(page);
-  expect(calls).toEqual({ list: 0, detail: 1, timeline: 1, estimates: 1 });
+  expect(calls).toEqual({ list: 0, detail: 1, timeline: 0, estimates: 1 });
   const refresh = page.getByRole("button", { name: "Refresh", exact: true });
   await refresh.evaluate((button) => {
     (button as HTMLButtonElement).click();
     (button as HTMLButtonElement).click();
   });
-  await expect(
-    page.getByText("Latest progress", { exact: true }),
-  ).toBeVisible();
-  expect(calls).toEqual({ list: 0, detail: 2, timeline: 2, estimates: 2 });
+  await expect
+    .poll(() => ({ ...calls }))
+    .toEqual({ list: 0, detail: 2, timeline: 0, estimates: 2 });
+  await expect(refresh).toBeEnabled();
   await idleAndFocus(page);
-  expect(calls).toEqual({ list: 0, detail: 2, timeline: 2, estimates: 2 });
+  expect(calls).toEqual({ list: 0, detail: 2, timeline: 0, estimates: 2 });
 });
 
 test("Customer failed request refresh waits for an explicit retry", async ({

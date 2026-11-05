@@ -13,6 +13,10 @@ const waiting: Array<() => void> = [];
 
 // Bound memory use and keep password hashing off the request/event-loop thread.
 async function derive(options: IArgon2Options): Promise<string | Uint8Array> {
+  if (active >= 2 && waiting.length >= 32)
+    throw Object.assign(new Error("Password hashing queue is full"), {
+      code: "PASSWORD_HASH_BUSY",
+    });
   if (active >= 2) await new Promise<void>((resolve) => waiting.push(resolve));
   else active++;
   try {

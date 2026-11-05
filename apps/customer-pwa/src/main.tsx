@@ -15,6 +15,7 @@ import "./v6.css";
 import { AppErrorBoundary } from "@home/ui";
 import { ToastProvider } from "@home/ui/widgets";
 import { CustomerGoogleProvider } from "./lib/googleAuth";
+import { PwaUpdate } from "./components/PwaUpdate";
 const client = new QueryClient({
   defaultOptions: {
     queries: { retry: retryTransientRequest, refetchOnWindowFocus: true },
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
     element: (
       <>
         <OfflineBanner />
+        <PwaUpdate />
         <NavigationScroll />
         <AppErrorBoundary>
           <CustomerStartup />

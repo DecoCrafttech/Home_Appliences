@@ -13,7 +13,7 @@ export function useGoogleConfiguration() {
         }>("/auth/customer/config")
       ).data.data,
     staleTime: 300_000,
-    refetchOnWindowFocus: "always",
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

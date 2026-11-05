@@ -10,14 +10,22 @@ if (process.platform === "win32") {
   setDefaultResultOrder("ipv4first");
   setDefaultAutoSelectFamily(false);
 }
-config({ path: resolve(process.cwd(), ".env.push.local") });
-config({ path: resolve(process.cwd(), "../.env.push.local") });
-config({ path: resolve(process.cwd(), ".env.local") });
-config({ path: resolve(process.cwd(), ".env") });
-config({ path: resolve(process.cwd(), "../.env.local") });
-config({ path: resolve(process.cwd(), "../.env") });
-config({ path: resolve(process.cwd(), "backend/.env.local") });
-config({ path: resolve(process.cwd(), "backend/.env") });
+// Tests receive an explicit isolated target through their setup, never a
+// developer's local/shared database implicitly loaded from disk.
+if (process.env.NODE_ENV !== "test") {
+  for (const path of [
+    ".env.push.local",
+    "../.env.push.local",
+    ".env.local",
+    ".env",
+    "../.env.local",
+    "../.env",
+    "backend/.env.local",
+    "backend/.env",
+  ]) {
+    config({ path: resolve(process.cwd(), path), quiet: true });
+  }
+}
 export const env = z
   .object({
     PORT: z.coerce.number().int().min(1).max(65535).default(3001),
@@ -58,7 +66,20 @@ export const env = z
       .transform((value) => value === "true"),
     VAPID_PUBLIC_KEY: z.string().min(20).optional(),
     VAPID_PRIVATE_KEY: z.string().min(20).optional(),
-    VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(),
+    VAPID_SUBJECT: z
+      .string()
+      .regex(/^(mailto:|https:\/\/)/)
+      .optional(),
   })
-  .refine((value) => [value.VAPID_PUBLIC_KEY,value.VAPID_PRIVATE_KEY,value.VAPID_SUBJECT].filter(Boolean).length % 3 === 0, "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be configured together")
+  .refine(
+    (value) =>
+      [
+        value.VAPID_PUBLIC_KEY,
+        value.VAPID_PRIVATE_KEY,
+        value.VAPID_SUBJECT,
+      ].filter(Boolean).length %
+        3 ===
+      0,
+    "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be configured together",
+  )
   .parse(process.env);

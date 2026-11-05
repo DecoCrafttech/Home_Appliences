@@ -86,5 +86,5 @@ Build output is in each application's `dist` and `backend/dist`. The backend use
 For built-PWA checks, start local previews on ports 5183, 5184 and 5185 and run `node scripts/check-pwa.mjs`. Alternatively set `PWA_CUSTOMER_ORIGIN`, `PWA_ADMIN_ORIGIN` and `PWA_TECHNICIAN_ORIGIN` to the three preview origins. This checks manifests, Chrome installability, service workers, offline shells and private-cache exclusion, not installation on a physical device.
 
 See [administrative status overrides](docs/STATUS_OVERRIDE_REPORT.md), [appliance-first booking and contact access](docs/CUSTOMER_SERVICE_FLOW.md), [UI redesign progress](docs/UI_REDESIGN_PROGRESS.md), [navigation structure](docs/FINAL_NAVIGATION_STRUCTURE.md), [workflow redesign](docs/WORKFLOW_REDESIGN.md), [workflow progress](docs/WORKFLOW_PROGRESS.md), [three-PWA verification](docs/THREE_PWA_SYNC_TEST.md) and [final test report](docs/FINAL_TEST_REPORT.md) for actual results and remaining environment limits. Older reports describe earlier development stages.
-#   h a _ A p p l i c a t i o n  
- 
+
+See [the November release audit](docs/FINAL_RELEASE_AUDIT_2026-11-05.md) for the current security, database cleanup, test results and launch blockers.

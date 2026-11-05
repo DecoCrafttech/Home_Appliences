@@ -76,6 +76,7 @@ declare global {
 }
 export const requireTechnician: RequestHandler = route(
   async (req, _res, next) => {
+    if (req.technician) return next();
     const value = cookie(req);
     if (!value)
       throw new ApiError(401, "UNAUTHORIZED", "Technician sign in required");

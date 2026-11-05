@@ -1,4 +1,8 @@
+/* global Image, document */
 import fs from "node:fs/promises";
+import { URL } from "node:url";
+import { Buffer } from "node:buffer";
+import process from "node:process";
 import path from "node:path";
 import { chromium } from "playwright";
 

@@ -61,4 +61,17 @@ describe("portable password hashing", () => {
     );
     expect(results).toEqual([true, false, true, false, true, false]);
   });
+  it("bounds queued hashing work and recovers after overload", async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 40 }, () =>
+        verifyPassword("Existing-Password-42", existing),
+      ),
+    );
+    const denied = results.filter((result) => result.status === "rejected");
+    expect(denied.length).toBeGreaterThan(0);
+    for (const result of denied)
+      if (result.status === "rejected")
+        expect(result.reason.code).toBe("PASSWORD_HASH_BUSY");
+    expect(await verifyPassword("Existing-Password-42", existing)).toBe(true);
+  });
 });
