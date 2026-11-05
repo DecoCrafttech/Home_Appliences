@@ -13,7 +13,7 @@ applianceCatalogueRoutes.get(
   "/catalogue/appliances",
   route(async (_req, res) => {
     const rows =
-      await db()`SELECT a.id,a.name,a.slug,a.kind,a.catalogue_category_id,g.name AS category_name,a.description,a.display_order,COALESCE((SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key),a.default_image_path) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED' AND s.archived_at IS NULL) AS service_count FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL ORDER BY g.display_order,a.display_order,a.name,a.id`;
+      await db()`SELECT a.id,a.name,a.slug,a.kind,a.catalogue_category_id,g.name AS category_name,a.description,a.display_order,COALESCE((SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key),a.default_image_path) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED' AND s.archived_at IS NULL) AS service_count FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL ORDER BY g.display_order,g.name,g.id,a.display_order,a.name,a.id`;
     res.json({ data: rows });
   }),
 );

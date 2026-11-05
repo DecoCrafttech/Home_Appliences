@@ -309,12 +309,13 @@ test("admin configures arbitrary catalogue, customer books, and mobile layouts r
     );
     await c.goto("http://localhost:5193/");
     await c.locator(".home-promo-cta").click();
-    await c
-      .getByRole("link", { name: "View " + tag + " items", exact: true })
-      .click();
-    await expect(c.locator(".appliance-card-footer h2").first()).toHaveText(
-      "Second item",
-    );
+    await expect(
+      c
+        .locator(".customer-listing-group")
+        .filter({ has: c.getByRole("heading", { name: tag, exact: true }) })
+        .locator(".appliance-card-footer h2")
+        .first(),
+    ).toHaveText("Second item");
     await c
       .getByRole("link", { name: "View First item services", exact: true })
       .click();

@@ -10,6 +10,8 @@ Admin's **Service Catalogue** workspace supports category and item creation/edit
 
 Customer discovery reads active, published categories, items, and entries from the API, in database order. There are no curated item lists or name-based visibility filters in the browsing/booking flow. Empty, unavailable, loading and network states have recovery actions. The original booking wizard receives the chosen IDs and continues through address, date/time and submission. Operations receive the saved category, item and service names.
 
+Customer browsing uses the original direct appliance/item card listing: four preview cards on Home and all items grouped under their Admin-defined category headings on Services. Selecting an item opens its services directly. Category deep links remain available, and all names, images, visibility and ordering still come from Admin-managed data.
+
 The home banner uses the requested default text and a link to category browsing. Admin can edit its headline, description, button label, secondary text and image under **Home banner**. Branding, account sign-in, existing operations and technician workflows are preserved.
 
 ## Images

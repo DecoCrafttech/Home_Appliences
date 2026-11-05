@@ -6,6 +6,21 @@
   margin: 10px 4px 0;
   text-wrap: balance;
 }
+.customer-listing-group + .customer-listing-group {
+  margin-top: 28px;
+}
+.customer-listing-heading {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+.home-discovery .customer-listing-groups .appliance-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 761px) {
+  .home-discovery .customer-listing-groups .appliance-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 .home-promo-title {
   max-width: 480px;
 }

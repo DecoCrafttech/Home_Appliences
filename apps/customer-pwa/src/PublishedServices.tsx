@@ -190,24 +190,42 @@ export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
   const { search, setSearch } = useCatalogueFilters();
   const term = useDebouncedValue(search.trim(), 200);
   const q = useQuery({
-    queryKey: ["published-categories"],
+    queryKey: ["published-appliances"],
     queryFn: async () =>
-      (await api.get<{ data: Category[] }>("/catalogue/categories")).data.data,
+      (await api.get<{ data: PublishedAppliance[] }>("/catalogue/appliances"))
+        .data.data,
     staleTime: 15000,
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
   });
   const rows = (q.data || []).filter(
-    (c) => compact || c.name.toLowerCase().includes(term.toLowerCase()),
+    (c) =>
+      compact ||
+      `${c.name} ${c.category_name || ""}`
+        .toLowerCase()
+        .includes(term.toLowerCase()),
   );
-  const categories = compact ? rows.slice(0, 6) : rows;
+  const appliances = compact ? rows.slice(0, 4) : rows;
+  const groups = new Map<
+    string,
+    { name: string; items: PublishedAppliance[] }
+  >();
+  for (const appliance of appliances) {
+    const key = appliance.catalogue_category_id || "items";
+    if (!groups.has(key))
+      groups.set(key, {
+        name: appliance.category_name || "Services",
+        items: [],
+      });
+    groups.get(key)!.items.push(appliance);
+  }
   return (
     <section
       className={compact ? "home-discovery" : "section page services-discovery"}
     >
       {compact ? (
         <div className="section-heading">
-          <h2>Explore services</h2>
+          <h2>Browse Appliances</h2>
           <Link to="/services">
             View all <FaArrowRight aria-hidden="true" />
           </Link>
@@ -217,22 +235,22 @@ export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
           <div className="page-heading">
             <div>
               <span className="eyebrow">CARE FOR YOUR HOME</span>
-              <h1>Explore services</h1>
+              <h1>Services &amp; Installation</h1>
             </div>
           </div>
           <Search
-            label="Search categories"
+            label="Search appliances and services"
             value={search}
             onChange={setSearch}
           />
         </>
       )}
       {q.isPending ? (
-        <LoadingSkeleton variant="appliances" count={compact ? 2 : 4} />
+        <LoadingSkeleton variant="appliances" count={compact ? 4 : 8} />
       ) : q.isError ? (
         <EmptyState
           kind="network"
-          title="Unable to load categories"
+          title="Unable to load services"
           description="Check your connection and try again."
           primaryAction={
             <button className="primary" onClick={() => q.refetch()}>
@@ -240,38 +258,41 @@ export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
             </button>
           }
         />
-      ) : categories.length ? (
-        <div className="appliance-grid catalogue-category-grid">
-          {categories.map((category) => (
-            <Link
-              className="appliance-card"
-              key={category.id}
-              to={"/services/categories/" + category.id}
-              aria-label={"View " + category.name + " items"}
-            >
-              <div className="appliance-photo-wrap">
-                <CatalogueImage src={category.icon_url} />
+      ) : appliances.length ? (
+        <div className="customer-listing-groups">
+          {[...groups].map(([id, group]) => (
+            <div className="customer-listing-group" key={id}>
+              {!compact && (
+                <h2 className="customer-listing-heading">{group.name}</h2>
+              )}
+              <div className="appliance-grid">
+                {group.items.map((appliance) => (
+                  <Link
+                    className="appliance-card"
+                    key={appliance.id}
+                    to={"/services/appliances/" + appliance.id}
+                    aria-label={"View " + appliance.name + " services"}
+                  >
+                    <div className="appliance-photo-wrap">
+                      <CatalogueImage src={appliance.icon_url} />
+                    </div>
+                    <div className="appliance-card-footer">
+                      <h2>{appliance.name}</h2>
+                      <FaChevronRight aria-hidden="true" />
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <div className="appliance-card-footer">
-                <div>
-                  <h2>{category.name}</h2>
-                  <small>
-                    {category.item_count}{" "}
-                    {category.item_count === 1 ? "item" : "items"}
-                  </small>
-                </div>
-                <FaChevronRight aria-hidden="true" />
-              </div>
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
         <EmptyState
           kind={search ? "search" : "catalogue"}
-          title={search ? "No matching categories" : "Services are coming soon"}
+          title={search ? "No matching appliances" : "Services are coming soon"}
           description={
             search
-              ? "Try a different category name."
+              ? "Try a different appliance or service name."
               : "Check back soon or contact support for help."
           }
           primaryAction={
