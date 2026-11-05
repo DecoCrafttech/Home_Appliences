@@ -13,7 +13,7 @@ applianceCatalogueRoutes.get(
   "/catalogue/appliances",
   route(async (_req, res) => {
     const rows =
-      await db()`SELECT a.id,a.name,a.slug,a.kind,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED') AS service_count FROM appliance_categories a WHERE a.active AND a.publication_status='PUBLISHED' ORDER BY a.name`;
+      await db()`SELECT a.id,a.name,a.slug,a.kind,a.catalogue_category_id,g.name AS category_name,a.description,a.display_order,COALESCE((SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key),a.default_image_path) AS icon_url,(SELECT count(*)::int FROM service_catalogue s WHERE s.appliance_category_id=a.id AND s.active AND s.publication_status='PUBLISHED' AND s.archived_at IS NULL) AS service_count FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL ORDER BY g.display_order,a.display_order,a.name,a.id`;
     res.json({ data: rows });
   }),
 );
@@ -22,12 +22,12 @@ applianceCatalogueRoutes.get(
   route(async (req, res) => {
     const id = z.string().uuid().parse(req.params.id);
     const category = (
-      await db()`SELECT id,name,slug,kind FROM appliance_categories WHERE id=${id} AND active AND publication_status='PUBLISHED'`
+      await db()`SELECT a.id,a.name,a.slug,a.kind,a.catalogue_category_id,g.name AS category_name FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.id=${id} AND a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL`
     )[0];
     if (!category)
       throw new ApiError(404, "NOT_FOUND", "Appliance is not available");
     const rows =
-      await db()`SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,${category.name}::text AS appliance_name,${category.kind}::text AS category_kind,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s WHERE s.appliance_category_id=${id} AND s.active AND s.publication_status='PUBLISHED' ORDER BY s.display_order,s.name`;
+      await db()`SELECT s.id,s.appliance_category_id,${category.catalogue_category_id}::uuid AS catalogue_category_id,${category.category_name}::text AS catalogue_category_name,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,${category.name}::text AS appliance_name,${category.kind}::text AS category_kind,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s WHERE s.appliance_category_id=${id} AND s.active AND s.publication_status='PUBLISHED' AND s.archived_at IS NULL ORDER BY s.display_order,s.name`;
     res.json({ data: rows, meta: { appliance: category } });
   }),
 );

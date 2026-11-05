@@ -1,9 +1,6 @@
 import { AccountAccessState } from "./components/AccountAccessState";
 import { VisitCalendar } from "./VisitCalendar";
-import {
-  isHiddenCustomerAppliance,
-  appliancePhoto,
-} from "./appliancePresentation";
+import { ImageWithFallback } from "@home/ui";
 import { serviceIcon } from "./servicePresentation";
 import { AppCheckbox, AppInput, AppSelect, AppTextarea } from "@home/ui";
 import { ConfirmActionDialog, AppButton as SafeAsyncButton } from "@home/ui";
@@ -28,7 +25,7 @@ import {
 } from "@home/shared";
 import { toast } from "sonner";
 import axios from "axios";
-import { api } from "./lib/api";
+import { api, catalogueImageUrl } from "./lib/api";
 import type {
   Address,
   CatalogueItem,
@@ -39,6 +36,12 @@ import { useTranslation } from "./lib/language";
 import { clearDraft, readDraft, saveDraft } from "./lib/drafts";
 import { LoadingSkeleton, EmptyState } from "./components/ui";
 
+const bookingInputSchema = bookingFormSchema.extend({
+  details: bookingFormSchema.shape.details.extend({
+    description:
+      bookingFormSchema.shape.details.shape.description.removeDefault(),
+  }),
+});
 const emptyValues: BookingFormValues = {
   applianceCategoryId: "",
   serviceId: "",
@@ -126,14 +129,16 @@ function Wizard({
   const [editingAddress, setEditingAddress] = useState(true);
   const [busy, setBusy] = useState(false);
   const [submissionError, setSubmissionError] = useState(false);
+  const [stepError, setStepError] = useState("");
   const [locating, setLocating] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
   const keyRef = useRef(initialDraft?.idempotencyKey || crypto.randomUUID());
   const submittingRef = useRef(false);
   const initialized = useRef(false);
+  const advancing = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const form = useForm<BookingFormValues>({
-    resolver: zodResolver(bookingFormSchema),
+    resolver: zodResolver(bookingInputSchema),
     defaultValues: initialDraft
       ? {
           ...initialDraft.values,
@@ -194,11 +199,7 @@ function Wizard({
   const categories = useQuery({
     queryKey: customerKeys.appliances,
     queryFn: async () =>
-      (
-        await api.get<{ data: CatalogueItem[] }>("/appliances")
-      ).data.data.filter(
-        (appliance) => !isHiddenCustomerAppliance(appliance.name),
-      ),
+      (await api.get<{ data: CatalogueItem[] }>("/appliances")).data.data,
   });
   const services = useQuery({
     queryKey: customerKeys.catalogue(type, values.applianceCategoryId),
@@ -303,54 +304,94 @@ function Wizard({
     return () => clearTimeout(timeout);
   }, [values, step, form.formState.isDirty, getValues, profile.id, type, busy]);
   async function continueStep() {
-    const valid = await trigger(
-      step === 0
-        ? ["applianceCategoryId", "serviceId", "details"]
-        : step === 1
-          ? ["address"]
-          : ["preferredDate", "preferredTimeWindow"],
-      { shouldFocus: true },
-    );
-    if (!valid) {
-      toast.error(
-        locale === "ta"
-          ? "குறிக்கப்பட்ட விவரங்களைச் சரிபார்க்கவும்"
-          : "Please check the highlighted fields.",
+    if (advancing.current) return;
+    advancing.current = true;
+    try {
+      setStepError("");
+      if (step === 0) {
+        const available =
+          selected?.booking_options?.filter((option) => option.active) || [];
+        if (
+          available.length === 1 &&
+          !selectedOptionIds(getValues("details")).length
+        )
+          setValue("details.optionId", available[0]!.id, { shouldDirty: true });
+      }
+      const valid = await trigger(
+        step === 0
+          ? ["applianceCategoryId", "serviceId", "details"]
+          : step === 1
+            ? ["address"]
+            : ["preferredDate", "preferredTimeWindow"],
+        { shouldFocus: true },
       );
-      return;
-    }
-    if (step === 0) {
-      if (!selected) {
-        toast.error("Choose an available service.");
+      if (!valid) {
+        if (step === 1) setEditingAddress(true);
+        const message = (
+          step === 0
+            ? ["applianceCategoryId", "serviceId", "details"]
+            : step === 1
+              ? ["address"]
+              : ["preferredDate", "preferredTimeWindow"]
+        )
+          .map(
+            (field) =>
+              form.getFieldState(field as keyof BookingFormValues).error
+                ?.message,
+          )
+          .find(Boolean);
+        setStepError(
+          typeof message === "string"
+            ? message
+            : "Please check the highlighted fields before continuing.",
+        );
+        toast.error(
+          locale === "ta"
+            ? "குறிக்கப்பட்ட விவரங்களைச் சரிபார்க்கவும்"
+            : "Please check the highlighted fields.",
+        );
         return;
       }
-      if (
-        selected.booking_options?.some((o) => o.active) &&
-        (!selectedOptionIds(getValues("details")).length ||
-          selectedOptionIds(getValues("details")).some(
-            (id) =>
-              !selected.booking_options!.some((o) => o.active && o.id === id),
-          ))
-      ) {
-        toast.error("Choose a problem or installation option.");
+      if (step === 0) {
+        if (!selected) {
+          setStepError(
+            "This service is no longer available. Browse services to choose another.",
+          );
+          toast.error("Choose an available service.");
+          return;
+        }
+        if (
+          selected.booking_options?.some((o) => o.active) &&
+          (!selectedOptionIds(getValues("details")).length ||
+            selectedOptionIds(getValues("details")).some(
+              (id) =>
+                !selected.booking_options!.some((o) => o.active && o.id === id),
+            ))
+        ) {
+          toast.error("Choose a problem or installation option.");
+          setStepError("Choose an available service option before continuing.");
+          return;
+        }
+        const error = validateServiceAnswers(
+          selected.form_fields || [],
+          getValues("details"),
+        );
+        if (error) {
+          setStepError(error);
+          toast.error(error);
+          return;
+        }
+      }
+      if (step === 2 && getValues("preferredDate") < businessDate()) {
+        form.setError("preferredDate", {
+          message: "Choose today or a future date",
+        });
         return;
       }
-      const error = validateServiceAnswers(
-        selected.form_fields || [],
-        getValues("details"),
-      );
-      if (error) {
-        toast.error(error);
-        return;
-      }
+      setStep(Math.min(3, step + 1));
+    } finally {
+      advancing.current = false;
     }
-    if (step === 2 && getValues("preferredDate") < businessDate()) {
-      form.setError("preferredDate", {
-        message: "Choose today or a future date",
-      });
-      return;
-    }
-    setStep((current) => Math.min(3, current + 1));
   }
   async function useLocation() {
     if (!navigator.geolocation) {
@@ -510,12 +551,12 @@ function Wizard({
                     )?.name
                   }
                 </h2>
-                <img
+                <ImageWithFallback
                   className="selected-appliance-photo"
-                  src={appliancePhoto(
+                  src={catalogueImageUrl(
                     categories.data?.find(
                       (c) => c.id === values.applianceCategoryId,
-                    )?.name || "",
+                    )?.icon_url,
                   )}
                   alt=""
                 />
@@ -524,7 +565,7 @@ function Wizard({
             )}
             {!catalogueSelection && (
               <>
-                <h2>{t("Choose your appliance")}</h2>
+                <h2>{t("Choose an item")}</h2>
                 {categories.isPending ? (
                   <LoadingSkeleton variant="appliances" count={6} />
                 ) : categories.isError ? (
@@ -554,9 +595,9 @@ function Wizard({
                           });
                         }}
                       >
-                        <img
+                        <ImageWithFallback
                           className="choice-appliance-photo"
-                          src={appliancePhoto(appliance.name)}
+                          src={catalogueImageUrl(appliance.icon_url)}
                           alt=""
                         />
                         {t(appliance.name)}
@@ -568,7 +609,7 @@ function Wizard({
             )}
             {errors.applianceCategoryId && (
               <p className="field-error" role="alert">
-                Choose an appliance.
+                Choose an item.
               </p>
             )}
             {values.applianceCategoryId && !catalogueSelection && (
@@ -591,7 +632,7 @@ function Wizard({
                   </p>
                 ) : !services.data.length ? (
                   <p role="status">
-                    No options are available for this appliance yet.{" "}
+                    No options are available for this item yet.{" "}
                     <Link to="/support">Contact support</Link>.
                   </p>
                 ) : (
@@ -1022,6 +1063,11 @@ function Wizard({
             />
           </div>
         )}
+        {stepError && (
+          <p className="field-error" role="alert">
+            {stepError}
+          </p>
+        )}
         <div className="wizard-actions">
           {step > 0 && (
             <SafeAsyncButton
@@ -1045,6 +1091,7 @@ function Wizard({
               locating ||
               (step === 0 &&
                 (categories.isPending || services.isPending || !selected)) ||
+              (step === 1 && addresses.isPending) ||
               (step === 2 && windows.isPending)
             }
             onClick={step < 3 ? continueStep : undefined}

@@ -1,5 +1,5 @@
+import { CategoryItems, useHomeBanner } from "./PublishedServices";
 import { AccountAccessState } from "./components/AccountAccessState";
-import { Maintenance } from "./Maintenance";
 import { useGoogleConfiguration } from "./lib/googleAuth";
 import { contactPhone } from "@home/shared";
 import { CatalogueSearch } from "./CatalogueSearch";
@@ -36,7 +36,7 @@ import {
   FaHeadset,
   FaToolbox,
 } from "react-icons/fa6";
-import { api } from "./lib/api";
+import { api, catalogueImageUrl } from "./lib/api";
 import axios from "axios";
 import { useTranslation } from "./lib/language";
 import type { Notification } from "./lib/types";
@@ -170,6 +170,10 @@ export function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
+            <Route
+              path="/services/categories/:categoryId"
+              element={<CategoryItems />}
+            />
             <Route path="/book" element={<BookingEntry />} />
             <Route
               path="/services/appliances/:applianceId"
@@ -314,10 +318,10 @@ export function App() {
   );
 }
 function Home() {
+  const banner = useHomeBanner();
   const config = useGoogleConfiguration();
   const adminPhone = contactPhone(config.data?.adminOfficePhone);
-  const { t } = useTranslation(),
-    profile = useProfile(),
+  const profile = useProfile(),
     requests = useRequests(!!profile.data),
     [, setDraftVersion] = useState(0);
   useEffect(() => {
@@ -343,30 +347,24 @@ function Home() {
           <div className="home-promo-copy">
             <p className="home-promo-eyebrow">We fit it. We fix it.</p>
             <h1 className="home-promo-title">
-              Appliance care <span>at your doorstep</span>
+              {banner.data?.headline || "Your Home, Our Expertise"}
             </h1>
             <p className="home-promo-description">
-              Repairs, installation and upkeep. Book a home visit in a few taps.
+              {banner.data?.description ||
+                "Appliance repairs, installations & home maintenance made simple."}
             </p>
-            <p className="home-promo-caption">
-              <span>
-                <FaScrewdriverWrench aria-hidden="true" /> Repair
-              </span>
-              <span>
-                <FaToolbox aria-hidden="true" /> Install
-              </span>
-              <span>
-                <FaCalendarDays aria-hidden="true" /> Maintain
-              </span>
-            </p>
-            <Link className="home-promo-cta" to="/book">
-              Book a Service <FaArrowRight aria-hidden="true" />
+            <Link className="home-promo-cta" to="/services">
+              {banner.data?.cta || "Explore Services"}{" "}
+              <FaArrowRight aria-hidden="true" />
             </Link>
           </div>
           <div className="v6-hero-art" aria-hidden="true">
             <img
               className="home-hero-composition"
-              src="/banners/v8/appliance-family.webp"
+              src={
+                catalogueImageUrl(banner.data?.icon_url) ||
+                "/banners/v8/appliance-family.webp"
+              }
               alt=""
               width={800}
               height={900}
@@ -375,6 +373,10 @@ function Home() {
             />
           </div>
         </section>
+        <p className="home-banner-secondary">
+          {banner.data?.secondary ||
+            "Trusted Professionals • Easy Booking • Quick Response"}
+        </p>
         <div className="home-benefits" aria-label="Our service promise">
           {[
             ["Verified Technicians", FaShieldHalved],
@@ -392,44 +394,6 @@ function Home() {
             </div>
           ))}
         </div>
-        <nav className="home-quick-actions" aria-label="Quick actions">
-          {[
-            {
-              to: "/request/service",
-              label: "Services",
-              image: "/categories/v8/service.webp",
-              tone: "service",
-            },
-            {
-              to: "/request/installation",
-              label: "Installation",
-              image: "/categories/v8/installation.webp",
-              tone: "installation",
-            },
-            {
-              to: "/services?tab=maintenance",
-              label: "Maintenance",
-              image: "/categories/v8/maintenance.webp",
-              tone: "support",
-            },
-          ].map(({ to, label, image, tone }) => (
-            <Link
-              to={to}
-              className={`home-action home-action--${tone}`}
-              key={to}
-            >
-              <img
-                className="home-action-photo"
-                src={image}
-                alt=""
-                width={240}
-                height={180}
-                decoding="async"
-              />
-              <strong>{t(label)}</strong>
-            </Link>
-          ))}
-        </nav>
       </div>
       <ServiceDiscovery compact />
       {adminPhone && (
@@ -520,22 +484,7 @@ function Protected({ children }: { children: ReactNode }) {
   return children;
 }
 function Services() {
-  const location = useLocation();
-  useEffect(() => {
-    if (new URLSearchParams(location.search).get("tab") === "maintenance") {
-      document
-        .getElementById("maintenance")
-        ?.scrollIntoView({ block: "start" });
-    }
-  }, [location.search]);
-  return (
-    <div className="services-catalogue-page">
-      <ServiceDiscovery />
-      <div className="section services-maintenance" id="maintenance">
-        <Maintenance />
-      </div>
-    </div>
-  );
+  return <ServiceDiscovery />;
 }
 function BookingEntry() {
   return (

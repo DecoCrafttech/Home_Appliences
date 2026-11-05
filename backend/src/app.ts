@@ -1,3 +1,4 @@
+import { dynamicCatalogue } from "./dynamicCatalogue.js";
 import {
   technicianIdentityRoutes,
   adminIdentityRoutes,
@@ -72,7 +73,7 @@ app.use((req, res, next) => {
 });
 app.use(createApiRateLimit(env.NODE_ENV === "production" ? 300 : 1000));
 app.use(verifyBrowserOrigin);
-app.use("/api/v1/admin/catalogue/media", express.json({ limit: "512kb" }));
+app.use("/api/v1/admin/catalogue/media", express.json({ limit: "3mb" }));
 app.use(express.json({ limit: "32kb" }));
 app.use(limitJsonComplexity);
 app.use(idempotentMutations);
@@ -115,6 +116,7 @@ app.use("/api/v1/admin", notificationRoutes);
 app.use("/api/v1/admin", catalogueMediaAdmin);
 app.use("/api/v1/admin", adminCalendarRoutes);
 app.use("/api/v1", catalogueMediaPublic);
+app.use("/api/v1", dynamicCatalogue);
 app.use("/api/v1", customerRoutes);
 app.use("/api/v1/push", customerPushRoutes);
 app.use("/api/v1/admin", adminRoutes);

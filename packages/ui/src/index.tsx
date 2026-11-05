@@ -159,6 +159,15 @@ export function protectApi(client: AxiosInstance, role: string) {
         !/\/(auth|locations)\/|\/(photos|documents|photo)(\/|$)/.test(
           config.url || "",
         );
+      // Each catalogue edit is a new intent (e.g. disable/enable/disable).
+      // Retain the key on this request for retries, but do not reuse an old
+      // successful edit's key just because its payload happens to match.
+      if (
+        protectedOperation &&
+        /\/catalogue(?:\/|$)/.test(config.url || "") &&
+        !config.headers.has("Idempotency-Key")
+      )
+        config.headers.set("Idempotency-Key", crypto.randomUUID());
       if (protectedOperation && !config.headers.has("Idempotency-Key")) {
         const digest = await crypto.subtle.digest(
           "SHA-256",

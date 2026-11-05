@@ -746,15 +746,44 @@ const serviceBody = z.object({
   options: catalogueOptionsSchema.optional(),
   iconObjectKey: z.string().max(160).nullable().optional(),
 });
+async function checkCatalogueName(
+  itemId: string,
+  type: string,
+  name: string,
+  id?: string,
+) {
+  await db()`SELECT pg_advisory_xact_lock(hashtextextended(${itemId + ":" + type + ":" + name.toLowerCase()},0))`;
+  const existing =
+    await db()`SELECT id FROM service_catalogue WHERE appliance_category_id=${itemId} AND request_type=${type} AND lower(name)=lower(${name}) AND archived_at IS NULL AND id<>COALESCE(${id ?? null}::uuid,'00000000-0000-0000-0000-000000000000'::uuid)`;
+  if (existing.length)
+    throw new ApiError(
+      409,
+      "DUPLICATE_SERVICE",
+      "An entry with this name already exists for this item and type.",
+    );
+}
 router.get(
   "/catalogue",
   requireStaff,
   asyncRoute(async (_req, res) => {
     const categories =
-      await db()`SELECT a.id,a.slug,a.name,a.kind,a.icon_object_key,a.publication_status,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key) AS icon_preview_url FROM appliance_categories a WHERE a.active=true ORDER BY a.name`;
+      await db()`SELECT a.*,COALESCE((SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key),a.default_image_path) AS icon_preview_url FROM appliance_categories a WHERE a.archived_at IS NULL ORDER BY a.display_order,a.name,a.id`;
     const services =
-      await db()`SELECT s.*,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_preview_url,a.name AS appliance_name,a.kind AS category_kind FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active=true AND a.active=true ORDER BY s.display_order,a.name,s.name`;
-    res.json({ data: { categories, services } });
+      await db()`SELECT s.*,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url,(SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_preview_url,a.name AS appliance_name,a.kind AS category_kind FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.archived_at IS NULL AND a.archived_at IS NULL ORDER BY s.display_order,a.name,s.name`;
+    const groups =
+      await db()`SELECT g.*,COALESCE((SELECT '/api/v1/admin/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=g.icon_object_key),g.default_image_path) AS icon_preview_url FROM catalogue_categories g WHERE g.archived_at IS NULL ORDER BY g.display_order,g.name,g.id`;
+    const banner = (
+      await db()`SELECT value FROM app_settings WHERE key='customer_home_banner'`
+    )[0];
+    const bannerData = banner ? JSON.parse(String(banner.value)) : null;
+    if (bannerData?.iconObjectKey) {
+      const media = (
+        await db()`SELECT id FROM catalogue_media WHERE object_key=${bannerData.iconObjectKey}`
+      )[0];
+      if (media)
+        bannerData.previewUrl = `/api/v1/admin/catalogue/media/${media.id}`;
+    }
+    res.json({ data: { groups, categories, services, banner: bannerData } });
   }),
 );
 router.post(
@@ -770,6 +799,12 @@ router.post(
         input.error.issues[0]?.message || "Check service details",
       );
     const s = input.data;
+    await checkCatalogueName(
+      s.applianceCategoryId,
+      s.requestType,
+      s.name,
+      req.params.id as string | undefined,
+    );
     if (
       s.publicationStatus === "PUBLISHED" &&
       s.options === undefined &&
@@ -863,6 +898,12 @@ router.patch(
         input.error.issues[0]?.message || "Check service details",
       );
     const s = input.data;
+    await checkCatalogueName(
+      s.applianceCategoryId,
+      s.requestType,
+      s.name,
+      req.params.id as string | undefined,
+    );
     if (
       s.publicationStatus === "PUBLISHED" &&
       s.options === undefined &&
@@ -911,7 +952,7 @@ router.patch(
         "Choose an available appliance",
       );
     const rows =
-      await db()`UPDATE service_catalogue SET appliance_category_id=${s.applianceCategoryId},request_type=${s.requestType},name=${s.name},description=COALESCE(${s.description ?? null},description),display_order=COALESCE(${s.displayOrder ?? null}::int,display_order),publication_status=COALESCE(${s.publicationStatus ?? null},publication_status),booking_options=CASE WHEN ${s.options !== undefined} THEN ${JSON.stringify(s.options || [])}::jsonb ELSE booking_options END,icon_object_key=CASE WHEN ${s.iconObjectKey !== undefined} THEN ${s.iconObjectKey || null} ELSE icon_object_key END,form_fields=${JSON.stringify(s.formFields)}::jsonb,base_price=CASE WHEN ${s.basePrice !== undefined} THEN ${s.basePrice ?? null}::numeric ELSE base_price END WHERE id=${req.params.id} AND active=true RETURNING *`;
+      await db()`UPDATE service_catalogue SET appliance_category_id=${s.applianceCategoryId},request_type=${s.requestType},name=${s.name},description=COALESCE(${s.description ?? null},description),display_order=COALESCE(${s.displayOrder ?? null}::int,display_order),publication_status=COALESCE(${s.publicationStatus ?? null},publication_status),booking_options=CASE WHEN ${s.options !== undefined} THEN ${JSON.stringify(s.options || [])}::jsonb ELSE booking_options END,icon_object_key=CASE WHEN ${s.iconObjectKey !== undefined} THEN ${s.iconObjectKey || null} ELSE icon_object_key END,form_fields=${JSON.stringify(s.formFields)}::jsonb,base_price=CASE WHEN ${s.basePrice !== undefined} THEN ${s.basePrice ?? null}::numeric ELSE base_price END WHERE id=${req.params.id} AND archived_at IS NULL RETURNING *`;
     if (!rows[0]) throw new ApiError(404, "NOT_FOUND", "Service not found");
     res.json({ data: rows[0] });
   }),
@@ -922,7 +963,7 @@ router.delete(
   manageCatalogue,
   asyncRoute(async (req, res) => {
     const rows =
-      await db()`UPDATE service_catalogue SET active=false WHERE id=${req.params.id} AND active=true RETURNING id`;
+      await db()`UPDATE service_catalogue SET active=false,archived_at=now(),updated_at=now() WHERE id=${req.params.id} AND archived_at IS NULL RETURNING id`;
     if (!rows[0]) throw new ApiError(404, "NOT_FOUND", "Service not found");
     res.status(204).end();
   }),

@@ -41,6 +41,7 @@ import {
 } from "./components";
 import { icons, adminKeys } from "./design";
 type Row = CompletionRequest & {
+  catalogue_category_name?: string;
   display_number?: number | string;
   status_source?: string;
   customer_phone?: string;
@@ -310,6 +311,9 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
       header: mode === "COMPLETED" ? "Appliance" : "Problem / Service",
       cell: (c) => (
         <>
+          {c.row.original.catalogue_category_name && (
+            <small>{c.row.original.catalogue_category_name}</small>
+          )}
           {c.getValue()}
           <small>{c.row.original.service_name}</small>
           <small>
@@ -717,6 +721,9 @@ export function RequestWorkspace({ mode }: { mode: Mode }) {
                     )}
                   </span>
                   <div>
+                    {r.catalogue_category_name && (
+                      <small>{r.catalogue_category_name}</small>
+                    )}
                     <h2>{r.appliance}</h2>
                     <p>{r.service_name}</p>
                   </div>

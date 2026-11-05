@@ -171,6 +171,14 @@ try {
     if (!process.env.npm_execpath)
       throw new Error("Run through npm run audit:test-db");
     await closeSource();
+    const migration = spawnSync(
+      process.execPath,
+      [process.env.npm_execpath, "run", "db:migrate", "-w", "@home/api"],
+      { cwd: root, stdio: "inherit", env: childEnv },
+    );
+    if (migration.error) throw migration.error;
+    if (migration.status !== 0)
+      throw new Error("Isolated test migrations failed");
     const result = spawnSync(
       process.execPath,
       [

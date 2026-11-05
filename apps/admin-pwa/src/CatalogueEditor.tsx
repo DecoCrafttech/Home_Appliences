@@ -90,7 +90,24 @@ export function CatalogueEditor({
         throw new Error(
           "Publish this appliance in Edit category before publishing its services.",
         );
-      const parsed = catalogueOptionsSchema.safeParse(options),
+      const parsed = catalogueOptionsSchema.safeParse(
+          options.length
+            ? options
+            : [
+                {
+                  id: crypto.randomUUID(),
+                  name: name.trim(),
+                  description: "",
+                  active: true,
+                  priceType: "QUOTE",
+                  amountPaise: null,
+                  maximumPaise: null,
+                  included: "",
+                  exclusions: "",
+                  durationMinutes: null,
+                },
+              ],
+        ),
         form = serviceFormSchema.safeParse(fields);
       if (!parsed.success)
         throw new Error(
@@ -100,9 +117,12 @@ export function CatalogueEditor({
         throw new Error(
           form.error.issues[0]?.message || "Check booking questions.",
         );
-      if (publicationStatus === "PUBLISHED" && !options.some((o) => o.active))
+      if (
+        publicationStatus === "PUBLISHED" &&
+        !parsed.data.some((o) => o.active)
+      )
         throw new Error("Add at least one active option before publishing.");
-      const first = options.find((o) => o.active);
+      const first = parsed.data.find((o) => o.active);
       const body = {
         name: name.trim(),
         applianceCategoryId: category,
@@ -199,7 +219,7 @@ export function CatalogueEditor({
       )}
       <div className="catalogue-wizard" hidden={leaving}>
         <ol className="catalogue-steps">
-          {["Details", "Icon", "Options & pricing", "Preview"].map(
+          {["Details & image", "Options & pricing", "Preview"].map(
             (label, i) => (
               <li key={label}>
                 <button
@@ -270,9 +290,9 @@ export function CatalogueEditor({
               </label>
             </>
           )}
-          {step === 1 && (
+          {step === 0 && (
             <>
-              <h3>Service icon</h3>
+              <h3>Entry image</h3>
               <CatalogueIconUpload
                 preview={preview}
                 onBusyChange={setUploading}
@@ -283,7 +303,7 @@ export function CatalogueEditor({
               />
             </>
           )}
-          {step === 2 && (
+          {step === 1 && (
             <>
               <h3>
                 {actualType === "SERVICE"
@@ -372,7 +392,7 @@ export function CatalogueEditor({
               <CatalogueQuestions fields={fields} setFields={setFields} />
             </>
           )}
-          {step === 2 && (
+          {step === 1 && (
             <>
               <h3>Approximate INR pricing</h3>
               {!options.length && <p>Add booking options first.</p>}
@@ -483,7 +503,7 @@ export function CatalogueEditor({
               ))}
             </>
           )}
-          {step === 3 && (
+          {step === 2 && (
             <div className="catalogue-preview">
               <span className="eyebrow">Customer preview</span>
               {preview && (

@@ -103,10 +103,14 @@ export const idempotentMutations: RequestHandler = (req, res, next) => {
         "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
         [scope + ":payload:" + fingerprint],
       );
-      const duplicate = await connection.query(
-        "SELECT * FROM mutation_results WHERE actor_scope=$1 AND fingerprint=$2 AND created_at>now()-interval '10 seconds' AND expires_at>now() LIMIT 1",
-        [scope, fingerprint],
-      );
+      // Catalogue writes have scoped uniqueness guards and explicit operation
+      // keys. Repeated payloads may be intentional state changes or re-uploads.
+      const duplicate = req.path.startsWith("/api/v1/admin/catalogue")
+        ? { rows: [] }
+        : await connection.query(
+            "SELECT * FROM mutation_results WHERE actor_scope=$1 AND fingerprint=$2 AND created_at>now()-interval '10 seconds' AND expires_at>now() LIMIT 1",
+            [scope, fingerprint],
+          );
       if (duplicate.rows[0]) {
         const saved = duplicate.rows[0];
         await connection.query(

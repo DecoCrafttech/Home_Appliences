@@ -32,6 +32,7 @@ export type CatalogueItem = {
   form_fields?: ServiceFormField[];
 };
 export type RequestRecord = {
+  catalogue_category_name?: string;
   status_source?: string;
   display_number?: number | string;
   assigned_technician_name?: string;

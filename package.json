@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:catalogue-e2e": "node scripts/run-catalogue-e2e.mjs",
     "test:pwa-render": "node scripts/check-pwa-render.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

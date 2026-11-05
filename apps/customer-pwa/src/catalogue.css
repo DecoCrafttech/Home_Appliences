@@ -1,0 +1,120 @@
+.home-banner-secondary {
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: center;
+  color: #766586;
+  margin: 10px 4px 0;
+  text-wrap: balance;
+}
+.home-promo-title {
+  max-width: 480px;
+}
+.catalogue-category-grid .appliance-card-footer small {
+  display: block;
+  font-size: 11px;
+  color: #887799;
+  margin-top: 3px;
+}
+.appliance-card-footer > div {
+  min-width: 0;
+}
+.appliance-card-footer h2,
+.appliance-card-footer h3 {
+  overflow-wrap: anywhere;
+}
+.appliance-photo.image-fallback {
+  display: grid;
+  place-items: center;
+  color: #b4a1cf;
+}
+.appliance-photo.image-fallback svg {
+  width: 42px;
+  height: 42px;
+}
+.service-option-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.service-option-icon:has(.service-option-photo) {
+  background: #faf8fe;
+}
+.services-discovery .appliance-card .appliance-photo-wrap {
+  padding: 12px;
+}
+.home-discovery .catalogue-category-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.home-discovery .catalogue-category-grid .appliance-photo-wrap {
+  aspect-ratio: 3/2;
+}
+.home-discovery .catalogue-category-grid .appliance-card-footer {
+  min-height: 64px;
+}
+.home-promo .v6-hero-art {
+  min-width: 0;
+}
+.home-banner-secondary + .home-benefits {
+  margin-top: 10px;
+}
+@media (min-width: 761px) {
+  .home-discovery .catalogue-category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .home-discovery .catalogue-category-grid .appliance-photo-wrap {
+    max-height: 180px;
+  }
+  .home-banner-secondary {
+    font-size: 12px;
+  }
+}
+@media (max-width: 760px) {
+  .home-promo {
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    min-height: 194px;
+  }
+  .home-promo-title {
+    font-size: 22px;
+    line-height: 1.15;
+  }
+  .home-promo-description {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .home-promo .v6-hero-art {
+    height: 145px;
+  }
+  .home-discovery .catalogue-category-grid .appliance-card h2 {
+    font-size: 14px;
+  }
+  .services-discovery .page-heading {
+    border-radius: 16px;
+  }
+  .services-discovery .appliance-card-footer {
+    min-height: 56px;
+  }
+  .booking-page .choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .booking-page .choice-card {
+    min-width: 0;
+  }
+  .booking-page .choice-card img {
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .selected-catalogue-service .selected-appliance-photo {
+    object-fit: contain;
+  }
+  .home-page .home-showcase {
+    margin-bottom: 18px;
+  }
+}
+@media (max-width: 350px) {
+  .home-promo-title {
+    font-size: 19px;
+  }
+  .home-banner-secondary {
+    font-size: 9px;
+  }
+}

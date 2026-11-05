@@ -1,10 +1,4 @@
 import { serviceIcon } from "./servicePresentation";
-import {
-  homeAppliances,
-  isHiddenCustomerAppliance,
-  appliancePhoto,
-  appliancePresentation,
-} from "./appliancePresentation";
 import { ImageWithFallback, useDebouncedValue } from "@home/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -13,90 +7,130 @@ import {
   FaXmark,
   FaMagnifyingGlass,
   FaChevronRight,
+  FaLayerGroup,
 } from "react-icons/fa6";
 import { type CatalogueOption } from "@home/shared";
-import { api } from "./lib/api";
+import { api, catalogueImageUrl } from "./lib/api";
 import { LoadingSkeleton, EmptyState } from "./components/ui";
 export type PublishedService = {
-  category_kind?: string;
   id: string;
   name: string;
   description: string;
   appliance_category_id: string;
   appliance_name: string;
+  catalogue_category_id?: string;
+  catalogue_category_name?: string;
+  category_kind?: string;
   request_type: "SERVICE" | "INSTALLATION";
   icon_url?: string | null;
   base_price?: string | null;
   booking_options: CatalogueOption[];
 };
+export type PublishedAppliance = {
+  id: string;
+  name: string;
+  description?: string;
+  slug: string;
+  kind?: string;
+  catalogue_category_id?: string;
+  category_name?: string;
+  icon_url?: string | null;
+  service_count: number;
+};
+type Category = {
+  id: string;
+  name: string;
+  description: string;
+  icon_url?: string | null;
+  item_count: number;
+};
 export function usePublishedCatalogue(enabled = true) {
   return useQuery({
     queryKey: ["published-catalogue"],
     queryFn: async ({ signal }) =>
-      (
-        await api.get<{ data: PublishedService[] }>("/catalogue", { signal })
-      ).data.data.filter(
-        (service) => !isHiddenCustomerAppliance(service.appliance_name),
-      ),
+      (await api.get<{ data: PublishedService[] }>("/catalogue", { signal }))
+        .data.data,
     enabled,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 300_000,
+    staleTime: 15000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
 }
-function ApplianceImage({ name, src }: { name: string; src?: string | null }) {
+export function useHomeBanner() {
+  return useQuery({
+    queryKey: ["customer-home-banner"],
+    queryFn: async () =>
+      (
+        await api.get<{
+          data: {
+            headline: string;
+            description: string;
+            cta: string;
+            secondary: string;
+            icon_url: string | null;
+          };
+        }>("/catalogue/home-banner")
+      ).data.data,
+    staleTime: 30000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+  });
+}
+function CatalogueImage({ src }: { src?: string | null }) {
   return (
     <ImageWithFallback
       className="appliance-photo"
-      src={src || appliancePhoto(name)}
+      src={catalogueImageUrl(src)}
       alt=""
       width={400}
       height={300}
       loading="lazy"
       decoding="async"
-      fallback={
-        <span className="appliance-photo-missing">Photo unavailable</span>
-      }
+      fallback={<FaLayerGroup aria-hidden="true" />}
     />
   );
 }
 export function ServiceCard({ service }: { service: PublishedService }) {
-  const bookingParams = new URLSearchParams({
+  const params = new URLSearchParams({
     applianceCategoryId: service.appliance_category_id,
     serviceId: service.id,
   });
-  const bookingType =
-    service.request_type === "INSTALLATION" ? "installation" : "service";
+  if (service.catalogue_category_id)
+    params.set("categoryId", service.catalogue_category_id);
   const Icon = serviceIcon(service.name, service.request_type);
   return (
     <Link
       className="discovery-card service-option"
-      to={`/request/${bookingType}?${bookingParams}`}
-      aria-label={`Book ${service.name}`}
+      to={
+        "/request/" +
+        (service.request_type === "INSTALLATION" ? "installation" : "service") +
+        "?" +
+        params
+      }
+      aria-label={"Book " + service.name}
     >
       <span className="service-option-icon">
-        <Icon aria-hidden="true" />
+        {service.icon_url ? (
+          <ImageWithFallback
+            className="service-option-photo"
+            src={catalogueImageUrl(service.icon_url)}
+            alt=""
+            width={72}
+            height={72}
+            fallback={<Icon />}
+          />
+        ) : (
+          <Icon aria-hidden="true" />
+        )}
       </span>
       <span className="service-option-copy">
         <h3>{service.name}</h3>
-        <p>
-          {service.description ||
-            `${service.appliance_name} ${service.request_type === "INSTALLATION" ? "installation" : "service"}`}
-        </p>
+        {service.description && <p>{service.description}</p>}
       </span>
       <FaChevronRight className="service-option-chevron" aria-hidden="true" />
     </Link>
   );
 }
-
-type PublishedAppliance = {
-  kind?: string;
-  id: string;
-  name: string;
-  slug: string;
-  icon_url?: string | null;
-  service_count: number;
-};
 function useCatalogueFilters() {
   const [params, setParams] = useSearchParams();
   const search = params.get("q") || "";
@@ -105,7 +139,6 @@ function useCatalogueFilters() {
     ? requestedType
     : "";
   function update(changes: Record<string, string>) {
-    // Preserve fast consecutive selections before the route renders again.
     const next = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
@@ -121,153 +154,239 @@ function useCatalogueFilters() {
     clear: () => update({ q: "", type: "" }),
   };
 }
+function Search({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  return (
+    <label className="discovery-search">
+      <FaMagnifyingGlass aria-hidden="true" />
+      <input
+        type="search"
+        aria-label={label}
+        placeholder={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {value && (
+        <button
+          type="button"
+          className="search-clear"
+          aria-label="Clear search"
+          onClick={() => onChange("")}
+        >
+          <FaXmark aria-hidden="true" />
+        </button>
+      )}
+    </label>
+  );
+}
 export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
   const { search, setSearch } = useCatalogueFilters();
-  const settledSearch = useDebouncedValue(search.trim(), 250);
+  const term = useDebouncedValue(search.trim(), 200);
   const q = useQuery({
-    queryKey: ["published-appliances"],
+    queryKey: ["published-categories"],
     queryFn: async () =>
-      (await api.get<{ data: PublishedAppliance[] }>("/catalogue/appliances"))
-        .data.data,
-    staleTime: 300_000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+      (await api.get<{ data: Category[] }>("/catalogue/categories")).data.data,
+    staleTime: 15000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
-  const curated = homeAppliances.map((presentation) => ({
-    presentation,
-    appliance: q.data
-      ?.filter((appliance) => appliance.kind !== "MAINTENANCE")
-      .find((appliance) =>
-        presentation.match.test(`${appliance.name} ${appliance.slug || ""}`),
-      ),
-  }));
-  const extra = (q.data || [])
-    .filter(
-      (appliance) =>
-        appliance.kind !== "MAINTENANCE" &&
-        !isHiddenCustomerAppliance(appliance.name) &&
-        !isHiddenCustomerAppliance(appliance.slug || "") &&
-        !curated.some((row) => row.appliance?.id === appliance.id),
-    )
-    .map((appliance) => ({
-      presentation: appliancePresentation(appliance.name),
-      appliance,
-    }));
-  const rows = [...curated, ...extra];
-  const matches = rows.filter(({ presentation, appliance }) =>
-    `${presentation.label} ${appliance?.name || ""}`
-      .toLowerCase()
-      .includes(settledSearch.toLowerCase()),
+  const rows = (q.data || []).filter(
+    (c) => compact || c.name.toLowerCase().includes(term.toLowerCase()),
   );
-  const appliances = compact && !settledSearch ? matches.slice(0, 4) : matches;
+  const categories = compact ? rows.slice(0, 6) : rows;
   return (
     <section
       className={compact ? "home-discovery" : "section page services-discovery"}
     >
       {compact ? (
         <div className="section-heading">
-          <h2>Browse Appliances</h2>
+          <h2>Explore services</h2>
           <Link to="/services">
-            View All <FaArrowRight aria-hidden="true" />
+            View all <FaArrowRight aria-hidden="true" />
           </Link>
         </div>
       ) : (
         <>
           <div className="page-heading">
             <div>
-              <span className="eyebrow">APPLIANCE CARE</span>
-              <h1>Services &amp; Installation</h1>
+              <span className="eyebrow">CARE FOR YOUR HOME</span>
+              <h1>Explore services</h1>
             </div>
           </div>
-          <label className="discovery-search">
-            <FaMagnifyingGlass aria-hidden="true" />
-            <input
-              type="search"
-              aria-label="Search appliances"
-              placeholder="Search appliances"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                className="search-clear"
-                type="button"
-                aria-label="Clear search"
-                onClick={() => setSearch("")}
-              >
-                <FaXmark aria-hidden="true" />
-              </button>
-            )}
-          </label>
+          <Search
+            label="Search categories"
+            value={search}
+            onChange={setSearch}
+          />
         </>
       )}
       {q.isPending ? (
-        <LoadingSkeleton variant="appliances" count={compact ? 4 : 11} />
+        <LoadingSkeleton variant="appliances" count={compact ? 2 : 4} />
       ) : q.isError ? (
-        <div role="alert">
-          <EmptyState
-            kind="network"
-            title="Unable to load information"
-            description="Check your connection and try loading the appliances again."
-            primaryAction={
-              <button className="secondary" onClick={() => q.refetch()}>
-                Retry
-              </button>
-            }
-          />
-        </div>
-      ) : appliances.length ? (
-        <div className="appliance-grid">
-          {appliances.map(({ presentation, appliance }) => {
-            const label = appliance?.name || presentation.label;
-            return (
-              <Link
-                className="appliance-card"
-                key={appliance?.id || presentation.key}
-                to={`/services/appliances/${appliance?.id || `unlisted-${presentation.key}`}`}
-                aria-label={`View ${label} services`}
-              >
-                <div className="appliance-photo-wrap">
-                  <ApplianceImage name={label} />
+        <EmptyState
+          kind="network"
+          title="Unable to load categories"
+          description="Check your connection and try again."
+          primaryAction={
+            <button className="primary" onClick={() => q.refetch()}>
+              Try again
+            </button>
+          }
+        />
+      ) : categories.length ? (
+        <div className="appliance-grid catalogue-category-grid">
+          {categories.map((category) => (
+            <Link
+              className="appliance-card"
+              key={category.id}
+              to={"/services/categories/" + category.id}
+              aria-label={"View " + category.name + " items"}
+            >
+              <div className="appliance-photo-wrap">
+                <CatalogueImage src={category.icon_url} />
+              </div>
+              <div className="appliance-card-footer">
+                <div>
+                  <h2>{category.name}</h2>
+                  <small>
+                    {category.item_count}{" "}
+                    {category.item_count === 1 ? "item" : "items"}
+                  </small>
                 </div>
-                {!appliance && (
-                  <span className="appliance-availability">Not listed yet</span>
-                )}
-                <div className="appliance-card-footer">
-                  <h2>{label}</h2>
-                  <FaChevronRight aria-hidden="true" />
-                </div>
-              </Link>
-            );
-          })}
+                <FaChevronRight aria-hidden="true" />
+              </div>
+            </Link>
+          ))}
         </div>
       ) : (
         <EmptyState
           kind={search ? "search" : "catalogue"}
-          title={
-            search ? "No matching appliances" : "No appliances available yet"
-          }
+          title={search ? "No matching categories" : "Services are coming soon"}
           description={
             search
-              ? "Try a different appliance name."
-              : "Check back for appliance services."
+              ? "Try a different category name."
+              : "Check back soon or contact support for help."
           }
-        >
-          {search && (
-            <button className="secondary" onClick={() => setSearch("")}>
-              Clear search
+          primaryAction={
+            search ? (
+              <button className="secondary" onClick={() => setSearch("")}>
+                Clear search
+              </button>
+            ) : (
+              <Link className="secondary" to="/support">
+                Contact support
+              </Link>
+            )
+          }
+        />
+      )}
+    </section>
+  );
+}
+export function CategoryItems() {
+  const { categoryId } = useParams();
+  const { search, setSearch } = useCatalogueFilters();
+  const q = useQuery({
+    queryKey: ["category-items", categoryId],
+    queryFn: async () =>
+      (
+        await api.get<{
+          data: PublishedAppliance[];
+          meta: { category: Category };
+        }>(`/catalogue/categories/${categoryId}/items`)
+      ).data,
+    staleTime: 15000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+  });
+  const rows = (q.data?.data || []).filter((i) =>
+    i.name.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+  return (
+    <section className="section page services-discovery">
+      <Link className="text-button appliance-back" to="/services">
+        All categories
+      </Link>
+      {q.isPending ? (
+        <LoadingSkeleton variant="appliances" />
+      ) : q.isError ? (
+        <EmptyState
+          kind="network"
+          title="Category unavailable"
+          description="Try again or browse another category."
+          primaryAction={
+            <button className="primary" onClick={() => q.refetch()}>
+              Try again
             </button>
+          }
+          secondaryAction={
+            <Link className="secondary" to="/services">
+              Browse categories
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <div className="page-heading">
+            <div>
+              <h1>{q.data.meta.category.name}</h1>
+              {q.data.meta.category.description && (
+                <p>{q.data.meta.category.description}</p>
+              )}
+            </div>
+          </div>
+          <Search label="Search items" value={search} onChange={setSearch} />
+          {rows.length ? (
+            <div className="appliance-grid">
+              {rows.map((item) => (
+                <Link
+                  className="appliance-card"
+                  key={item.id}
+                  to={"/services/appliances/" + item.id}
+                  aria-label={"View " + item.name + " services"}
+                >
+                  <div className="appliance-photo-wrap">
+                    <CatalogueImage src={item.icon_url} />
+                  </div>
+                  <div className="appliance-card-footer">
+                    <h2>{item.name}</h2>
+                    <FaChevronRight aria-hidden="true" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              kind={search ? "search" : "services"}
+              title={search ? "No matching items" : "No items available yet"}
+              description="Try a different search or check back for new services."
+              primaryAction={
+                search ? (
+                  <button className="secondary" onClick={() => setSearch("")}>
+                    Clear search
+                  </button>
+                ) : (
+                  <Link className="secondary" to="/services">
+                    Browse categories
+                  </Link>
+                )
+              }
+            />
           )}
-        </EmptyState>
+        </>
       )}
     </section>
   );
 }
 export function ApplianceServices() {
   const { applianceId } = useParams();
-  const unlisted = homeAppliances.find(
-    (appliance) => `unlisted-${appliance.key}` === applianceId,
-  );
   const { search, setSearch, type, setType, clear } = useCatalogueFilters();
   const q = useQuery({
     queryKey: ["appliance-services", applianceId],
@@ -278,30 +397,9 @@ export function ApplianceServices() {
           meta: { appliance: PublishedAppliance };
         }>(`/catalogue/appliances/${applianceId}/services`)
       ).data,
-    enabled: !unlisted,
     staleTime: 300_000,
     refetchOnMount: true,
   });
-  if (unlisted)
-    return (
-      <section className="section page services-discovery">
-        <Link className="text-button appliance-back" to="/services">
-          All appliances
-        </Link>
-        <div className="page-heading">
-          <h1>{unlisted.label}</h1>
-        </div>
-        <EmptyState title="No services listed yet">
-          <p>
-            There are no {unlisted.label.toLowerCase()} services in the current
-            catalogue. Check back later or contact support for help.
-          </p>
-          <Link className="secondary" to="/support">
-            Help &amp; Support
-          </Link>
-        </EmptyState>
-      </section>
-    );
   if (q.isPending)
     return (
       <section className="section page">
@@ -311,9 +409,21 @@ export function ApplianceServices() {
   if (q.isError)
     return (
       <section className="section page" role="alert">
-        <p>Unable to load this appliance's services.</p>
-        <button onClick={() => q.refetch()}>Try again</button>
-        <Link to="/services">All appliances</Link>
+        <EmptyState
+          kind="network"
+          title="Services unavailable"
+          description="This item may no longer be available, or the connection was interrupted."
+          primaryAction={
+            <button className="primary" onClick={() => q.refetch()}>
+              Try again
+            </button>
+          }
+          secondaryAction={
+            <Link className="secondary" to="/services">
+              Browse categories
+            </Link>
+          }
+        />
       </section>
     );
   const rows = q.data.data.filter(
@@ -326,12 +436,12 @@ export function ApplianceServices() {
   return (
     <section className="section page services-discovery">
       <Link className="text-button appliance-back" to="/services">
-        All appliances
+        All categories
       </Link>
       <div className="page-heading">
         <div>
           <h1>{q.data.meta.appliance.name}</h1>
-          <p>Choose a service or installation for your appliance.</p>
+          <p>Choose the service or installation you need.</p>
         </div>
       </div>
       <label className="discovery-search">

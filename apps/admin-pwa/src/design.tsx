@@ -28,7 +28,7 @@ export const navigation = [
       },
       {
         to: "/catalogue",
-        label: "Services & Installations",
+        label: "Service Catalogue",
         icon: icons.catalogue,
       },
       { to: "/settings", label: "Settings", icon: icons.settings },

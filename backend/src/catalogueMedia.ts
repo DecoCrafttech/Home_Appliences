@@ -1,8 +1,12 @@
 import { Router, type RequestHandler } from "express";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import sanitizeHtml from "sanitize-html";
 import { z } from "zod";
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { requireStaff, allow } from "./adminRoutes.js";
 import { ApiError } from "./customerRoutes.js";
 import { db } from "./db.js";
@@ -16,9 +20,15 @@ const route =
           ? new ApiError(
               422,
               "INVALID_MEDIA",
-              "Choose a supported icon smaller than 256 KB.",
+              "Choose a supported icon smaller than 2 MB.",
             )
-          : error,
+          : error instanceof ApiError
+            ? error
+            : new ApiError(
+                503,
+                "MEDIA_UNAVAILABLE",
+                "Image storage is unavailable. Check the storage configuration or try again shortly.",
+              ),
       ),
     );
 export function sanitizeCatalogueSvg(source: string): string {
@@ -150,17 +160,17 @@ catalogueMediaAdmin.post(
         data: z
           .string()
           .min(1)
-          .max(350000)
+          .max(2800000)
           .regex(/^[A-Za-z0-9+/]+={0,2}$/),
       })
       .strict()
       .parse(req.body);
     let bytes = Buffer.from(i.data, "base64");
-    if (!bytes.length || bytes.length > 262144)
+    if (!bytes.length || bytes.length > 2097152)
       throw new ApiError(
         422,
         "INVALID_MEDIA",
-        "Icons must be smaller than 256 KB.",
+        "Icons must be smaller than 2 MB.",
       );
     if (i.contentType === "image/svg+xml")
       bytes = Buffer.from(sanitizeCatalogueSvg(bytes.toString("utf8")), "utf8");
@@ -181,9 +191,24 @@ catalogueMediaAdmin.post(
           "File contents do not match the selected image type.",
         );
     }
+    const contentHash = createHash("sha256").update(bytes).digest("hex");
+    await db()`SELECT pg_advisory_xact_lock(hashtextextended(${req.staff!.id + ":" + contentHash},0))`;
+    const existing = (
+      await db()`SELECT id,object_key FROM catalogue_media WHERE created_by=${req.staff!.id} AND content_hash=${contentHash}`
+    )[0];
+    if (existing) {
+      await db()`UPDATE catalogue_media SET last_selected_at=now() WHERE id=${existing.id}`;
+      res.status(200).json({
+        data: {
+          ...existing,
+          previewUrl: `/api/v1/admin/catalogue/media/${existing.id}`,
+        },
+      });
+      return;
+    }
     const quota =
       await db()`SELECT count(*)::int AS count FROM catalogue_media WHERE created_by=${req.staff!.id} AND created_at>now()-interval '24 hours'`;
-    if (Number(quota[0]?.count) >= 40)
+    if (Number(quota[0]?.count) >= 200)
       throw new ApiError(
         429,
         "UPLOAD_LIMIT",
@@ -199,7 +224,7 @@ catalogueMediaAdmin.post(
       }),
     );
     const rows =
-      await db()`INSERT INTO catalogue_media(object_key,content_type,byte_size,created_by) VALUES(${key},${i.contentType},${bytes.length},${req.staff!.id}) RETURNING id,object_key`;
+      await db()`INSERT INTO catalogue_media(object_key,content_type,byte_size,created_by,content_hash) VALUES(${key},${i.contentType},${bytes.length},${req.staff!.id},${contentHash}) RETURNING id,object_key`;
     res.status(201).json({
       data: {
         ...rows[0],
@@ -215,7 +240,7 @@ async function serve(
 ) {
   z.string().uuid().parse(id);
   const rows =
-    await db()`SELECT m.* FROM catalogue_media m WHERE m.id=${id} AND (${!published} OR EXISTS(SELECT 1 FROM service_catalogue s WHERE s.icon_object_key=m.object_key AND s.active AND s.publication_status='PUBLISHED') OR EXISTS(SELECT 1 FROM appliance_categories a WHERE a.icon_object_key=m.object_key AND a.active AND a.publication_status='PUBLISHED'))`;
+    await db()`SELECT m.* FROM catalogue_media m WHERE m.id=${id} AND (${!published} OR EXISTS(SELECT 1 FROM service_catalogue s WHERE s.icon_object_key=m.object_key AND s.active AND s.publication_status='PUBLISHED' AND s.archived_at IS NULL AND EXISTS(SELECT 1 FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.id=s.appliance_category_id AND a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL)) OR EXISTS(SELECT 1 FROM appliance_categories a WHERE a.icon_object_key=m.object_key AND a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND EXISTS(SELECT 1 FROM catalogue_categories g WHERE g.id=a.catalogue_category_id AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL)) OR EXISTS(SELECT 1 FROM catalogue_categories g WHERE g.icon_object_key=m.object_key AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL) OR EXISTS(SELECT 1 FROM app_settings v WHERE v.key='customer_home_banner' AND v.value::jsonb->>'iconObjectKey'=m.object_key))`;
   if (!rows[0]) throw new ApiError(404, "NOT_FOUND", "Icon not found.");
   const media = rows[0],
     file = await storage().send(
@@ -237,4 +262,68 @@ catalogueMediaAdmin.get(
 catalogueMediaPublic.get(
   "/catalogue/media/:id",
   route(async (req, res) => serve(String(req.params.id), true, res)),
+);
+catalogueMediaAdmin.delete(
+  "/catalogue/media/:id",
+  requireStaff,
+  allow("SUPER_ADMIN", "ADMIN"),
+  route(async (req, res) => {
+    const id = z.string().uuid().parse(req.params.id);
+    const media = (
+      await db()`SELECT * FROM catalogue_media WHERE id=${id} FOR UPDATE`
+    )[0];
+    if (!media) {
+      res.status(204).end();
+      return;
+    }
+    const used =
+      await db()`SELECT 1 FROM catalogue_categories WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM appliance_categories WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM service_catalogue WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM app_settings WHERE key='customer_home_banner' AND value::jsonb->>'iconObjectKey'=${media.object_key}`;
+    if (used.length)
+      throw new ApiError(
+        409,
+        "IMAGE_IN_USE",
+        "This image is still used by the catalogue and cannot be removed.",
+      );
+    await db()`DELETE FROM catalogue_media WHERE id=${id}`;
+    await storage().send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: String(media.object_key),
+      }),
+    );
+    res.status(204).end();
+  }),
+);
+catalogueMediaAdmin.post(
+  "/catalogue/media/cleanup",
+  requireStaff,
+  allow("SUPER_ADMIN", "ADMIN"),
+  route(async (req, res) => {
+    const { ids } = z
+      .object({ ids: z.array(z.string().uuid()).min(1).max(50).optional() })
+      .strict()
+      .parse(req.body);
+    const images =
+      await db()`SELECT m.id,m.object_key FROM catalogue_media m WHERE (${ids === undefined} OR m.id=ANY(${ids || []}::uuid[])) AND m.last_selected_at<now()-interval '24 hours'
+        AND NOT EXISTS(SELECT 1 FROM catalogue_categories WHERE icon_object_key=m.object_key)
+        AND NOT EXISTS(SELECT 1 FROM appliance_categories WHERE icon_object_key=m.object_key)
+        AND NOT EXISTS(SELECT 1 FROM service_catalogue WHERE icon_object_key=m.object_key)
+        AND NOT EXISTS(SELECT 1 FROM app_settings WHERE key='customer_home_banner' AND value::jsonb->>'iconObjectKey'=m.object_key)
+        ORDER BY m.id LIMIT 100 FOR UPDATE`;
+    const removed: string[] = [];
+    for (const media of images) {
+      const used =
+        await db()`SELECT 1 FROM catalogue_categories WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM appliance_categories WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM service_catalogue WHERE icon_object_key=${media.object_key} UNION ALL SELECT 1 FROM app_settings WHERE key='customer_home_banner' AND value::jsonb->>'iconObjectKey'=${media.object_key}`;
+      if (used.length) continue;
+      await db()`DELETE FROM catalogue_media WHERE id=${media.id}`;
+      await storage().send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: String(media.object_key),
+        }),
+      );
+      removed.push(String(media.id));
+    }
+    res.json({ data: { removed } });
+  }),
 );

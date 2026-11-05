@@ -338,7 +338,7 @@ router.get(
   "/appliances",
   asyncRoute(async (_req, res) => {
     const rows =
-      await db()`SELECT id,slug,name FROM appliance_categories WHERE active=true ORDER BY name`;
+      await db()`SELECT a.id,a.slug,a.name,a.catalogue_category_id,COALESCE((SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=a.icon_object_key),a.default_image_path) AS icon_url FROM appliance_categories a JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL ORDER BY g.display_order,a.display_order,a.name`;
     res.json({ data: rows });
   }),
 );
@@ -346,7 +346,7 @@ router.get(
   "/catalogue",
   asyncRoute(async (_req, res) => {
     const rows =
-      await db()`SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,a.name AS appliance_name,a.kind AS category_kind,a.slug AS appliance_slug,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id WHERE s.active AND a.active AND a.publication_status='PUBLISHED' AND s.publication_status='PUBLISHED' ORDER BY s.display_order,a.name,s.name`;
+      await db()`SELECT s.id,s.appliance_category_id,s.request_type,s.name,s.description,s.form_fields,s.booking_options,s.base_price,a.name AS appliance_name,a.kind AS category_kind,a.slug AS appliance_slug,a.catalogue_category_id,g.name AS catalogue_category_name,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=s.icon_object_key) AS icon_url FROM service_catalogue s JOIN appliance_categories a ON a.id=s.appliance_category_id JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE s.archived_at IS NULL AND a.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL AND s.active AND a.active AND a.publication_status='PUBLISHED' AND s.publication_status='PUBLISHED' ORDER BY s.display_order,a.name,s.name`;
     res.json({ data: rows });
   }),
 );
@@ -361,7 +361,7 @@ router.get(
     if (!z.string().uuid().safeParse(category).success)
       throw new ApiError(422, "VALIDATION_ERROR", "Select an appliance");
     const rows =
-      await db()`SELECT id,appliance_category_id,request_type,slug,name,form_fields,base_price,description,booking_options,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=service_catalogue.icon_object_key) AS icon_url FROM service_catalogue WHERE appliance_category_id=${category} AND request_type=${type} AND active=true AND publication_status='PUBLISHED' AND EXISTS(SELECT 1 FROM appliance_categories a WHERE a.id=service_catalogue.appliance_category_id AND a.active AND a.publication_status='PUBLISHED') ORDER BY display_order,name`;
+      await db()`SELECT id,appliance_category_id,request_type,slug,name,form_fields,base_price,description,booking_options,(SELECT '/api/v1/catalogue/media/'||m.id::text FROM catalogue_media m WHERE m.object_key=service_catalogue.icon_object_key) AS icon_url FROM service_catalogue WHERE appliance_category_id=${category} AND request_type=${type} AND active=true AND publication_status='PUBLISHED' AND EXISTS(SELECT 1 FROM appliance_categories a WHERE a.id=service_catalogue.appliance_category_id AND a.active AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND EXISTS(SELECT 1 FROM catalogue_categories g WHERE g.id=a.catalogue_category_id AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL)) AND archived_at IS NULL ORDER BY display_order,name`;
     res.json({ data: rows });
   }),
 );
@@ -486,7 +486,7 @@ async function createRequest(
     await db()`SELECT * FROM service_requests WHERE customer_id=${req.customerId!} AND idempotency_key=${input.data.idempotencyKey}`;
   if (existing[0]) return replay(existing[0]);
   const catalogue =
-    await db()`SELECT c.id,c.form_fields,c.booking_options,c.base_price,c.name AS service_name,a.id AS appliance_id,a.name AS appliance_name FROM service_catalogue c JOIN appliance_categories a ON a.id=c.appliance_category_id WHERE c.id=${input.data.serviceId} AND a.id=${input.data.applianceCategoryId} AND c.request_type=${type} AND c.active=true AND c.publication_status='PUBLISHED' AND a.active=true AND a.publication_status='PUBLISHED'`;
+    await db()`SELECT c.id,c.form_fields,c.booking_options,c.base_price,c.name AS service_name,a.id AS appliance_id,a.name AS appliance_name,g.id AS catalogue_category_id,g.name AS catalogue_category_name FROM service_catalogue c JOIN appliance_categories a ON a.id=c.appliance_category_id JOIN catalogue_categories g ON g.id=a.catalogue_category_id WHERE c.id=${input.data.serviceId} AND a.id=${input.data.applianceCategoryId} AND c.request_type=${type} AND c.active=true AND c.publication_status='PUBLISHED' AND a.active=true AND a.publication_status='PUBLISHED' AND a.archived_at IS NULL AND c.archived_at IS NULL AND g.active AND g.publication_status='PUBLISHED' AND g.archived_at IS NULL`;
   if (!catalogue[0])
     throw new ApiError(
       422,
@@ -578,7 +578,7 @@ async function createRequest(
     _fieldLabels: Object.fromEntries(form.map((f) => [f.key, f.label])),
   };
   const rows =
-    await db()`WITH created AS (INSERT INTO service_requests(request_number,customer_id,request_type,appliance,service_name,appliance_category_id,service_catalogue_id,details,address_snapshot,preferred_date,preferred_time_window,idempotency_key,booking_payload_hash) VALUES(${number},${req.customerId!},${type},${catalogue[0].appliance_name},${catalogue[0].service_name},${input.data.applianceCategoryId},${input.data.serviceId},${JSON.stringify(details)},${JSON.stringify({ ...input.data.address, phone: contactPhone(input.data.address.phone) })},${input.data.preferredDate},${input.data.preferredTimeWindow},${input.data.idempotencyKey},${payloadHash}) ON CONFLICT(customer_id,idempotency_key) DO NOTHING RETURNING *),event AS (INSERT INTO request_status_events(request_id,status,note) SELECT id,'REQUESTED','Request received' FROM created RETURNING id) SELECT * FROM created`;
+    await db()`WITH created AS (INSERT INTO service_requests(request_number,customer_id,request_type,appliance,service_name,appliance_category_id,service_catalogue_id,catalogue_category_id,catalogue_category_name,details,address_snapshot,preferred_date,preferred_time_window,idempotency_key,booking_payload_hash) VALUES(${number},${req.customerId!},${type},${catalogue[0].appliance_name},${catalogue[0].service_name},${input.data.applianceCategoryId},${input.data.serviceId},${catalogue[0].catalogue_category_id},${catalogue[0].catalogue_category_name},${JSON.stringify(details)},${JSON.stringify({ ...input.data.address, phone: contactPhone(input.data.address.phone) })},${input.data.preferredDate},${input.data.preferredTimeWindow},${input.data.idempotencyKey},${payloadHash}) ON CONFLICT(customer_id,idempotency_key) DO NOTHING RETURNING *),event AS (INSERT INTO request_status_events(request_id,status,note) SELECT id,'REQUESTED','Request received' FROM created RETURNING id) SELECT * FROM created`;
   if (!rows[0]) {
     const existing =
       await db()`SELECT * FROM service_requests WHERE customer_id=${req.customerId!} AND idempotency_key=${input.data.idempotencyKey}`;

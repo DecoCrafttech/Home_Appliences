@@ -17,6 +17,6 @@ it("rejects oversized arrays before validating their elements", () => {
   expect(visited).toBe(0);
   if (!result.success) {
     expect(result.error.issues).toHaveLength(1);
-    expect(result.error.issues[0].code).toBe("too_big");
+    expect(result.error.issues[0]?.code).toBe("too_big");
   }
 });
