@@ -44,7 +44,7 @@ export function TechSchedule() {
     <section className="tech-appointments">
       <PageHeader
         title="Appointments"
-        description="Your confirmed visits, all in one place."
+        description="Your assigned visits, all in one place."
         actions={
           <AsyncActionButton
             pending={q.isFetching}
@@ -136,6 +136,11 @@ function AppointmentDetails({
               : "Service")}
         </p>
         <div className="tech-appointment-time">
+          <span>
+            {booking.visit_confirmed === false
+              ? "Preferred visit · awaiting confirmation"
+              : "Confirmed visit"}
+          </span>
           <strong>{dateLabel}</strong>
           <span>{booking.confirmed_time_window} · IST</span>
         </div>

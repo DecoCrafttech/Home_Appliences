@@ -5,7 +5,12 @@ const origin = process.env.TECHNICIAN_PREVIEW_ORIGIN || "http://127.0.0.1:5175";
 const id = "11111111-1111-4111-8111-111111111111";
 async function setup(
   page: Page,
-  options: { empty?: boolean; failure?: boolean; truncated?: boolean } = {},
+  options: {
+    empty?: boolean;
+    failure?: boolean;
+    truncated?: boolean;
+    preferred?: boolean;
+  } = {},
 ) {
   const ranges: URL[] = [];
   let failed = options.failure || false;
@@ -17,7 +22,8 @@ async function setup(
     request_type: "SERVICE",
     appliance: "Air Conditioner",
     service_name: "General service",
-    status: "APPOINTMENT_CONFIRMED",
+    status: options.preferred ? "TECHNICIAN_ASSIGNED" : "APPOINTMENT_CONFIRMED",
+    visit_confirmed: !options.preferred,
     version: 1,
     confirmed_date: "2099-11-01",
     confirmed_time_window: "09:00-10:00",
@@ -145,14 +151,28 @@ for (const width of [320, 375, 390, 430, 768, 1440])
     await expect(page).toHaveURL(new RegExp("/technician/jobs/" + id));
     expect(state.writes()).toBe(0);
   });
+test("preferred visits appear with an awaiting-confirmation label", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  const state = await setup(page, { preferred: true });
+  await expect(
+    page.locator(".calendar-event").getByText(/Awaiting confirmation/),
+  ).toBeVisible();
+  await page.locator(".calendar-event").first().click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByText("Preferred visit · awaiting confirmation", { exact: true }),
+  ).toBeVisible();
+  expect(state.writes()).toBe(0);
+});
 test("empty technician calendar and truncated results have clear states", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await setup(page, { empty: true, truncated: true });
-  await expect(
-    page.getByText("No confirmed appointments in this period."),
-  ).toBeVisible();
+  await expect(page.getByText("No appointments in this period.")).toBeVisible();
   await expect(
     page.getByText(/There are more than 1,000 visits/),
   ).toBeVisible();

@@ -135,9 +135,12 @@ export function ScheduleCalendar({
                   : "Installation"}
               </span>
               <small>
-                {booking.status === "APPOINTMENT_CONFIRMED"
-                  ? "Confirmed"
-                  : booking.status.replaceAll("_", " ").toLowerCase()}{" "}
+                {booking.visit_confirmed === false &&
+                !["COMPLETED", "CANCELLED"].includes(booking.status)
+                  ? "Awaiting confirmation"
+                  : booking.status === "APPOINTMENT_CONFIRMED"
+                    ? "Confirmed"
+                    : booking.status.replaceAll("_", " ").toLowerCase()}{" "}
                 ·{" "}
                 {booking.technician_name ||
                   booking.address_snapshot?.area ||
@@ -148,9 +151,7 @@ export function ScheduleCalendar({
           );
         }}
         noEventsContent={() => (
-          <p className="calendar-empty">
-            No confirmed appointments in this period.
-          </p>
+          <p className="calendar-empty">No appointments in this period.</p>
         )}
       />
     </div>
