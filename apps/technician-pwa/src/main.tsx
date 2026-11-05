@@ -12,6 +12,7 @@ import "./styles.css";
 import "@home/ui/platform.css";
 import "@home/ui/styles.css";
 import "@home/ui/staff.css";
+import "./workday.css";
 const client = new QueryClient({
   defaultOptions: {
     queries: {

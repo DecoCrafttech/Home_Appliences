@@ -1,4 +1,3 @@
-import { BrandLogo } from "@home/ui";
 import {
   ConfirmActionDialog,
   useSafeMutation,
@@ -75,119 +74,148 @@ export function LoginPage() {
   const script = useGoogleScriptStatus();
   const { scriptLoadedSuccessfully } = useGoogleOAuth();
   return (
-    <Page title={t("Welcome to Fixbeez")}>
-      <div className="customer-auth-brand fb-header-gradient">
-        <BrandLogo />
-        <p>Home appliance service &amp; installation</p>
-        <small>We fit it. We fix it.</small>
-      </div>
-      <div className="workflow-form google-login">
-        <p>Sign in securely to book appliance care and track your requests.</p>
-        {config.isPending || busy ? (
-          <LoadingSkeleton />
-        ) : config.isError ? (
-          <p role="alert">
-            Unable to connect to the sign-in service.{" "}
-            <button onClick={() => config.refetch()}>Try again</button>
-          </p>
-        ) : !config.data.clientId ? (
-          <p role="alert">
-            Google sign-in is temporarily unavailable. Please contact support.
-          </p>
-        ) : script.failed ? (
-          <p role="alert">
-            Unable to load Google sign-in. Check your connection or browser
-            extensions, then{" "}
-            <button onClick={() => window.location.reload()}>
-              reload this page
-            </button>
-            .
-          </p>
-        ) : !scriptLoadedSuccessfully ? (
-          <LoadingSkeleton />
-        ) : (
-          <GoogleLogin
-            ux_mode="popup"
-            onSuccess={async (response) => {
-              if (!response.credential) {
-                setError(
-                  "Google sign-in did not return a credential. Please try again.",
-                );
-                return;
-              }
-              setBusy(true);
-              setError("");
-              try {
-                const result = await api.post<{
-                  data: { created: boolean; profileComplete: boolean };
-                }>("/auth/customer/google", {
-                  credential: response.credential,
-                });
-                let customer: Customer;
-                try {
-                  customer = (
-                    await api.get<{ data: Customer }>("/auth/customer/me")
-                  ).data.data;
-                } catch {
+    <section className="customer-signin-page">
+      <div className="customer-signin-card">
+        <span className="customer-signin-icon">
+          <FaShieldHalved aria-hidden="true" />
+        </span>
+        <h1>{t("Sign in to Fixbeez")}</h1>
+        <p className="customer-signin-intro">
+          Book a visit. Track your requests.
+          <br />
+          All your home care, in one place.
+        </p>
+        <div className="customer-signin-action google-login">
+          {config.isPending || busy ? (
+            <div className="customer-signin-loading" role="status">
+              <span className="action-spinner" aria-hidden="true" />
+              {busy ? "Signing you in…" : "Getting sign-in ready…"}
+            </div>
+          ) : config.isError ? (
+            <p role="alert">
+              Unable to connect to the sign-in service.{" "}
+              <button onClick={() => config.refetch()}>Try again</button>
+            </p>
+          ) : !config.data.clientId ? (
+            <p role="alert">
+              Google sign-in is temporarily unavailable. Please contact support.
+            </p>
+          ) : script.failed ? (
+            <p role="alert">
+              Unable to load Google sign-in. Check your connection or browser
+              extensions, then{" "}
+              <button onClick={() => window.location.reload()}>
+                reload this page
+              </button>
+              .
+            </p>
+          ) : !scriptLoadedSuccessfully ? (
+            <div className="customer-signin-loading" role="status">
+              <span className="action-spinner" aria-hidden="true" />
+              Loading secure sign-in…
+            </div>
+          ) : (
+            <GoogleLogin
+              theme="outline"
+              size="large"
+              shape="pill"
+              text="continue_with"
+              width="240"
+              ux_mode="popup"
+              onSuccess={async (response) => {
+                if (!response.credential) {
                   setError(
-                    "Your browser could not keep the sign-in session. Allow cookies for this site and try again.",
+                    "Google sign-in did not return a credential. Please try again.",
                   );
                   return;
                 }
-                const privateKeys = [
-                  "profile",
-                  "addresses",
-                  "requests",
-                  "request",
-                  "timeline",
-                  "tickets",
-                  "support-conversation",
-                  "customer-estimates",
-                  "customer-me",
-                  "notifications",
-                  "review",
-                  "my-reviews",
-                ];
-                await qc.cancelQueries({
-                  predicate: (q) => privateKeys.includes(String(q.queryKey[0])),
-                });
-                qc.removeQueries({
-                  predicate: (q) => privateKeys.includes(String(q.queryKey[0])),
-                });
-                qc.setQueryData(customerKeys.profile, customer);
-                toast.success(
-                  result.data.data.created
-                    ? "Your account has been created successfully."
-                    : "Successfully signed in with Google.",
-                );
-                navigate(
-                  result.data.data.profileComplete
-                    ? next
-                    : `/profile?next=${encodeURIComponent(next)}`,
-                  { replace: true },
-                );
-              } catch (e) {
+                setBusy(true);
+                setError("");
+                try {
+                  const result = await api.post<{
+                    data: { created: boolean; profileComplete: boolean };
+                  }>("/auth/customer/google", {
+                    credential: response.credential,
+                  });
+                  let customer: Customer;
+                  try {
+                    customer = (
+                      await api.get<{ data: Customer }>("/auth/customer/me")
+                    ).data.data;
+                  } catch {
+                    setError(
+                      "Your browser could not keep the sign-in session. Allow cookies for this site and try again.",
+                    );
+                    return;
+                  }
+                  const privateKeys = [
+                    "profile",
+                    "addresses",
+                    "requests",
+                    "request",
+                    "timeline",
+                    "tickets",
+                    "support-conversation",
+                    "customer-estimates",
+                    "customer-me",
+                    "notifications",
+                    "review",
+                    "my-reviews",
+                  ];
+                  await qc.cancelQueries({
+                    predicate: (q) =>
+                      privateKeys.includes(String(q.queryKey[0])),
+                  });
+                  qc.removeQueries({
+                    predicate: (q) =>
+                      privateKeys.includes(String(q.queryKey[0])),
+                  });
+                  qc.setQueryData(customerKeys.profile, customer);
+                  toast.success(
+                    result.data.data.created
+                      ? "Your account has been created successfully."
+                      : "Successfully signed in with Google.",
+                  );
+                  navigate(
+                    result.data.data.profileComplete
+                      ? next
+                      : `/profile?next=${encodeURIComponent(next)}`,
+                    { replace: true },
+                  );
+                } catch (e) {
+                  setError(
+                    message(
+                      e,
+                      "Google sign-in could not be completed. Please try again.",
+                    ),
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              onError={() =>
                 setError(
-                  message(
-                    e,
-                    "Google sign-in could not be completed. Please try again.",
-                  ),
-                );
-              } finally {
-                setBusy(false);
+                  "Google sign-in could not be completed. Allow pop-ups for this site and try again.",
+                )
               }
-            }}
-            onError={() =>
-              setError(
-                "Google sign-in could not be completed. Allow pop-ups for this site and try again.",
-              )
-            }
-          />
-        )}
-        {error && <p role="alert">{error}</p>}
-        <small>Your Google account is used to sign in securely.</small>
+            />
+          )}
+          {error && <p role="alert">{error}</p>}
+          <small className="customer-signin-privacy">
+            <FaShieldHalved aria-hidden="true" /> Secure sign-in with your
+            Google account
+          </small>
+        </div>
+        <div className="customer-signin-footer">
+          <Link to="/services">Browse services</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/support">Need help?</Link>
+        </div>
       </div>
-    </Page>
+      <p className="customer-signin-caption">
+        A little care for the place you call home.
+      </p>
+    </section>
   );
 }
 

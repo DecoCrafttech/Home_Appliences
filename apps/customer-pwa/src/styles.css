@@ -1969,9 +1969,6 @@ html[lang="ta"] .eyebrow {
   letter-spacing: -0.035em;
   line-height: 1.25;
 }
-.home-header .profile-shortcut {
-  display: none;
-}
 @media (max-width: 820px) {
   .home-hero {
     grid-template-columns: 1fr;

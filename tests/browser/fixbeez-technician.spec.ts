@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "./fixtures";
+import process from "node:process";
+const technicianOrigin =
+  process.env.TECHNICIAN_PREVIEW_ORIGIN || "http://127.0.0.1:5175";
 
 const id = "11111111-1111-4111-8111-111111111111";
 async function setup(page: Page) {
@@ -96,11 +99,16 @@ test("workday global filters use server totals and carry into My Jobs", async ({
     const url = new URL(request.url());
     if (url.pathname.endsWith("/technician/jobs")) queries.push(url);
   });
-  await page.goto("http://127.0.0.1:5175/technician");
+  await page.goto(`${technicianOrigin}/technician`);
   await expect(
     page.getByRole("heading", { name: "Your workday", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".staff-hero-signal strong")).toHaveText("5");
+  await expect(
+    page
+      .locator(".workday-stats .stat-card")
+      .filter({ hasText: "Completed today" })
+      .locator("strong"),
+  ).toHaveText("5");
   expect(queries).toHaveLength(0);
   const trigger = page.getByRole("button", {
     name: "Global filters",
@@ -162,18 +170,26 @@ test("workday global filters use server totals and carry into My Jobs", async ({
       ),
     )
     .toBe(true);
-  await expect(page.locator(".staff-hero-signal strong")).toHaveText("47");
+  await expect(
+    page
+      .locator(".workday-stats .stat-card")
+      .filter({ hasText: "Showing now" })
+      .locator("small"),
+  ).toContainText("47");
   await page.screenshot({
     path: "test-results/fixbeez/technician-workday-desktop.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "Open My Jobs", exact: true }).click();
+  await page
+    .locator(".staff-workday .section-heading")
+    .getByRole("link", { name: "My jobs", exact: true })
+    .click();
   await expect(page).toHaveURL(
     /jobs\?view=weekly&type=INSTALLATION&date=2026-11-03/,
   );
   await trigger.click();
   await page.getByRole("button", { name: "Reset", exact: true }).click();
-  await expect(page).toHaveURL("http://127.0.0.1:5175/technician/jobs");
+  await expect(page).toHaveURL(`${technicianOrigin}/technician/jobs`);
 });
 
 for (const width of [320, 360, 768, 1440]) {
@@ -182,7 +198,7 @@ for (const width of [320, 360, 768, 1440]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     const state = await setup(page);
-    await page.goto("http://127.0.0.1:5175/technician/jobs");
+    await page.goto(`${technicianOrigin}/technician/jobs`);
     await expect(
       page.getByRole("heading", { name: "My jobs", exact: true }),
     ).toBeVisible();

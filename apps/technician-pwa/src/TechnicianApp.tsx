@@ -607,11 +607,6 @@ function TechnicianJobCard({
   return (
     <AppCard variant="job" className="panel tech-job-card">
       <JobCardSummary job={job} showArea={!job.address_snapshot} />
-      {phone && (
-        <a href={`tel:${phone}`} aria-label="Call Customer">
-          <FaPhone aria-hidden="true" /> Call Customer: {phone}
-        </a>
-      )}
       {job.address_snapshot && (
         <div className="tech-card-location">
           <p>
@@ -627,12 +622,17 @@ function TechnicianJobCard({
         </div>
       )}
       <div className="tech-card-actions">
-        <CompleteJobButton job={job} />
-        {onHold ? (
-          <span className="tech-action-disabled" aria-disabled="true">
-            Job on hold
-          </span>
-        ) : (
+        {phone && (
+          <a
+            href={`tel:${phone}`}
+            className="tech-card-call"
+            aria-label="Call Customer"
+          >
+            <FaPhone aria-hidden="true" /> Call customer
+          </a>
+        )}
+        {!onHold && <CompleteJobButton job={job} />}
+        {!onHold && (
           <Link
             className="primary tech-job-open"
             to={`/technician/jobs/${job.id}`}
@@ -653,7 +653,6 @@ function TechHome() {
   const { filters, apply } = useJobFilters();
   const filtered =
     filters.view !== "active" || !!filters.type || !!filters.date;
-  const profile = useQueryClient().getQueryData<Profile>(["technician", "me"]);
   const q = useQuery({
     queryKey: ["technician", "dashboard"],
     queryFn: async () =>
@@ -700,10 +699,15 @@ function TechHome() {
   const refresh = () => (filtered ? matching.refetch() : q.refetch());
   const jobsUrl = `/technician/jobs${jobFilterQuery(filters)}`;
   return (
-    <section className="staff-workday">
+    <section className="staff-workday tech-workday">
       <PageHeader
         title="Your workday"
-        description="A clear view of your visits and the work ahead."
+        description={new Intl.DateTimeFormat("en-IN", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          timeZone: "Asia/Kolkata",
+        }).format(new Date())}
         actions={
           <>
             <button
@@ -725,45 +729,6 @@ function TechHome() {
         <ErrorState title="Unable to load your workday" retry={refresh} />
       ) : (
         <>
-          <div className="staff-dashboard-hero staff-technician-hero">
-            <div>
-              <p className="staff-eyebrow">YOUR DAY, SIMPLIFIED</p>
-              <h2>
-                {profile?.full_name
-                  ? `Good to see you, ${profile.full_name.split(" ")[0]}.`
-                  : "A clear plan for your day."}
-              </h2>
-              <p>
-                {filtered
-                  ? jobFilterLabel(filters)
-                  : "Keep your next visit, customer details and job updates together."}
-              </p>
-              <Link className="primary" to={jobsUrl}>
-                Open My Jobs <icons.next aria-hidden="true" />
-              </Link>
-            </div>
-            <div className="staff-hero-signal">
-              <span>
-                <icons.calendar aria-hidden="true" />
-                {filtered ? "Matching jobs" : "Completed today"}
-              </span>
-              <strong>
-                {filtered
-                  ? (matching.data?.meta.total ?? "--")
-                  : (q.data?.completed_today ?? "--")}
-              </strong>
-              <small>
-                {filtered
-                  ? "Across this filtered view"
-                  : new Intl.DateTimeFormat("en-IN", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "short",
-                      timeZone: "Asia/Kolkata",
-                    }).format(new Date())}
-              </small>
-            </div>
-          </div>
           <div className="stat-grid workday-stats">
             {filtered ? (
               <>
@@ -795,6 +760,7 @@ function TechHome() {
                   ["pending", "Assigned jobs", "pending"],
                   ["today", "Today's jobs", "today"],
                   ["in_progress", "In progress", "in-progress"],
+                  ["completed_today", "Completed today", "completed"],
                 ] as const
               ).map(([key, label, view]) => (
                 <Link
@@ -1386,7 +1352,6 @@ function TechProfile({ profile: p }: { profile: Profile }) {
     <>
       <PageHeader title="My profile" />
       <div className="ui-actions">
-
         <button
           onClick={async () => {
             try {

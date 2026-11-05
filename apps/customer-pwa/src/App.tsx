@@ -97,9 +97,7 @@ export function App() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header
-        className={`app-header ${location.pathname === "/" ? "home-header" : ""}`}
-      >
+      <header className="app-header">
         <div className="header-inner">
           <Link to="/" className="brand" aria-label="Fixbeez home">
             <BrandLogo />
@@ -146,7 +144,11 @@ export function App() {
                   initiallyOpen={location.pathname === "/notifications"}
                   onLegacyClose={() => navigate("/", { replace: true })}
                 />
-                <Link className="profile-shortcut" to="/profile">
+                <Link
+                  className="profile-shortcut"
+                  to="/profile"
+                  aria-label="Your profile"
+                >
                   <Avatar
                     name={profile.data.full_name}
                     src={profile.data.profile_photo_url}
@@ -156,11 +158,11 @@ export function App() {
                   </span>
                 </Link>
               </>
-            ) : (
+            ) : location.pathname !== "/login" ? (
               <Link className="secondary" to="/login">
                 {t("Sign in")}
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       </header>

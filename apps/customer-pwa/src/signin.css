@@ -1,0 +1,128 @@
+.customer-signin-page {
+  min-height: min(680px, calc(100svh - 100px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px 60px;
+  background: radial-gradient(ellipse at 50% 28%, #f5efff 0, transparent 65%);
+}
+.customer-signin-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px 24px;
+  border: 1px solid #ece7f3;
+  border-radius: 24px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 16px 60px #42216a08;
+}
+.customer-signin-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 18px;
+  border-radius: 16px;
+  background: #f3edff;
+  color: #5832ac;
+  font-size: 20px;
+}
+.customer-signin-card h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: -0.7px;
+  margin: 0 0 12px;
+  color: #242034;
+}
+.customer-signin-intro {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #777183;
+  margin: 0;
+}
+.customer-signin-action.google-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin: 26px 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  width: 100%;
+}
+.customer-signin-action [role="alert"] {
+  font-size: 13px;
+  line-height: 1.6;
+  background: #fff6f4;
+  color: #974530;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0;
+}
+.customer-signin-action [role="alert"] button {
+  color: inherit;
+  text-decoration: underline;
+  background: transparent;
+  padding: 6px;
+}
+.customer-signin-privacy {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #87818f;
+}
+.customer-signin-privacy svg {
+  flex-shrink: 0;
+}
+.customer-signin-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+  color: #726780;
+}
+.customer-signin-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding-top: 22px;
+  margin-top: 24px;
+  border-top: 1px solid #f0edf5;
+  font-size: 12px;
+}
+.customer-signin-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: #65469a;
+}
+.customer-signin-footer span {
+  color: #cec6d8;
+}
+.customer-signin-caption {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: #8a8295;
+}
+@media (max-width: 480px) {
+  .customer-signin-page {
+    padding-top: 24px;
+    justify-content: flex-start;
+  }
+  .customer-signin-card {
+    padding: 26px 20px 18px;
+    border-radius: 20px;
+  }
+  .customer-signin-card h1 {
+    font-size: 24px;
+  }
+}

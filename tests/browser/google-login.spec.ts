@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./fixtures";
+import process from "node:process";
 
 // These tests exercise app behavior with a simulated Google provider.
 // Real origin authorization remains under the Google Cloud OAuth client.
@@ -119,7 +120,9 @@ test("rejects external return destinations", async ({ page }) => {
   await page
     .getByRole("button", { name: "Sign in with Google", exact: true })
     .click();
-  await expect(page).toHaveURL("http://localhost:5173/");
+  await expect(page).toHaveURL(
+    (process.env.CUSTOMER_PREVIEW_ORIGIN || "http://localhost:5173") + "/",
+  );
 });
 test("shows a recoverable error when Google cannot verify the token", async ({
   page,

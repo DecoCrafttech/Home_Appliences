@@ -2,7 +2,8 @@ import { AsyncActionButton as SafeAsyncButton } from "@home/ui";
 import { ConfirmModal } from "./components";
 import { icons, adminKeys } from "./design";
 import { useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import { api } from "./api";
@@ -28,19 +29,94 @@ export function CompleteRequestModal({
   const guard = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState(initialSummary);
   const qc = useQueryClient();
+  const latest = useQuery({
+    queryKey: adminKeys.request(request.id),
+    queryFn: async () =>
+      (
+        await api.get<{
+          data: CompletionRequest & {
+            technician_account_enabled?: boolean;
+            pending_report_id?: string;
+            work_summary?: string;
+          };
+        }>(`/requests/${request.id}`)
+      ).data.data,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  if (latest.isPending || latest.isFetching)
+    return (
+      <ConfirmModal title="Complete request" busy={false} onClose={onClose}>
+        <p role="status">Checking request…</p>
+      </ConfirmModal>
+    );
+  if (latest.isError)
+    return (
+      <ConfirmModal title="Complete request" busy={false} onClose={onClose}>
+        <p role="alert">Unable to check this request.</p>
+        <button onClick={() => latest.refetch()}>Try again</button>
+      </ConfirmModal>
+    );
+  const current = latest.data;
+  if (current.status === "COMPLETED")
+    return (
+      <ConfirmModal title="Request completed" busy={false} onClose={onClose}>
+        <p>This request is already complete.</p>
+        <button
+          className="primary"
+          onClick={() => {
+            void qc.invalidateQueries({ queryKey: adminKeys.requests });
+            onClose();
+          }}
+        >
+          Done
+        </button>
+      </ConfirmModal>
+    );
+  if (
+    !["TECHNICIAN_ASSIGNED", "APPOINTMENT_CONFIRMED", "IN_PROGRESS"].includes(
+      current.status,
+    )
+  )
+    return (
+      <ConfirmModal title="Request not ready" busy={false} onClose={onClose}>
+        <p>Review this request’s latest status before completing it.</p>
+        <Link
+          className="primary"
+          to={`/requests/${request.id}`}
+          onClick={onClose}
+        >
+          View request
+        </Link>
+      </ConfirmModal>
+    );
+  if (current.technician_account_enabled)
+    return (
+      <ConfirmModal title="Review completion" busy={false} onClose={onClose}>
+        <p>
+          {current.pending_report_id
+            ? "Review the technician’s work report to complete this job."
+            : "The technician needs to submit a work report first."}
+        </p>
+        <div className="admin-dialog-actions">
+          <button onClick={onClose}>Close</button>
+          <Link
+            className="primary"
+            to={`/requests/${request.id}#work-report`}
+            onClick={onClose}
+          >
+            {current.pending_report_id ? "Review report" : "View request"}
+          </Link>
+        </div>
+      </ConfirmModal>
+    );
   return (
-    <ConfirmModal title="Complete this request?" busy={busy} onClose={onClose}>
+    <ConfirmModal title="Complete request" busy={busy} onClose={onClose}>
       <p>
         <strong>{request.request_number}</strong> · {request.customer_name}
-      </p>
-      <p>
-        {request.appliance} · {request.request_type} ·{" "}
-        {request.status.replaceAll("_", " ")}
-      </p>
-      <p>
-        Confirm the work is finished. The customer will be notified and can
-        leave a review.
       </p>
       <form
         onSubmit={async (e) => {
@@ -60,11 +136,9 @@ export function CompleteRequestModal({
               `/requests/${request.id}/complete`,
               {
                 workSummary,
-                completionNotes: String(
-                  form.get("completionNotes") || "",
-                ).trim(),
+                completionNotes: "",
                 attachmentIds: [],
-                version: request.version,
+                version: current.version,
               },
             );
             qc.setQueryData(
@@ -103,6 +177,8 @@ export function CompleteRequestModal({
             toast.success("Request marked as completed successfully.");
             onClose();
           } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.status === 409)
+              void latest.refetch();
             setError(
               axios.isAxiosError(err)
                 ? err.response?.data?.error?.message ||
@@ -116,23 +192,19 @@ export function CompleteRequestModal({
         }}
       >
         <label>
-          Work completed summary
+          What work was completed?
           <textarea
             autoFocus
             name="workSummary"
             required
             minLength={3}
             maxLength={2000}
-            defaultValue={initialSummary}
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+            rows={3}
+            placeholder="A short summary of the work"
           />
         </label>
-        <label>
-          Completion notes (optional)
-          <textarea name="completionNotes" maxLength={4000} />
-        </label>
-        <p className="honest">
-          Completion time is recorded automatically when you confirm.
-        </p>
         {error && <p role="alert">{error}</p>}
         <div className="admin-dialog-actions">
           <button type="button" disabled={busy} onClick={onClose}>
@@ -144,7 +216,7 @@ export function CompleteRequestModal({
             pendingLabel="Saving..."
           >
             <icons.success />
-            {busy ? "Completing…" : "Confirm Completion"}
+            {busy ? "Completing…" : "Complete request"}
           </SafeAsyncButton>
         </div>
       </form>
