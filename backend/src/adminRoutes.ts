@@ -6,7 +6,7 @@ import {
 import { checkTechnicianSchedule } from "./technicianScheduling.js";
 import { completeRequest } from "./completion.js";
 import { Router, type RequestHandler } from "express";
-import { createHash, randomInt, randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "./db.js";
 import { env } from "./config/env.js";
@@ -122,60 +122,8 @@ router.post(
       );
     }
     await db()`UPDATE staff_profiles SET failed_attempts=0,locked_until=NULL WHERE id=${staff.id}`;
-    const code =
-      env.NODE_ENV === "production"
-        ? String(randomInt(100000, 1000000))
-        : "123456";
-    const challenge =
-      await db()`INSERT INTO staff_login_challenges(staff_id,code_hash,expires_at) VALUES(${staff.id},${hash(code)},now()+interval '5 minutes') RETURNING id`;
-    res.json({
-      data: {
-        challengeId: challenge[0]!.id,
-        mustChangePassword: staff.must_change_password,
-        ...(env.NODE_ENV !== "production" ? { developmentCode: code } : {}),
-      },
-    });
-  }),
-);
-router.post(
-  "/auth/mfa",
-  asyncRoute(async (req, res) => {
-    const input = z
-      .object({
-        challengeId: z.string().uuid(),
-        code: z.string().regex(/^\d{6}$/),
-      })
-      .safeParse(req.body);
-    if (!input.success)
-      throw new ApiError(422, "VALIDATION_ERROR", "Invalid verification code");
-    const rows =
-      await db()`SELECT c.*,s.username,s.full_name,s.role,s.active,s.must_change_password FROM staff_login_challenges c JOIN staff_profiles s ON s.id=c.staff_id WHERE c.id=${input.data.challengeId}`;
-    const challenge = rows[0];
-    if (
-      !challenge ||
-      !challenge.active ||
-      challenge.consumed_at ||
-      challenge.attempts >= 5 ||
-      new Date(String(challenge.expires_at)) < new Date() ||
-      challenge.code_hash !== hash(input.data.code)
-    ) {
-      if (challenge)
-        await db()`UPDATE staff_login_challenges SET attempts=attempts+1 WHERE id=${input.data.challengeId} AND consumed_at IS NULL AND expires_at>now() AND attempts<5`;
-      throw new ApiError(
-        401,
-        "INVALID_MFA",
-        "Invalid or expired verification code",
-      );
-    }
     const token = randomUUID() + randomUUID();
-    const accepted =
-      await db()`WITH accepted AS (UPDATE staff_login_challenges SET consumed_at=now() WHERE id=${input.data.challengeId} AND consumed_at IS NULL AND expires_at>now() AND attempts<5 AND code_hash=${hash(input.data.code)} RETURNING staff_id) INSERT INTO staff_sessions(staff_id,token_hash,expires_at) SELECT staff_id,${hash(token)},now()+interval '12 hours' FROM accepted RETURNING id`;
-    if (!accepted.length)
-      throw new ApiError(
-        401,
-        "INVALID_MFA",
-        "Invalid or expired verification code",
-      );
+    await db()`INSERT INTO staff_sessions(staff_id,token_hash,expires_at) VALUES(${staff.id},${hash(token)},now()+interval '12 hours')`;
     res
       .cookie("staff_session", token, {
         httpOnly: true,
@@ -187,11 +135,11 @@ router.post(
       .json({
         data: {
           staff: {
-            id: challenge.staff_id,
-            username: challenge.username,
-            fullName: challenge.full_name,
-            role: challenge.role,
-            mustChangePassword: challenge.must_change_password,
+            id: staff.id,
+            username: staff.username,
+            fullName: staff.full_name,
+            role: staff.role,
+            mustChangePassword: staff.must_change_password,
           },
         },
       });

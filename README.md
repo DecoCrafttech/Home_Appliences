@@ -15,27 +15,27 @@ npm run dev
 
 On Windows, use `npm.cmd` if PowerShell script execution is blocked.
 
-| Application | Local URL                           | Workspace             |
-| ----------- | ----------------------------------- | --------------------- |
-| Customer    | http://localhost:5173               | `apps/customer-pwa`   |
-| Admin       | http://127.0.0.1:5174               | `apps/admin-pwa`      |
-| Technician  | http://127.0.0.1:5175/technician    | `apps/technician-pwa` |
-| API health  | http://localhost:3001/api/v1/health | `backend`             |
-| API/database readiness | http://localhost:3001/api/v1/ready | `backend` |
+| Application            | Local URL                           | Workspace             |
+| ---------------------- | ----------------------------------- | --------------------- |
+| Customer               | http://localhost:5173               | `apps/customer-pwa`   |
+| Admin                  | http://127.0.0.1:5174               | `apps/admin-pwa`      |
+| Technician             | http://127.0.0.1:5175/technician    | `apps/technician-pwa` |
+| API health             | http://localhost:3001/api/v1/health | `backend`             |
+| API/database readiness | http://localhost:3001/api/v1/ready  | `backend`             |
 
 `/health` checks that the API process is responding. `/ready` runs a database query and returns 503 when the database cannot be reached. Check readiness when the app opens but catalogue or account data fails to load. On Windows, backend initialization prefers IPv4 and disables automatic address-family selection to avoid database connection timeouts on the local network.
 
 Old admin `/technician` URLs redirect to the independent technician origin. Copy `apps/admin-pwa/.env.example` when overriding `VITE_TECHNICIAN_ORIGIN`. All three clients use a same-origin `/api` proxy; configure HTTPS proxies separately for production hosting.
 
-Backend configuration is documented in `backend/.env.example`. Keep Neon, storage, signing and MFA secrets server-side. Do not put backend secrets in `VITE_*` variables. Start backend commands from `backend` or use its workspace scripts so environment resolution is correct.
+Backend configuration is documented in `backend/.env.example`. Keep Neon, storage, signing and technician MFA secrets server-side. Do not put backend secrets in `VITE_*` variables. Start backend commands from `backend` or use its workspace scripts so environment resolution is correct.
 
 ## Workflow
 
 Customers sign in with Google, discover published services/options and indicative INR prices, and submit service/installation requests through the four-stage booking wizard. Operations review requests and send assignment offers through the shared searchable drawer or by selecting a technician in the status override. Manual status assignment does not require skill matching, but still sends an offer that the technician must accept before customer contact details are revealed or owned job work begins. Additional estimates require customer decisions. Technicians submit immutable work reports and can mark a job complete only when the latest report is resolved and no estimate is awaiting a customer decision. Completion records the technician as the status actor and is visible in the admin request timeline and Completed Requests. Operations can request report corrections before completion. Customers can then submit one review, visible in admin Feedback.
 
-Assignments, booking status, work-report sign-off, payments and review state remain separate. Existing contact-only technicians retain their audited manual completion flow. Private object uploads use short-lived ownership-checked access. Email delivery is not active; secure technician activation/recovery links are created by operations for manual delivery. Production staff MFA delivery remains an external setup dependency.
+Assignments, booking status, work-report sign-off, payments and review state remain separate. Existing contact-only technicians retain their audited manual completion flow. Private object uploads use short-lived ownership-checked access. Email delivery is not active; secure technician activation/recovery links are created by operations for manual delivery.
 
-Authorized operations administrators also have an explicit status override modal, including confirmed reopening of final requests. When setting Technician Assigned manually, operations select a verified technician with an active account from the full list without skill matching; this creates a pending offer in My Jobs and does not fabricate technician acceptance or work reports. Overrides require reasons and version checks and record a separate administrative audit. Manual completion requires a verified completion note. Existing completion and review history is preserved. Replaced pending offers are withdrawn with notice; cancellation revokes assignment/contact access.
+Authorized operations administrators sign in with their username and password. They also have an explicit status override modal, including confirmed reopening of final requests. When setting Technician Assigned manually, operations select a verified technician with an active account from the full list without skill matching; this creates a pending offer in My Jobs and does not fabricate technician acceptance or work reports. Overrides require reasons and version checks and record a separate administrative audit. Manual completion requires a verified completion note. Existing completion and review history is preserved. Replaced pending offers are withdrawn with notice; cancellation revokes assignment/contact access.
 
 The Customer Services tab opens an appliance grid, then appliance-specific published services and a prefilled booking. Appliance icons/visibility and service options/prices are managed in Admin. Multiple selected options retain booking-time price snapshots. Admin and accepted technician views use booking contact numbers, with profile fallback; pending offers do not reveal phone numbers or full addresses.
 

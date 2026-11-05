@@ -46,16 +46,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       const customers = await request(app).get("/api/v1/admin/customers");
       expect(customers.status).toBe(401);
     });
-    it("authenticates staff with username, password, and MFA and restores session", async () => {
+    it("authenticates staff with username and password and restores session", async () => {
       const login = await admin
         .post("/api/v1/admin/auth/login")
         .send({ username, password });
       expect(login.status).toBe(200);
-      const mfa = await admin
-        .post("/api/v1/admin/auth/mfa")
-        .send({ challengeId: login.body.data.challengeId, code: "123456" });
-      expect(mfa.status).toBe(200);
-      expect(mfa.body.data.staff.role).toBe("OPERATIONS_MANAGER");
+      expect(login.body.data.staff.role).toBe("OPERATIONS_MANAGER");
       const me = await admin.get("/api/v1/admin/auth/me");
       expect(me.status).toBe(200);
       expect(me.body.data.username).toBe(username);
@@ -106,16 +102,24 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       expect(audit[0]?.action).toBe("REQUEST_STATUS_UPDATED");
     });
     it("shows the customer profile and related records to authenticated staff", async () => {
-      const denied = await request(app).get(`/api/v1/admin/customers/${customerId}`);
+      const denied = await request(app).get(
+        `/api/v1/admin/customers/${customerId}`,
+      );
       expect(denied.status).toBe(401);
       const detail = await admin.get(`/api/v1/admin/customers/${customerId}`);
       expect(detail.status).toBe(200);
       expect(detail.body.data.id).toBe(customerId);
-      expect(detail.body.data.requests.some((r: {id:string}) => r.id === requestId)).toBe(true);
+      expect(
+        detail.body.data.requests.some(
+          (r: { id: string }) => r.id === requestId,
+        ),
+      ).toBe(true);
       expect(detail.body.data.addresses).toEqual([]);
       expect(detail.body.data.tickets).toEqual([]);
       expect(detail.body.data).not.toHaveProperty("password_hash");
-      expect((await admin.get("/api/v1/admin/customers/invalid")).status).toBe(422);
+      expect((await admin.get("/api/v1/admin/customers/invalid")).status).toBe(
+        422,
+      );
     });
     it("revokes logout session", async () => {
       expect((await admin.post("/api/v1/admin/auth/logout")).status).toBe(204);

@@ -262,8 +262,6 @@ function AdminApp() {
   );
 }
 function Login() {
-  const [challenge, setChallenge] = useState("");
-  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -272,22 +270,13 @@ function Login() {
     setBusy(true);
     const data = new FormData(e.currentTarget);
     try {
-      if (!challenge) {
-        const r = await api.post<{
-          data: { challengeId: string; developmentCode?: string };
-        }>("/auth/login", {
-          username: data.get("username"),
-          password: data.get("password"),
-        });
-        setChallenge(r.data.data.challengeId);
-        setCode(r.data.data.developmentCode || "");
-        toast.success("Password verified. Enter your MFA code.");
-      } else {
-        await api.post("/auth/mfa", { challengeId: challenge, code });
-        toast.success("Welcome to Fixbeez Admin.");
-        await qc.invalidateQueries({ queryKey: adminKeys.me });
-        navigate("/");
-      }
+      await api.post("/auth/login", {
+        username: data.get("username"),
+        password: data.get("password"),
+      });
+      toast.success("Welcome to Fixbeez Admin.");
+      await qc.invalidateQueries({ queryKey: adminKeys.me });
+      navigate("/");
     } catch (e) {
       toast.error(errorMessage(e, "Unable to sign in."));
     } finally {
@@ -300,40 +289,25 @@ function Login() {
         <BrandLogo />
         <h1>Admin sign in</h1>
         <p>Authorized staff only</p>
-        {!challenge ? (
-          <>
-            <label>
-              Username
-              <input name="username" autoComplete="username" required />
-            </label>
-            <label>
-              Password
-              <PasswordInput
-                name="password"
-                autoComplete="current-password"
-                minLength={10}
-                required
-              />
-            </label>
-          </>
-        ) : (
-          <label>
-            MFA code
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              inputMode="numeric"
-              maxLength={6}
-              required
-            />
-          </label>
-        )}
+        <label>
+          Username
+          <input name="username" autoComplete="username" required />
+        </label>
+        <label>
+          Password
+          <PasswordInput
+            name="password"
+            autoComplete="current-password"
+            minLength={10}
+            required
+          />
+        </label>
         <SafeAsyncButton
           disabled={busy}
           pending={busy}
           pendingLabel="Saving..."
         >
-          {busy ? "Please wait…" : challenge ? "Verify MFA" : "Continue"}
+          {busy ? "Please wait…" : "Sign in"}
         </SafeAsyncButton>
       </form>
     </main>

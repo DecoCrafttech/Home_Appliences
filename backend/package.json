@@ -12,8 +12,7 @@
     "admin:bootstrap": "tsx src/bootstrapAdmin.ts",
     "audit:db": "tsx src/ops/databaseAudit.ts",
     "audit:test-db": "tsx src/ops/testDatabase.ts",
-    "admin:reset": "tsx src/ops/adminAccount.ts",
-    "admin:mfa": "tsx src/ops/adminAccount.ts --mfa"
+    "admin:reset": "tsx src/ops/adminAccount.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1155.0",

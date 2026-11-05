@@ -79,7 +79,6 @@ app.use(idempotentMutations);
 app.use(
   [
     "/api/v1/admin/auth/login",
-    "/api/v1/admin/auth/mfa",
     "/api/v1/admin/auth/password",
     "/api/v1/auth/customer/google",
     "/api/v1/auth/otp",

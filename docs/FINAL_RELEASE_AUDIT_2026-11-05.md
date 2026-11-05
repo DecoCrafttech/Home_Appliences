@@ -41,7 +41,7 @@ Auth guard tests verify one customer authorization lookup per request, including
 
 ## D. Security results and remaining risks
 
-Implemented: exact trusted browser origins for writes (including hostile sibling-subdomain checks), request-scoped authenticated identity reuse, forced staff password-change restrictions, bounded password hashing queue, generic credential failures/dummy-hash verification, five-failure account lockout, cryptographic production MFA codes, atomic one-use MFA acceptance, invalidation of other sessions/outstanding MFA after password changes, push SSRF restrictions, bounded JSON structure checks, and sanitized application/background/pool errors. API responses remain `no-store`; private API responses are not service-worker cached.
+Implemented: exact trusted browser origins for writes (including hostile sibling-subdomain checks), request-scoped authenticated identity reuse, forced staff password-change restrictions, bounded password hashing queue, generic credential failures/dummy-hash verification, five-failure account lockout, invalidation of other sessions after password changes, push SSRF restrictions, bounded JSON structure checks, and sanitized application/background/pool errors. API responses remain `no-store`; private API responses are not service-worker cached.
 
 Remaining risks/actions:
 
@@ -50,7 +50,7 @@ Remaining risks/actions:
 
    Final root `npm audit --omit=dev`: 7 affected package entries (2 low, 4 moderate, 1 high), compared with 13 initially (3 low, 5 moderate, 5 high). The standalone runtime audit has one remaining high Zod finding. Root production-mode dependencies include frontend build tooling, so these counts are not all backend-runtime exposures.
 
-3. Production staff MFA has no delivery provider configured in this code. Use the explicit owner-terminal bridge temporarily; configure real delivery before general staff use. Never deploy development MFA mode.
+3. Technician MFA remains separately configurable through the technician account flow.
 4. Real Google-provider account login requires interactive owner verification. The hosted API currently returns a configured public client ID; that alone does not prove OAuth success.
 5. Five other legacy staff profiles remain active because the approved deletion scope preserved all six. Review ownership and disable unauthorized accounts before launch.
 6. Remaining browser-suite failures prevent a clean release sign-off. See H. No claim of complete XSS/IDOR/upload/SQL-injection coverage or 100% security is made.
@@ -77,7 +77,7 @@ npm run admin:reset -- --username admin --expect-branch br-broad-breeze-b41iqgjz
 After submitting username/password in the Admin PWA, issue its current five-minute MFA challenge using:
 
 ```powershell
-npm run admin:mfa -- --username admin --expect-branch br-broad-breeze-b41iqgjz --expect-database neondb --apply
+
 ```
 
 The tools refuse redirected output, check the actual target, and manage only a SUPER_ADMIN. Reset revokes prior sessions and challenges. Change the temporary password immediately after signing in.
@@ -124,4 +124,4 @@ Existing branch `main`; origin `https://github.com/DecoCrafttech/Home_Appliences
 
 ## J. Before production launch
 
-Resolve remaining browser regression failures; complete the Zod migration; rotate exposed credentials; review the five legacy staff accounts; configure staff MFA delivery; perform real Google sign-in and owner acceptance on Customer/Admin/Technician domains. In Hostinger verify `NODE_ENV=production`, the four exact app origins and the correct proxy-hop setting. Redeploy from the verified GitHub commit and inspect deployment/runtime logs. Backend root remains `backend`, build `npm run build`, output `.`, entry `start.mjs`; PWA roots remain their respective `apps/*-pwa` folders with `dist` output. Keep `DATABASE_URL` on the backend only. Validate `/api/v1/ready`, cross-domain cookie/CORS behavior, customer booking, admin assignment, technician progress and customer feedback after deployment. GitHub push alone does not prove Hostinger completed a redeployment.
+Resolve remaining browser regression failures; complete the Zod migration; rotate exposed credentials; review the five legacy staff accounts; perform real Google sign-in and owner acceptance on Customer/Admin/Technician domains. In Hostinger verify `NODE_ENV=production`, the four exact app origins and the correct proxy-hop setting. Redeploy from the verified GitHub commit and inspect deployment/runtime logs. Backend root remains `backend`, build `npm run build`, output `.`, entry `start.mjs`; PWA roots remain their respective `apps/*-pwa` folders with `dist` output. Keep `DATABASE_URL` on the backend only. Validate `/api/v1/ready`, cross-domain cookie/CORS behavior, customer booking, admin assignment, technician progress and customer feedback after deployment. GitHub push alone does not prove Hostinger completed a redeployment.
