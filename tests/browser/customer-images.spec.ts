@@ -131,14 +131,12 @@ for (const width of [360, 390, 430, 1440])
         page.getByRole("link", { name: `Book ${name}`, exact: true }),
       ).toBeVisible();
     await expect(page.locator(".service-type-tabs")).toHaveCount(0);
-    await expect(page.locator(".maintenance-category > img")).toHaveCount(3);
-    for (const photo of await page
-      .locator(".maintenance-category > img")
-      .all()) {
+    await expect(page.locator(".maintenance-card img")).toHaveCount(3);
+    for (const photo of await page.locator(".maintenance-card img").all()) {
       await photo.scrollIntoViewIfNeeded();
       await expect(photo).toHaveAttribute(
         "src",
-        /\/maintenance\/(electrical|plumbing|painting)\.webp$/,
+        /\/maintenance\/(electrical|plumbing|painting)-cutout\.webp$/,
       );
       await expect
         .poll(() =>
@@ -146,14 +144,20 @@ for (const width of [360, 390, 430, 1440])
         )
         .toBeGreaterThan(0);
     }
-    await expect(page.locator(".appliance-card")).toHaveCount(11);
+    await expect(
+      page.locator(
+        ".services-catalogue-page > .services-discovery .appliance-card",
+      ),
+    ).toHaveCount(11);
     await expect(
       page.getByRole("link", {
         name: "View Other Appliances services",
         exact: true,
       }),
     ).toHaveCount(0);
-    for (const card of await page.locator(".appliance-card").all()) {
+    for (const card of await page
+      .locator(".services-catalogue-page > .services-discovery .appliance-card")
+      .all()) {
       await card.scrollIntoViewIfNeeded();
       await expect(card.locator("img")).toHaveAttribute(
         "src",

@@ -9,6 +9,7 @@ import {
 } from "@home/ui/skeletons";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation, statusLabel } from "../lib/language";
+import { StateIllustration } from "./StateIllustration";
 export function Avatar({
   name,
   src,
@@ -83,10 +84,13 @@ export function EmptyState({
   ...props
 }: React.ComponentProps<typeof SharedEmptyState>) {
   const { t } = useTranslation();
+  const kind = props.kind || emptyStateKind(title || "No records found");
   return (
     <SharedEmptyState
       {...props}
-      kind={props.kind || emptyStateKind(title || "No records found")}
+      kind={kind}
+      illustration={props.illustration || <StateIllustration kind={kind} />}
+      className={`customer-empty-state ${props.className || ""}`}
       title={t(title || "No records found")}
     >
       {children}

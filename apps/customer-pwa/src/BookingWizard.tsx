@@ -1,3 +1,4 @@
+import { AccountAccessState } from "./components/AccountAccessState";
 import { VisitCalendar } from "./VisitCalendar";
 import {
   isHiddenCustomerAppliance,
@@ -68,7 +69,6 @@ export function BookingWizard({ type }: { type: "service" | "installation" }) {
       (await api.get<{ data: Customer }>("/profile")).data.data,
     retry: false,
   });
-  const { t } = useTranslation();
   if (profile.isPending)
     return (
       <div className="section page">
@@ -80,33 +80,13 @@ export function BookingWizard({ type }: { type: "service" | "installation" }) {
       axios.isAxiosError(profile.error) &&
       profile.error.response?.status === 401;
     return (
-      <section className="section page">
-        <h1>
-          {t(type === "service" ? "Service request" : "Installation request")}
-        </h1>
-        <p role={unauthorized ? undefined : "alert"}>
-          {unauthorized
-            ? "Sign in to save your request and use your profile details."
-            : "Unable to load your account. Please try again."}
-        </p>
-        {unauthorized ? (
-          <Link
-            className="primary"
-            to={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-          >
-            {t("Sign in")}
-          </Link>
-        ) : (
-          <SafeAsyncButton
-            variant="primary"
-            pending={profile.isFetching}
-            pendingLabel="Loading..."
-            onClick={() => profile.refetch({ cancelRefetch: false })}
-          >
-            {t("Try again")}
-          </SafeAsyncButton>
-        )}
-      </section>
+      <AccountAccessState
+        label={type === "service" ? "Service request" : "Installation request"}
+        title="Sign in to book your visit"
+        unauthorized={unauthorized}
+        retry={() => profile.refetch({ cancelRefetch: false })}
+        pending={profile.isFetching}
+      />
     );
   }
   return (

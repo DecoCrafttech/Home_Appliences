@@ -1,8 +1,8 @@
+import { AccountAccessState } from "./components/AccountAccessState";
 import { Maintenance } from "./Maintenance";
 import { useGoogleConfiguration } from "./lib/googleAuth";
 import { contactPhone } from "@home/shared";
 import { CatalogueSearch } from "./CatalogueSearch";
-import { HomeHeaderSkeleton } from "@home/ui/skeletons";
 import { useCustomerProfile as useProfile } from "./lib/profile";
 import { AppErrorBoundary, BrandLogo } from "@home/ui";
 import { ApplianceServices } from "./PublishedServices";
@@ -320,13 +320,6 @@ function Home() {
     profile = useProfile(),
     requests = useRequests(!!profile.data),
     [, setDraftVersion] = useState(0);
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12
-      ? t("Good morning")
-      : hour < 17
-        ? t("Good afternoon")
-        : t("Good evening");
   useEffect(() => {
     const update = () => setDraftVersion((v) => v + 1);
     window.addEventListener("draft-changed", update);
@@ -343,40 +336,15 @@ function Home() {
     activeRequests.find((r) => r.status === "ESTIMATE_PENDING_APPROVAL") ||
     activeRequests[0];
   return (
-    <div className="home-page section">
-      {profile.isPending ? (
-        <HomeHeaderSkeleton />
-      ) : (
-        <section className="home-welcome" aria-label="Welcome">
-          {profile.data ? (
-            <Avatar
-              name={profile.data.full_name}
-              src={profile.data.profile_photo_url}
-            />
-          ) : (
-            <span className="home-welcome-avatar">
-              <FaHouse aria-hidden="true" />
-            </span>
-          )}
-          <div>
-            <h1>
-              {greeting}
-              {profile.data?.full_name
-                ? `, ${profile.data.full_name.split(" ")[0]}`
-                : ""}
-            </h1>
-            <p>{t("How can we help you today?")}</p>
-          </div>
-        </section>
-      )}
+    <div className="home-page section" aria-label="Home">
       <CatalogueSearch />
       <div className="home-showcase">
         <section className="home-promo" aria-label="Appliance care at home">
           <div className="home-promo-copy">
             <p className="home-promo-eyebrow">We fit it. We fix it.</p>
-            <h2>
+            <h1 className="home-promo-title">
               Appliance care <span>at your doorstep</span>
-            </h2>
+            </h1>
             <p className="home-promo-caption">
               <span>
                 <FaScrewdriverWrench aria-hidden="true" /> Repair
@@ -404,6 +372,19 @@ function Home() {
             />
           </div>
         </section>
+        <div className="home-benefits" aria-label="Our service promise">
+          {[
+            ["Verified Technicians", FaShieldHalved],
+            ["Quick Response", FaBolt],
+            ["Transparent Process", FaTag],
+            ["Quality Services", FaAward],
+          ].map(([label, Icon]) => (
+            <div key={String(label)}>
+              {typeof Icon !== "string" && Icon && <Icon aria-hidden="true" />}
+              <span>{String(label)}</span>
+            </div>
+          ))}
+        </div>
         <nav className="home-quick-actions" aria-label="Quick actions">
           {[
             {
@@ -444,19 +425,6 @@ function Home() {
         </nav>
       </div>
       <ServiceDiscovery compact />
-      <div className="home-benefits" aria-label="Our service promise">
-        {[
-          ["Verified Technicians", FaShieldHalved],
-          ["Quick Response", FaBolt],
-          ["Transparent Process", FaTag],
-          ["Quality Services", FaAward],
-        ].map(([label, Icon]) => (
-          <div key={String(label)}>
-            {typeof Icon !== "string" && Icon && <Icon aria-hidden="true" />}
-            <span>{String(label)}</span>
-          </div>
-        ))}
-      </div>
       {adminPhone && (
         <a className="secondary home-call-admin" href={`tel:${adminPhone}`}>
           <FaPhone aria-hidden="true" /> Call Admin
@@ -505,7 +473,6 @@ function Home() {
 function Protected({ children }: { children: ReactNode }) {
   const location = useLocation();
   const query = useProfile();
-  const { t } = useTranslation();
   if (query.isPending)
     return (
       <section className="section page">
@@ -523,25 +490,24 @@ function Protected({ children }: { children: ReactNode }) {
   if (query.isError) {
     const unauthorized =
       axios.isAxiosError(query.error) && query.error.response?.status === 401;
+    const requestsPage = /^\/(bookings|requests)(\/|$)/.test(location.pathname);
     return (
-      <section className="section page">
-        <EmptyState
-          title={unauthorized ? "Sign in" : "Unable to load this page"}
-        >
-          {unauthorized ? (
-            <Link
-              className="primary"
-              to={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-            >
-              {t("Sign in")}
-            </Link>
-          ) : (
-            <button className="primary" onClick={() => query.refetch()}>
-              {t("Try again")}
-            </button>
-          )}
-        </EmptyState>
-      </section>
+      <AccountAccessState
+        label={requestsPage ? "My Requests" : "Your account"}
+        title={
+          requestsPage
+            ? "Your requests, all together"
+            : "Sign in to your account"
+        }
+        description={
+          requestsPage
+            ? "Sign in to view your bookings, track visits and get updates."
+            : "Sign in to manage your profile and saved details."
+        }
+        unauthorized={unauthorized}
+        retry={() => query.refetch()}
+        pending={query.isFetching}
+      />
     );
   }
   return children;

@@ -86,7 +86,8 @@ for (const width of [320, 360, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await customerData(page);
     await page.goto("/");
-    await expect(page.locator(".home-welcome h1")).toBeVisible();
+    await expect(page.locator(".home-welcome")).toHaveCount(0);
+    await expect(page.locator(".home-promo h1")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Browse Appliances" }),
     ).toBeVisible();

@@ -1,3 +1,4 @@
+import { AccountAccessState } from "./components/AccountAccessState";
 import { AsyncActionButton as SafeAsyncButton } from "@home/ui";
 import { EstimateApproval } from "./EstimateApproval";
 import { customerKeys } from "./lib/queryKeys";
@@ -741,37 +742,15 @@ export function MyReviews() {
   );
 }
 function RequestError({ error, retry }: { error: unknown; retry: () => void }) {
-  const { t } = useTranslation();
   const unauthorized =
     axios.isAxiosError(error) && error.response?.status === 401;
   return (
-    <section className="section page">
-      <h1>{t("My Requests")}</h1>
-      <div role="alert">
-        <EmptyState
-          kind={unauthorized ? "auth" : "network"}
-          title={
-            unauthorized
-              ? "Sign in to view your requests"
-              : "Unable to load information"
-          }
-          description={errorMessage(error)}
-          primaryAction={
-            unauthorized ? (
-              <Link
-                to={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                className="primary"
-              >
-                {t("Sign in")}
-              </Link>
-            ) : (
-              <button className="primary" onClick={retry}>
-                {t("Try again")}
-              </button>
-            )
-          }
-        />
-      </div>
-    </section>
+    <AccountAccessState
+      label="My Requests"
+      title="Your requests, all together"
+      description="Sign in to view your bookings, track visits and get updates."
+      unauthorized={unauthorized}
+      retry={retry}
+    />
   );
 }
