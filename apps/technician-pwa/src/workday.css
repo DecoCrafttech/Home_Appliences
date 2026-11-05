@@ -1,3 +1,80 @@
+.tech-appointments {
+  min-width: 0;
+}
+.tech-appointments .ui-page-header {
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-direction: row;
+}
+.tech-appointments .ui-page-header > div:first-child {
+  min-width: 0;
+}
+.tech-appointments .ui-page-header .ui-actions {
+  flex: 0 0 auto;
+  width: auto;
+}
+.tech-appointments .appointment-calendar [role="heading"] {
+  font-size: clamp(16px, 2vw, 22px);
+  max-width: min(100%, calc(100vw - 60px));
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.tech-appointment-details {
+  padding: 0 24px 24px;
+  display: grid;
+  gap: 14px;
+}
+.tech-appointment-details h3 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  letter-spacing: -0.5px;
+}
+.tech-appointment-details > p {
+  margin: 0;
+  color: #777080;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tech-appointment-time {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  background: #f7f4fd;
+  border-radius: 14px;
+}
+.tech-appointment-time strong {
+  font-size: 14px;
+  color: #322146;
+}
+.tech-appointment-time span {
+  font-size: 13px;
+  color: #77658c;
+}
+.tech-appointment-contact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.tech-appointment-contact .location-actions {
+  margin: 0;
+}
+.tech-appointment-contact > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.tech-appointment-open.primary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  border-radius: 12px;
+}
+
 .tech-shell .tech-workday .ui-page-header {
   margin-bottom: 18px;
   align-items: center;

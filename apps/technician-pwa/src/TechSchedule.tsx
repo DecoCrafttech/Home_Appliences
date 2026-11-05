@@ -1,44 +1,31 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AsyncActionButton, LocationActions } from "@home/ui";
+import {
+  AsyncActionButton,
+  ConfirmActionDialog,
+  LocationActions,
+} from "@home/ui";
 import { contactPhone, requestReference } from "@home/shared";
-import { FaCalendarDay, FaLocationDot, FaPhone, FaUser } from "react-icons/fa6";
+import { FaPhone } from "react-icons/fa6";
 import type { CalendarBooking } from "@home/ui/calendar";
 import {
   PageHeader,
   LoadingSkeleton,
   ErrorState,
-  EmptyState,
   StatusBadge,
 } from "./components";
 import { api } from "./api";
 
-const dayKey = (date: Date) =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-const addDays = (value: string, amount: number) => {
-  const date = new Date(`${value}T12:00:00+05:30`);
-  date.setDate(date.getDate() + amount);
-  return dayKey(date);
-};
-const label = (value: string, options: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat("en-IN", {
-    ...options,
-    timeZone: "Asia/Kolkata",
-  }).format(new Date(`${value}T12:00:00+05:30`));
+const ScheduleCalendar = lazy(() =>
+  import("@home/ui/calendar").then((module) => ({
+    default: module.ScheduleCalendar,
+  })),
+);
 
 export function TechSchedule() {
-  const today = dayKey(new Date());
-  const [selectedDate, setSelectedDate] = useState(today);
-  const range = useMemo(
-    () => ({ from: selectedDate, to: addDays(selectedDate, 14) }),
-    [selectedDate],
-  );
+  const [range, setRange] = useState({ from: "", to: "" });
+  const [selected, setSelected] = useState<CalendarBooking | null>(null);
   const q = useQuery({
     queryKey: ["technician", "schedule", range],
     queryFn: async () =>
@@ -48,149 +35,139 @@ export function TechSchedule() {
           meta: { truncated: boolean };
         }>("/schedule", { params: range })
       ).data,
-    refetchOnMount: "always",
+    enabled: !!range.from,
+    staleTime: 15000,
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-  const days = Array.from({ length: 7 }, (_, index) =>
-    addDays(selectedDate, index),
-  );
-  const grouped = useMemo(() => {
-    const map = new Map<string, CalendarBooking[]>();
-    for (const booking of q.data?.data || []) {
-      const key = booking.confirmed_date.slice(0, 10);
-      map.set(key, [...(map.get(key) || []), booking]);
-    }
-    return map;
-  }, [q.data]);
-  const jobs = grouped.get(selectedDate) || [];
   return (
-    <section>
+    <section className="tech-appointments">
       <PageHeader
-        title="Schedule"
-        description="Confirmed visits in India Standard Time."
+        title="Appointments"
+        description="Your confirmed visits, all in one place."
         actions={
-          <AsyncActionButton pending={q.isFetching} onClick={() => q.refetch()}>
+          <AsyncActionButton
+            pending={q.isFetching}
+            onClick={() => q.refetch({ cancelRefetch: false })}
+            disabled={!range.from}
+          >
             Refresh
           </AsyncActionButton>
         }
       />
-      <div className="schedule-toolbar">
-        <button onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
-          Previous week
-        </button>
-        <strong>
-          {label(selectedDate, { month: "long", year: "numeric" })}
-        </strong>
-        <button
-          onClick={() => setSelectedDate(today)}
-          disabled={selectedDate === today}
-        >
-          Today
-        </button>
-        <button onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
-          Next week
-        </button>
-      </div>
-      <div className="schedule-strip" aria-label="Choose schedule date">
-        {days.map((day) => (
-          <button
-            key={day}
-            className={day === selectedDate ? "is-selected" : ""}
-            aria-pressed={day === selectedDate}
-            onClick={() => setSelectedDate(day)}
-          >
-            <span>
-              {day === today ? "Today" : label(day, { weekday: "short" })}
-            </span>
-            <strong>{label(day, { day: "2-digit" })}</strong>
-            <small>{grouped.get(day)?.length || 0} jobs</small>
-          </button>
-        ))}
-      </div>
-      {q.isPending ? (
-        <LoadingSkeleton title="Loading schedule..." variant="calendar" />
-      ) : q.isError ? (
-        <ErrorState title="Unable to load schedule" retry={() => q.refetch()} />
-      ) : !jobs.length ? (
-        <EmptyState
-          title="No jobs scheduled"
-          description={`You have no confirmed visits on ${label(selectedDate, { day: "numeric", month: "long" })}.`}
+      {q.isError && (
+        <ErrorState
+          title="Unable to load appointments"
+          retry={() => q.refetch()}
         />
-      ) : (
-        <div className="schedule-day-group">
-          <header>
-            <div>
-              <span>
-                {selectedDate === today
-                  ? "Today"
-                  : label(selectedDate, { weekday: "long" })}
-              </span>
-              <h2>
-                {label(selectedDate, {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h2>
+      )}
+      <div aria-busy={q.isFetching}>
+        <div className="calendar-loading-region">
+          {q.isPending && !!range.from && (
+            <div className="calendar-loading-overlay">
+              <LoadingSkeleton
+                variant="calendar"
+                title="Loading appointments…"
+              />
             </div>
-            <strong>
-              {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
-            </strong>
-          </header>
-          <div className="schedule-job-list">
-            {jobs.map((job) => {
-              const phone = contactPhone(job.customer_phone);
-              const address = job.address_snapshot;
-              return (
-                <article
-                  className={`schedule-job-card status-${job.status.toLowerCase()}`}
-                  key={job.id}
-                >
-                  <div className="schedule-job-time">
-                    <FaCalendarDay aria-hidden="true" />
-                    <strong>{job.confirmed_time_window}</strong>
-                  </div>
-                  <div className="schedule-job-main">
-                    <div className="tech-job-heading">
-                      <span className="request-reference">
-                        {requestReference(job)}
-                      </span>
-                      <StatusBadge status={job.status} />
-                    </div>
-                    <h3>{job.appliance}</h3>
-                    <p>
-                      {job.service_name} ·{" "}
-                      {job.request_type === "INSTALLATION"
-                        ? "Installation"
-                        : "Service"}
-                    </p>
-                    <p>
-                      <FaUser aria-hidden="true" /> {job.customer_name}
-                    </p>
-                    <p>
-                      <FaLocationDot aria-hidden="true" />{" "}
-                      {[address?.area, address?.city]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  </div>
-                  <div className="schedule-job-actions">
-                    {phone && (
-                      <a className="secondary" href={`tel:${phone}`}>
-                        <FaPhone /> Call
-                      </a>
-                    )}
-                    <LocationActions address={address} directions compact />
-                    <Link className="primary" to={`/technician/jobs/${job.id}`}>
-                      View job
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          )}
+          <Suspense
+            fallback={
+              <LoadingSkeleton variant="calendar" title="Loading calendar…" />
+            }
+          >
+            <ScheduleCalendar
+              bookings={q.data?.data || []}
+              onRange={(from, to) =>
+                setRange((old) =>
+                  old.from === from && old.to === to ? old : { from, to },
+                )
+              }
+              onSelect={setSelected}
+            />
+          </Suspense>
         </div>
+      </div>
+      {q.data?.meta?.truncated && (
+        <p role="status">
+          There are more than 1,000 visits in this range. Switch to Day or Week
+          to see all appointments.
+        </p>
+      )}
+      {selected && (
+        <AppointmentDetails
+          booking={selected}
+          onClose={() => setSelected(null)}
+        />
       )}
     </section>
+  );
+}
+
+function AppointmentDetails({
+  booking,
+  onClose,
+}: {
+  booking: CalendarBooking;
+  onClose: () => void;
+}) {
+  const phone = contactPhone(booking.customer_phone);
+  const date = booking.confirmed_date.slice(0, 10);
+  const dateLabel = new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(`${date}T12:00:00+05:30`));
+  return (
+    <ConfirmActionDialog
+      title={`Appointment ${requestReference(booking)}`}
+      onClose={onClose}
+      drawer
+    >
+      <div className="appointment-details tech-appointment-details">
+        <StatusBadge status={booking.status} />
+        <h3>{booking.customer_name}</h3>
+        <p>
+          {booking.appliance} ·{" "}
+          {booking.service_name ||
+            (booking.request_type === "INSTALLATION"
+              ? "Installation"
+              : "Service")}
+        </p>
+        <div className="tech-appointment-time">
+          <strong>{dateLabel}</strong>
+          <span>{booking.confirmed_time_window} · IST</span>
+        </div>
+        <p>
+          {[
+            booking.address_snapshot?.line1,
+            booking.address_snapshot?.area,
+            booking.address_snapshot?.city,
+          ]
+            .filter(Boolean)
+            .join(", ")}
+        </p>
+        <div className="tech-appointment-contact">
+          {phone && (
+            <a className="secondary" href={`tel:${phone}`}>
+              <FaPhone aria-hidden="true" /> Call customer
+            </a>
+          )}
+          <LocationActions
+            address={booking.address_snapshot}
+            directions
+            compact
+          />
+        </div>
+        <Link
+          className="primary tech-appointment-open"
+          to={`/technician/jobs/${booking.id}`}
+          onClick={onClose}
+        >
+          View job
+        </Link>
+      </div>
+    </ConfirmActionDialog>
   );
 }
