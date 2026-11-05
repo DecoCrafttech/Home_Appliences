@@ -19,11 +19,29 @@
   opacity: 0.65;
 }
 .home-showcase .home-benefits {
+  gap: 0;
   margin: 12px 0;
   padding: 12px;
   background: #f6f2ff;
   border: 1px solid #eee7fb;
   border-radius: 14px;
+}
+.home-showcase .home-benefits > div {
+  min-width: 0;
+  padding: 8px;
+}
+@media (min-width: 761px) {
+  .home-showcase .home-benefits > div + div {
+    border-inline-start: 1px solid #ded4f2;
+  }
+}
+@media (max-width: 760px) {
+  .home-showcase .home-benefits > div:nth-child(even) {
+    border-inline-start: 1px solid #ded4f2;
+  }
+  .home-showcase .home-benefits > div:nth-child(n + 3) {
+    border-top: 1px solid #ded4f2;
+  }
 }
 .home-showcase .home-benefits svg {
   width: 18px;
