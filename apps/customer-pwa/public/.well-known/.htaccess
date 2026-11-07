@@ -1,0 +1,12 @@
+Options -Indexes
+
+<Files "assetlinks.json">
+  ForceType application/json
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule mod_headers.c>
+    Header always set Content-Type "application/json"
+    Header always set Cache-Control "no-cache"
+  </IfModule>
+</Files>

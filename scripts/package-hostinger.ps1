@@ -8,6 +8,10 @@ foreach ($appName in @('customer', 'admin', 'technician')) {
     if (!(Test-Path -LiteralPath (Join-Path $dist 'index.html'))) {
         throw "Missing build for $appName. Run npm run build first."
     }
+    if ($appName -eq 'customer') {
+        & (Join-Path $PSScriptRoot 'package-customer-hostinger.ps1') -OutputDirectory $artifactRoot
+        continue
+    }
     $stage = Join-Path $artifactRoot $appName
     New-Item -ItemType Directory -Path $stage | Out-Null
     Copy-Item -Path "$dist/*" -Destination $stage -Recurse

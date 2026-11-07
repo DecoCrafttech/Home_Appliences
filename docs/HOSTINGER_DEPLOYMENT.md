@@ -13,6 +13,8 @@ These packages are prepared locally, not published automatically. Hosting creden
 
 ## Build and package locally
 
+For Customer TWA/Digital Asset Links fixes, build only Customer with `npm run build -w @home/customer` and package with `powershell -File scripts/package-customer-hostinger.ps1`. This preserves `.well-known` and the Customer-specific built `.htaccess`. Extract the resulting ZIP directly into the document root for `fixbeez.in`. See [Customer TWA verification](CUSTOMER_TWA_VERIFICATION.md) for endpoint checks and Android debugging; the full-platform build below is not required for this Customer-only update.
+
 Use Node.js 24 and npm at the repository root:
 
 ```powershell

@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "in.fixbeez.customer",
+      "sha256_cert_fingerprints": [
+        "19:0A:C1:50:81:D4:3C:9F:DB:85:2A:CC:29:3B:D2:F4:2D:1F:29:B0:FB:5B:65:7C:84:70:24:C7:06:6A:43:05",
+        "DD:40:70:58:47:E1:A1:68:84:5A:35:1A:D1:90:7A:BF:62:B9:7B:0B:F7:6B:54:FF:32:65:15:17:E5:B3:6B:69"
+      ]
+    }
+  }
+]
