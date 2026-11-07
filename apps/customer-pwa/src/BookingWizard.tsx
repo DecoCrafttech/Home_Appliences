@@ -1157,45 +1157,53 @@ function Wizard({
           onClose={() => blocker.reset()}
         >
           <div className="leave-booking">
-            <button
-              className="primary"
-              type="button"
-              onClick={() => blocker.reset()}
-            >
-              Continue Editing
-            </button>
-            <SafeAsyncButton
-              variant="outline"
-              onClick={() => {
-                const done = saveDraft(
-                  profile.id,
-                  type,
-                  getValues(),
-                  step,
-                  keyRef.current,
-                );
-                if (done) {
-                  toast.success("Draft saved.");
-                  blocker.proceed();
-                } else
-                  toast.error(
-                    "Unable to save the draft. Keep editing or discard changes.",
+            <p>
+              Your request has not been submitted. Keep editing, save a draft
+              for later, or discard your changes.
+            </p>
+            <div className="leave-booking-actions">
+              <button
+                className="primary"
+                type="button"
+                onClick={() => blocker.reset()}
+              >
+                Continue Editing
+              </button>
+              <SafeAsyncButton
+                variant="outline"
+                className="secondary"
+                type="button"
+                onClick={() => {
+                  const done = saveDraft(
+                    profile.id,
+                    type,
+                    getValues(),
+                    step,
+                    keyRef.current,
                   );
-              }}
-            >
-              Save Draft
-            </SafeAsyncButton>
-            <button
-              className="discard-outline"
-              type="button"
-              onClick={() => {
-                clearDraft(profile.id, type);
+                  if (done) {
+                    toast.success("Draft saved.");
+                    blocker.proceed();
+                  } else
+                    toast.error(
+                      "Unable to save the draft. Keep editing or discard changes.",
+                    );
+                }}
+              >
+                Save Draft
+              </SafeAsyncButton>
+              <button
+                className="discard-outline"
+                type="button"
+                onClick={() => {
+                  clearDraft(profile.id, type);
 
-                blocker.proceed();
-              }}
-            >
-              Discard Changes
-            </button>
+                  blocker.proceed();
+                }}
+              >
+                Discard Changes
+              </button>
+            </div>
           </div>
         </ConfirmActionDialog>
       )}

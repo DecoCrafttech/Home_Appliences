@@ -79,3 +79,4 @@ import "./catalogue.css";
 import "./signin.css";
 import "./android-layout.css";
 import "./request-details.css";
+import "./typography.css";

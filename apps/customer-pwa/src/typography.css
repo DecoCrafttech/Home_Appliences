@@ -1,0 +1,139 @@
+/* Customer typography contract, shared by the page and native-dialog layer. */
+:root {
+  --font-family:
+    Inter, "Noto Sans Tamil", "Nirmala UI", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+html,
+body {
+  font-family: var(--font-family);
+}
+body {
+  font-size: var(--font-body, 14px);
+  line-height: 1.55;
+}
+button,
+input,
+select,
+textarea,
+.safe-dialog {
+  font-family: var(--font-family);
+}
+button,
+input,
+select,
+textarea {
+  line-height: 1.4;
+}
+body :is(h1, h2, h3, p, label, legend, small, strong) {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+:where(h1, h2, h3) {
+  line-height: 1.35;
+}
+label,
+legend {
+  line-height: 1.5;
+}
+.appliance-card-footer :is(h2, h3) {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+.safe-dialog {
+  text-align: start;
+  line-height: 1.55;
+}
+.safe-dialog :is(button, a) {
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.safe-dialog > header h2 {
+  min-width: 0;
+  line-height: 1.35;
+}
+.safe-dialog > header > button {
+  flex: 0 0 44px;
+}
+
+/* This rule is scoped to the leave-booking dialog, not other application drawers. */
+.safe-dialog:has(.leave-booking) {
+  inset: 0;
+  margin: auto;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+.safe-dialog:has(.leave-booking) > header {
+  padding: 16px 20px;
+  gap: 12px;
+}
+.safe-dialog:has(.leave-booking) > header h2 {
+  font-size: 20px;
+}
+.safe-dialog .leave-booking {
+  padding: 18px 20px 20px;
+}
+.leave-booking > p {
+  margin: 0 0 20px;
+  color: #6a6176;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.leave-booking-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.leave-booking-actions > button {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  min-height: 48px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+  border-radius: 12px;
+}
+.leave-booking-actions > .primary {
+  grid-column: 1 / -1;
+}
+.leave-booking-actions > .discard-outline {
+  color: #b32f37;
+  background: #fff;
+  border: 1px solid #e5bbc0;
+}
+.leave-booking-actions > .discard-outline:hover {
+  background: #fff5f5;
+}
+@media (max-width: 480px) {
+  .leave-booking-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .safe-dialog:has(.leave-booking) > header {
+    padding: 14px 16px;
+  }
+  .safe-dialog:has(.leave-booking) > header h2 {
+    font-size: 18px;
+  }
+  .safe-dialog .leave-booking {
+    padding: 16px;
+  }
+}
+@media (min-width: 761px) {
+  #main :is(input, select, textarea) {
+    font-size: 14px;
+  }
+}
+/* Keep form text readable on touch tablets as well as narrow phones. */
+@media (pointer: coarse) {
+  #main :is(input, select, textarea),
+  .safe-dialog :is(input, select, textarea) {
+    font-size: 16px;
+  }
+}

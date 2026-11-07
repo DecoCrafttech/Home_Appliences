@@ -20,6 +20,12 @@ The Customer build passed. Six browser regression scenarios passed, covering lay
 
 ## Deployment and phone check
 
+### Typography and leave-booking dialog
+
+The Leave this request dialog is centered with consistent spacing. Continue Editing spans the first row; Save Draft and Discard align below it, with all three actions stacked at narrow widths. Customer pages and dialogs use the same Inter font stack with Tamil-capable system fallbacks, consistent line heights and natural word wrapping. Touch-device form controls stay at 16px. No shared Admin/Technician stylesheet was changed.
+
+The current regression suite has 23 passing checks: eleven Customer routes audited at 320/360/412/768/1024/1440px, Inter loading, consistent control fonts, unclipped headings/buttons, horizontal overflow and Tamil locale checks; centered leave-dialog actions including save/restore/discard; Pixel 7 and iPad Mini touch emulation; and the existing booking/review popup flows. These are browser/device-emulation checks, not a claim that every physical Android device was exercised. The production Inter WOFF2 URL also returned 200 with `font/woff2` and a valid WOFF2 signature during the audit.
+
 ### Request-details follow-up
 
 Booking submission confirmation now opens in a closable dialog instead of an inline page banner. Rating uses a dialog from completed request details and from the My Requests reminder. The Not now action shows a spinner during its reminder-dismissal request, disables duplicate saves/closing while pending, and retains the popup with a retryable inline error if saving fails. Confirmation history state and the rating URL trigger are cleared when dismissed. The regression suite now includes twelve checks, including actual mocked booking submission, popup Close/Escape behavior, review submission and delayed/failing Not now saves.

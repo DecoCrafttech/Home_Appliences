@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./fixtures";
+import { devices } from "@playwright/test";
 
 const applianceId = "11111111-1111-4111-8111-111111111111";
 const serviceId = "22222222-2222-4222-8222-222222222222";
@@ -162,6 +163,201 @@ async function noOverflow(page: Page) {
       () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBe(true);
+}
+
+for (const deviceName of ["Pixel 7", "iPad Mini"]) {
+  test(`touch font sizing and leave dialog on ${deviceName}`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      ...devices[deviceName],
+      baseURL: "http://localhost:5197",
+      serviceWorkers: "block",
+    });
+    try {
+      await context.addInitScript(() => {
+        localStorage.setItem("fixbeez.customer.onboarding.v1", "complete");
+        sessionStorage.setItem("fixbeez.customer.launched.v1", "complete");
+      });
+      const page = await context.newPage();
+      await setup(page);
+      await page.goto(
+        `/request/service?applianceCategoryId=${applianceId}&serviceId=${serviceId}`,
+      );
+      const description = page.getByPlaceholder(
+        "Enter your brand and short details",
+      );
+      await description.fill("Check my appliance.");
+      expect(
+        await description.evaluate((e) =>
+          parseFloat(getComputedStyle(e).fontSize),
+        ),
+      ).toBeGreaterThanOrEqual(16);
+      await page
+        .getByRole("button", { name: "Back to services", exact: true })
+        .tap();
+      const dialog = page.getByRole("dialog", {
+        name: "Leave this request?",
+        exact: true,
+      });
+      await expect(dialog).toBeVisible();
+      await page.screenshot({
+        path: `test-results/customer-android/leave-${deviceName.replaceAll(" ", "-")}.png`,
+        animations: "disabled",
+      });
+      const box = (await dialog.boundingBox())!;
+      const viewport = page.viewportSize()!;
+      expect(
+        Math.abs(box.x + box.width / 2 - viewport.width / 2),
+      ).toBeLessThanOrEqual(2);
+      expect(
+        Math.abs(box.y + box.height / 2 - viewport.height / 2),
+      ).toBeLessThanOrEqual(2);
+      await dialog
+        .getByRole("button", { name: "Continue Editing", exact: true })
+        .tap();
+      await expect(dialog).toHaveCount(0);
+      await expect(description).toHaveValue("Check my appliance.");
+      await noOverflow(page);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [320, 360, 412, 768, 1024, 1440]) {
+  test(`Customer font and alignment audit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page);
+    for (const route of [
+      "/",
+      "/book",
+      "/services",
+      `/services/appliances/${applianceId}`,
+      "/bookings",
+      `/requests/${requestId}`,
+      "/profile",
+      "/addresses",
+      "/support",
+      "/privacy",
+      "/terms",
+    ]) {
+      await page.goto(route);
+      await expect(page.locator("#main h1").first()).toBeAttached();
+      await page.evaluate(() => document.fonts.ready);
+      await noOverflow(page);
+      const audit = await page.evaluate(() => {
+        const family = getComputedStyle(document.body).fontFamily;
+        const controls = [
+          ...document.querySelectorAll<HTMLElement>(
+            "button, input, select, textarea",
+          ),
+        ].filter((e) => e.getBoundingClientRect().width > 0);
+        const clipped = [
+          ...document.querySelectorAll<HTMLElement>(
+            "#main h1, #main h2, #main h3, #main button",
+          ),
+        ]
+          .filter(
+            (e) =>
+              e.getBoundingClientRect().width > 0 &&
+              e.scrollWidth > e.clientWidth + 2,
+          )
+          .map((e) => e.textContent?.trim());
+        return {
+          family,
+          mismatches: controls
+            .filter((e) => getComputedStyle(e).fontFamily !== family)
+            .map((e) => e.tagName),
+          clipped,
+          interLoaded: [...document.fonts].some(
+            (font) => font.family === "Inter" && font.status === "loaded",
+          ),
+        };
+      });
+      expect(audit.family).toContain("Inter");
+      expect(audit.interLoaded).toBe(true);
+      expect(audit.mismatches, `${route} control fonts`).toEqual([]);
+      expect(audit.clipped, `${route} clipped text`).toEqual([]);
+    }
+    await page
+      .getByRole("combobox", { name: "Language / மொழி" })
+      .selectOption("ta");
+    await noOverflow(page);
+    await expect(page.locator("html")).toHaveAttribute("lang", "ta");
+    expect(
+      await page
+        .locator("body")
+        .evaluate((e) => getComputedStyle(e).fontFamily),
+    ).toContain("Noto Sans Tamil");
+  });
+}
+
+for (const width of [320, 768, 1440]) {
+  test(`leave-booking dialog is centered, aligned and functional at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await setup(page);
+    const url = `/request/service?applianceCategoryId=${applianceId}&serviceId=${serviceId}`;
+    await page.goto(url);
+    const description = page.getByPlaceholder(
+      "Enter your brand and short details",
+    );
+    await description.fill("Please check the appliance.");
+    await page
+      .getByRole("button", { name: "Back to services", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Leave this request?",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await page.screenshot({
+      path: `test-results/customer-android/leave-${width}.png`,
+      animations: "disabled",
+    });
+    const bounds = (await dialog.boundingBox())!;
+    expect(
+      Math.abs(bounds.x + bounds.width / 2 - width / 2),
+    ).toBeLessThanOrEqual(2);
+    expect(Math.abs(bounds.y + bounds.height / 2 - 425)).toBeLessThanOrEqual(2);
+    for (const action of await dialog
+      .locator(".leave-booking-actions > button")
+      .all()) {
+      const box = (await action.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(48);
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+      expect(
+        await action.evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
+      ).toBe(true);
+    }
+    await dialog
+      .getByRole("button", { name: "Continue Editing", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    await expect(description).toHaveValue("Please check the appliance.");
+    await page
+      .getByRole("button", { name: "Back to services", exact: true })
+      .click();
+    await dialog
+      .getByRole("button", { name: "Save Draft", exact: true })
+      .click();
+    await expect(page).not.toHaveURL(/\/request\/service/);
+    await page.goto(url);
+    await expect(description).toHaveValue("Please check the appliance.");
+    await description.fill("Discard this new description.");
+    await page
+      .getByRole("button", { name: "Back to services", exact: true })
+      .click();
+    await dialog
+      .getByRole("button", { name: "Discard Changes", exact: true })
+      .click();
+    await expect(page).not.toHaveURL(/\/request\/service/);
+    await page.goto(url);
+    await expect(description).toHaveValue("");
+  });
 }
 
 for (const width of [320, 360, 412]) {
