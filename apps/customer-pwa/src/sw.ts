@@ -1,7 +1,13 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
+import { cleanupOutdatedCaches, precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";
+import { NavigationRoute, registerRoute } from "workbox-routing";
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<{url:string;revision?:string|null}> };
 precacheAndRoute(self.__WB_MANIFEST); cleanupOutdatedCaches();
+// Serve the cached app shell for customer routes on offline launches and reloads.
+// Never turn API or missing asset requests into HTML responses.
+registerRoute(new NavigationRoute(createHandlerBoundToURL("/index.html"), {
+  denylist: [/^\/api(?:\/|$)/, /^\/\.well-known(?:\/|$)/, /^\/assets(?:\/|$)/, /\.[^/]+$/],
+}));
 self.addEventListener("install",()=>self.skipWaiting());
 self.addEventListener("activate",(event)=>event.waitUntil(self.clients.claim()));
 self.addEventListener("push",(event)=>{const p=event.data?.json()||{};event.waitUntil(self.registration.showNotification(p.title||"Home Services",{body:p.body||"You have an update",icon:"/icon-192.png",badge:"/icon-192.png",tag:p.tag||"home-services",data:{path:p.path||"/requests"}}));});

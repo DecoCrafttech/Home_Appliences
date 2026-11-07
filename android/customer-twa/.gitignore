@@ -3,7 +3,23 @@ twa-manifest.json
 *.keystore
 *.aab
 *.apk
+*.idsig
 app/
 gradle/
 .gradle/
 build/
+local.properties
+*.pem
+*.cer
+*.p12
+*.pfx
+*.password
+release-private/
+# Bubblewrap generated files; regenerate from the template and local manifest.
+build.gradle
+gradle.properties
+gradlew
+gradlew.bat
+manifest-checksum.txt
+settings.gradle
+store_icon.png
