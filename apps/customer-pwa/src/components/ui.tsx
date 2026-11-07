@@ -101,13 +101,15 @@ export function AppModal({
   title,
   children,
   onClose,
+  pending = false,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  pending?: boolean;
 }) {
   return (
-    <ConfirmActionDialog title={title} onClose={onClose}>
+    <ConfirmActionDialog title={title} onClose={onClose} pending={pending}>
       <div className="customer-modal-content">{children}</div>
     </ConfirmActionDialog>
   );

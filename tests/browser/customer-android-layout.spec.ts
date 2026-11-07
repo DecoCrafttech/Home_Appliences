@@ -126,6 +126,11 @@ async function setup(page: Page, lookupFails = false, completed = false) {
         state: "Tamil Nadu",
         pinCode: "600020",
       };
+    } else if (
+      path.endsWith("/requests/service") &&
+      route.request().method() === "POST"
+    ) {
+      return route.fulfill({ status: 201, json: { data: record } });
     } else if (path.endsWith(`/requests/${requestId}/review`)) {
       if (route.request().method() === "POST")
         review = {
@@ -345,7 +350,25 @@ for (const width of [320, 360, 1024]) {
     await expect(
       page.getByRole("heading", { name: "Rate & Review", exact: true }),
     ).toBeVisible();
+    const dialog = page.getByRole("dialog", {
+      name: "Rate & Review",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth + 1,
+      ),
+    ).toBe(true);
+    if (width === 320) await page.keyboard.press("Escape");
+    else
+      await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
     const feedback = page.locator(".request-feedback-top");
+    await feedback
+      .getByRole("button", { name: "Rate & Review", exact: true })
+      .click();
+    await expect(dialog).toBeVisible();
     const feedbackCard = await feedback.locator(".feedback-card").boundingBox();
     const summary = await page.locator(".request-detail-hero").boundingBox();
     expect(Math.abs(feedbackCard!.width - summary!.width)).toBeLessThanOrEqual(
@@ -377,6 +400,7 @@ for (const width of [320, 360, 1024]) {
     await page
       .getByRole("button", { name: "Submit review", exact: true })
       .click();
+    await expect(dialog).toHaveCount(0);
     await expect(
       feedback.getByRole("heading", { name: "Your review", exact: true }),
     ).toBeVisible();
@@ -391,6 +415,113 @@ for (const width of [320, 360, 1024]) {
     });
   });
 }
+
+test("booking success is a closable popup and does not reappear after reload", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await setup(page);
+  await addressStep(page);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .locator(".visit-month-grid button:not([disabled])")
+    .first()
+    .click();
+  await page
+    .locator(".time-selector")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "center", behavior: "instant" }),
+    );
+  await page.locator(".time-selector button").first().click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Submit request", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Request Submitted!",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Our executive will contact you soon.");
+  await page.screenshot({
+    path: "test-results/customer-android/submitted-popup-360.png",
+    animations: "disabled",
+  });
+  await expect(
+    page.locator(".my-requests-page > .confirmation-banner"),
+  ).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "My Requests", exact: true }),
+  ).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+});
+
+test("Not now shows a spinner while saving, prevents duplicates, and supports retry", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await setup(page, false, true);
+  let release!: () => void;
+  let calls = 0;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    `**/api/v1/requests/${requestId}/review-reminder`,
+    async (route) => {
+      calls++;
+      if (calls === 1) {
+        await gate;
+        return route.fulfill({
+          status: 503,
+          json: {
+            error: { message: "Unable to save your preference. Try again." },
+          },
+        });
+      }
+      return route.fulfill({ json: { data: {} } });
+    },
+  );
+  await page.goto("/bookings");
+  const dialog = page.getByRole("dialog", {
+    name: "Rate & Review",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(page.locator(".review-reminder")).toHaveCount(0);
+  await page.screenshot({
+    path: "test-results/customer-android/rating-popup-360.png",
+    animations: "disabled",
+  });
+  await dialog.getByRole("button", { name: "Not now", exact: true }).click();
+  const saving = dialog.getByRole("button", { name: "Saving...", exact: true });
+  await expect(saving).toHaveAttribute("aria-busy", "true");
+  await expect(saving.locator(".action-spinner")).toBeVisible();
+  await expect(saving).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: "Close", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  expect(calls).toBe(1);
+  release();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Unable to save your preference",
+  );
+  await expect(
+    dialog.getByRole("button", { name: "Not now", exact: true }),
+  ).toBeEnabled();
+  await dialog.getByRole("button", { name: "Not now", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(calls).toBe(2);
+  await page
+    .getByRole("button", { name: "Refresh requests", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+});
 
 test("denied location stays actionable and does not call geocoder", async ({
   page,

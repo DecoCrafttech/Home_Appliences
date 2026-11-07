@@ -107,9 +107,11 @@ export function MyRequests() {
   const location = useLocation();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [submission, setSubmission] = useState<RequestRecord | undefined>(
+  const [submission] = useState<RequestRecord | undefined>(
     (location.state as { submitted?: RequestRecord } | null)?.submitted,
   );
+  const [confirmationOpen, setConfirmationOpen] = useState(!!submission);
+  const [reminderHidden, setReminderHidden] = useState(false);
   const [filters, setFilters] = useSearchParams();
   const tab = ["All", "Pending", "In Progress", "Completed"].includes(
     filters.get("status") || "",
@@ -204,57 +206,48 @@ export function MyRequests() {
           + {t("Book a service")}
         </Link>
       </div>
-      {submission && (
-        <article className="confirmation-banner v6-confirmation" role="status">
-          <div className="v6-success-art" aria-hidden="true">
-            <FaCircleCheck />
+      {submission && confirmationOpen && (
+        <AppModal
+          title="Request Submitted!"
+          onClose={() => setConfirmationOpen(false)}
+        >
+          <div className="submission-popup">
+            <div className="v6-success-art" aria-hidden="true">
+              <FaCircleCheck />
+            </div>
+            <p>Our executive will contact you soon.</p>
+            <strong>{requestReference(submission)}</strong>
+            <p>
+              {t(submission.appliance)} &middot;{" "}
+              {submission.preferred_date?.slice(0, 10)} &middot;{" "}
+              {submission.preferred_time_window}
+            </p>
+            <div className="popup-actions">
+              <button
+                className="primary"
+                onClick={() => setConfirmationOpen(false)}
+              >
+                View My Requests
+              </button>
+              <Link
+                className="secondary"
+                to="/book"
+                onClick={() => setConfirmationOpen(false)}
+              >
+                Book Another Service
+              </Link>
+            </div>
           </div>
-          <h2>Request Submitted!</h2>
-          <p>Our executive will contact you soon.</p>
-          <strong>{requestReference(submission)}</strong>
-          <span>
-            {t(submission.appliance)} &middot;{" "}
-            {submission.preferred_date?.slice(0, 10)} &middot;{" "}
-            {submission.preferred_time_window}
-          </span>
-          <div className="v6-confirmation-actions">
-            <button
-              className="primary"
-              onClick={() => setSubmission(undefined)}
-            >
-              View My Requests
-            </button>
-            <Link className="secondary" to="/book">
-              Book Another Service
-            </Link>
-          </div>
-        </article>
+        </AppModal>
       )}
-      {reminder && (
-        <div className="review-reminder">
-          <div>
-            <strong>
-              {t("Service completed")} · {t(reminder.appliance)}
-            </strong>
-            <p>{t("How was your experience?")}</p>
-          </div>
-          <Link to={`/requests/${reminder.id}?review=1`} className="primary">
-            {t("Rate & Review")}
-          </Link>
-          <button
-            className="text-button"
-            onClick={async () => {
-              try {
-                await api.patch(`/requests/${reminder.id}/review-reminder`);
-                await qc.invalidateQueries({ queryKey: customerKeys.requests });
-              } catch (error) {
-                toast.error(errorMessage(error));
-              }
-            }}
-          >
-            {t("Not now")}
-          </button>
-        </div>
+      {reminder && !confirmationOpen && !reminderHidden && (
+        <ReviewCard
+          key={reminder.id}
+          requestId={reminder.id}
+          serviceLabel={reminder.appliance + " - " + requestReference(reminder)}
+          popupOnly
+          onClose={() => setReminderHidden(true)}
+        />
       )}
       <div className="filter-bar">
         <div
@@ -403,7 +396,10 @@ export function RequestPage() {
     <section className="section page request-details-page">
       {completed && (
         <div className="request-feedback-top" id="request-feedback">
-          <ReviewCard requestId={request.id} />
+          <ReviewCard
+            requestId={request.id}
+            serviceLabel={request.appliance + " - " + requestReference(request)}
+          />
         </div>
       )}
       <header className="request-detail-hero">
@@ -616,115 +612,202 @@ export function RequestPage() {
     </section>
   );
 }
-function ReviewCard({ requestId }: { requestId: string }) {
+function ReviewCard({
+  requestId,
+  serviceLabel,
+  popupOnly = false,
+  onClose,
+}: {
+  requestId: string;
+  serviceLabel?: string;
+  popupOnly?: boolean;
+  onClose?: () => void;
+}) {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const [open, setOpen] = useState(
-    new URLSearchParams(window.location.search).has("review"),
-  );
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(popupOnly || params.has("review"));
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [postponing, setPostponing] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const pending = busy || postponing;
   const query = useQuery({
     queryKey: customerKeys.review(requestId),
     queryFn: async () =>
-      (await api.get<{ data: Review | null }>(`/requests/${requestId}/review`))
-        .data.data,
+      (
+        await api.get<{ data: Review | null }>(
+          "/requests/" + requestId + "/review",
+        )
+      ).data.data,
   });
+  function close() {
+    setOpen(false);
+    if (params.has("review")) {
+      const next = new URLSearchParams(params);
+      next.delete("review");
+      setParams(next, { replace: true, preventScrollReset: true });
+    }
+    onClose?.();
+  }
+  useEffect(() => {
+    if (popupOnly && query.data) onClose?.();
+  }, [popupOnly, query.data, onClose]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+    setActionError("");
     if (rating < 1) {
-      toast.error("Choose one to five stars.");
+      setActionError("Choose one to five stars.");
       return;
     }
-    if (busy) return;
     const comment = String(
       new FormData(event.currentTarget).get("comment") || "",
     );
     setBusy(true);
     try {
-      await api.post(`/requests/${requestId}/review`, {
+      await api.post("/requests/" + requestId + "/review", {
         rating,
         comment,
         tags,
       });
+      close();
+      toast.success("Thank you for your feedback!");
       await Promise.all([
         qc.invalidateQueries({ queryKey: customerKeys.review(requestId) }),
         qc.invalidateQueries({ queryKey: customerKeys.requests }),
         qc.invalidateQueries({ queryKey: customerKeys.reviews }),
       ]);
-      toast.success("Thank you for your feedback!");
-      setOpen(false);
     } catch (error) {
-      toast.error(errorMessage(error));
+      setActionError(errorMessage(error));
     } finally {
       setBusy(false);
     }
   }
-  if (query.isPending) return <LoadingSkeleton variant="feedback" />;
-  if (query.isError)
-    return (
+  async function notNow() {
+    if (pending) return;
+    setPostponing(true);
+    setActionError("");
+    try {
+      await api.patch("/requests/" + requestId + "/review-reminder");
+      close();
+      await qc.invalidateQueries({ queryKey: customerKeys.requests });
+    } catch (error) {
+      setActionError(errorMessage(error));
+    } finally {
+      setPostponing(false);
+    }
+  }
+  if (query.isPending)
+    return popupOnly ? null : <LoadingSkeleton variant="feedback" />;
+  if (query.isError) {
+    const error = (
       <p role="alert">
         Unable to load your review.{" "}
         <button onClick={() => query.refetch()}>{t("Try again")}</button>
       </p>
     );
+    return open ? (
+      <AppModal title={t("Rate & Review")} onClose={close}>
+        {error}
+      </AppModal>
+    ) : popupOnly ? null : (
+      error
+    );
+  }
   return (
-    <article className="surface-card feedback-card">
-      <h2>{t(query.data ? "Your review" : "Service completed")}</h2>
-      {query.data ? (
-        <>
-          <StarRating value={query.data.rating} />
-          <p>{query.data.comment}</p>
-          <div className="filter-chips">
-            {query.data.tags.map((tag) => (
-              <span key={tag}>{t(tag)}</span>
-            ))}
-          </div>
-          <small>{new Date(query.data.created_at).toLocaleDateString()}</small>
-        </>
-      ) : open ? (
-        <form onSubmit={submit}>
-          <h3>{t("Rate & Review")}</h3>
-          <StarRating value={rating} onChange={setRating} />
-          <div className="filter-chips">
-            {reviewTags.map((tag) => (
-              <button
-                type="button"
-                key={tag}
-                className={tags.includes(tag) ? "selected" : ""}
-                aria-pressed={tags.includes(tag)}
-                onClick={() =>
-                  setTags((current) =>
-                    current.includes(tag)
-                      ? current.filter((value) => value !== tag)
-                      : [...current, tag],
-                  )
-                }
-              >
-                {t(tag)}
-              </button>
-            ))}
-          </div>
-          <label className="form-field">
-            {t("Written feedback")} · {t("Optional")}
-            <textarea name="comment" maxLength={2000} />
-          </label>
-          <SafeAsyncButton
-            className="primary"
-            disabled={busy}
-            pending={busy}
-            pendingLabel="Saving..."
-          >
-            {t("Submit review")}
-          </SafeAsyncButton>
-        </form>
-      ) : (
-        <button className="primary" onClick={() => setOpen(true)}>
-          {t("Rate & Review")}
-        </button>
+    <>
+      {!popupOnly && (
+        <article className="surface-card feedback-card">
+          <h2>{t(query.data ? "Your review" : "Service completed")}</h2>
+          {query.data ? (
+            <>
+              <StarRating value={query.data.rating} />
+              <p>{query.data.comment}</p>
+              <div className="filter-chips">
+                {query.data.tags.map((tag) => (
+                  <span key={tag}>{t(tag)}</span>
+                ))}
+              </div>
+              <small>
+                {new Date(query.data.created_at).toLocaleDateString()}
+              </small>
+            </>
+          ) : (
+            <button className="primary" onClick={() => setOpen(true)}>
+              {t("Rate & Review")}
+            </button>
+          )}
+        </article>
       )}
-    </article>
+      {open && !query.data && (
+        <AppModal title={t("Rate & Review")} onClose={close} pending={pending}>
+          <form className="feedback-popup" onSubmit={submit}>
+            {serviceLabel && (
+              <p className="feedback-service-label">{serviceLabel}</p>
+            )}
+            <p>How was your experience?</p>
+            <fieldset
+              className="feedback-fields"
+              disabled={pending}
+              aria-label="Your feedback"
+            >
+              <StarRating value={rating} onChange={setRating} />
+              <div className="filter-chips">
+                {reviewTags.map((tag) => (
+                  <button
+                    type="button"
+                    key={tag}
+                    className={tags.includes(tag) ? "selected" : ""}
+                    aria-pressed={tags.includes(tag)}
+                    onClick={() =>
+                      setTags((current) =>
+                        current.includes(tag)
+                          ? current.filter((value) => value !== tag)
+                          : [...current, tag],
+                      )
+                    }
+                  >
+                    {t(tag)}
+                  </button>
+                ))}
+              </div>
+              <label className="form-field">
+                {t("Written feedback")} &middot; {t("Optional")}
+                <textarea name="comment" maxLength={2000} />
+              </label>
+            </fieldset>
+            {actionError && (
+              <p className="field-error" role="alert">
+                {actionError}
+              </p>
+            )}
+            <div className="popup-actions">
+              <SafeAsyncButton
+                type="button"
+                className="secondary"
+                disabled={pending}
+                pending={postponing}
+                pendingLabel="Saving..."
+                onClick={notNow}
+              >
+                {t("Not now")}
+              </SafeAsyncButton>
+              <SafeAsyncButton
+                type="submit"
+                className="primary"
+                disabled={pending}
+                pending={busy}
+                pendingLabel="Saving..."
+              >
+                {t("Submit review")}
+              </SafeAsyncButton>
+            </div>
+          </form>
+        </AppModal>
+      )}
+    </>
   );
 }
 export function MyReviews() {

@@ -1,4 +1,91 @@
 /* Request record: consistent card alignment and a clear reading order. */
+.safe-dialog:has(.submission-popup),
+.safe-dialog:has(.feedback-popup) {
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+.safe-dialog:has(.submission-popup) > header,
+.safe-dialog:has(.feedback-popup) > header {
+  padding: 14px 18px;
+  gap: 10px;
+}
+.safe-dialog:has(.submission-popup) > header h2,
+.safe-dialog:has(.feedback-popup) > header h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.safe-dialog .feedback-popup {
+  padding: 0;
+}
+.safe-dialog .popup-actions > :is(button, a) {
+  font-size: 13px;
+  padding: 10px;
+}
+.submission-popup {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+  justify-items: center;
+}
+.submission-popup p {
+  margin: 0;
+  line-height: 1.5;
+}
+.submission-popup .v6-success-art {
+  width: 64px;
+  height: 64px;
+  font-size: 36px;
+}
+.popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+.popup-actions > :is(button, a) {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.feedback-popup {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.feedback-popup > p {
+  margin: 0;
+  line-height: 1.5;
+}
+.feedback-service-label {
+  color: #766b86;
+  font-size: 13px;
+}
+.feedback-fields {
+  display: grid;
+  gap: 14px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.feedback-popup .filter-chips {
+  flex-wrap: wrap;
+}
+.feedback-popup .filter-chips button {
+  white-space: normal;
+}
+.feedback-popup textarea {
+  width: 100%;
+  min-height: 90px;
+}
 #main:has(.request-details-page) .customer-back {
   max-width: 960px;
   padding: 8px 32px 0;
