@@ -77,3 +77,4 @@ import "./refinements.css";
 import "./mobile-layout.css";
 import "./catalogue.css";
 import "./signin.css";
+import "./android-layout.css";

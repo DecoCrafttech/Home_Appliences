@@ -93,6 +93,19 @@ export function App() {
   });
   const location = useLocation();
   const navigate = useNavigate();
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".bottom-nav");
+    if (!nav) return;
+    const update = () =>
+      document.documentElement.style.setProperty(
+        "--customer-bottom-nav-height",
+        `${nav.getBoundingClientRect().height}px`,
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [location.pathname]);
   return (
     <>
       <a className="skip" href="#main">
@@ -476,9 +489,7 @@ function BookingEntry() {
     <section className="section page booking-entry">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">LET’S GET IT SORTED</span>
           <h1>Book a visit</h1>
-          <p>What can we help with?</p>
         </div>
       </div>
       <div className="booking-entry-grid">

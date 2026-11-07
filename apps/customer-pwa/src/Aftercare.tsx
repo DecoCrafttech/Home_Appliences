@@ -27,6 +27,7 @@ import {
   FaClock,
   FaLocationDot,
   FaPhone,
+  FaArrowsRotate,
   FaScrewdriverWrench,
 } from "react-icons/fa6";
 import type { RequestRecord, Review } from "./lib/types";
@@ -179,15 +180,17 @@ export function MyRequests() {
       !r.review_reminder_dismissed_at,
   );
   return (
-    <section className="section page">
+    <section className="section page my-requests-page">
       <div className="page-heading">
         <div>
           <h1>{t("My Requests")}</h1>
         </div>
         <SafeAsyncButton
-          className="secondary"
+          className="secondary icon-refresh"
+          aria-label="Refresh requests"
+          title="Refresh"
           pending={query.isFetching}
-          pendingLabel="Refreshing..."
+          pendingLabel=""
           onClick={async () => {
             try {
               await query.refetch({ cancelRefetch: false, throwOnError: true });
@@ -196,7 +199,7 @@ export function MyRequests() {
             }
           }}
         >
-          {t("Refresh")}
+          <FaArrowsRotate aria-hidden="true" />
         </SafeAsyncButton>
         <Link className="primary" to="/services">
           + {t("Book a service")}
@@ -255,7 +258,10 @@ export function MyRequests() {
         </div>
       )}
       <div className="filter-bar">
-        <div className="filter-chips" aria-label="Request status">
+        <div
+          className="filter-chips request-status-tabs"
+          aria-label="Request status"
+        >
           {["All", "Pending", "In Progress", "Completed"].map((value) => (
             <button
               key={value}
@@ -395,6 +401,30 @@ export function RequestPage() {
       : "Not scheduled";
   return (
     <section className="section page request-details-page">
+      <article className="request-info-card request-contact-card admin-office-card request-priority-contact">
+        <h2>Contact Admin</h2>
+        {officePhone ? (
+          <>
+            <strong>{officePhone}</strong>
+            <a
+              className="primary request-call-action"
+              href={`tel:${officePhone}`}
+            >
+              <FaPhone aria-hidden="true" /> Call Admin
+            </a>
+          </>
+        ) : (
+          <p role="status">
+            Need help with this visit? Send a support request.
+          </p>
+        )}
+        <Link
+          className="secondary"
+          to={`/support?requestId=${request.id}&reference=${encodeURIComponent(requestReference(request))}`}
+        >
+          Contact Support
+        </Link>
+      </article>
       <header className="request-detail-hero">
         <div className="request-appliance-icon">
           <FaScrewdriverWrench aria-hidden="true" />
@@ -499,31 +529,6 @@ export function RequestPage() {
             )}
           </article>
         )}
-        <article className="request-info-card request-contact-card admin-office-card">
-          <h2>Admin Office</h2>
-          {officePhone ? (
-            <>
-              <strong>{officePhone}</strong>
-              <a
-                className="primary request-call-action"
-                href={`tel:${officePhone}`}
-              >
-                <FaPhone aria-hidden="true" /> Call Admin
-              </a>
-            </>
-          ) : (
-            <p role="status">
-              The official office number is being configured. Use Contact
-              Support for help.
-            </p>
-          )}
-          <Link
-            className="secondary"
-            to={`/support?requestId=${request.id}&reference=${encodeURIComponent(requestReference(request))}`}
-          >
-            Contact Support
-          </Link>
-        </article>
       </div>
       <EstimateApproval
         requestId={request.id}
@@ -537,9 +542,11 @@ export function RequestPage() {
       )}
       <div className="detail-actions">
         <SafeAsyncButton
-          className="secondary"
+          className="secondary icon-refresh"
+          aria-label="Refresh requests"
+          title="Refresh"
           pending={detail.isFetching}
-          pendingLabel="Refreshing..."
+          pendingLabel=""
           onClick={() =>
             Promise.all([
               detail.refetch(),
@@ -550,7 +557,7 @@ export function RequestPage() {
             ])
           }
         >
-          {t("Refresh")}
+          <FaArrowsRotate aria-hidden="true" />
         </SafeAsyncButton>
         {eligible && (
           <button className="danger-button" onClick={() => setCancel(true)}>

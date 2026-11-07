@@ -131,6 +131,7 @@ function Wizard({
   const [submissionError, setSubmissionError] = useState(false);
   const [stepError, setStepError] = useState("");
   const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [saveAddress, setSaveAddress] = useState(false);
   const keyRef = useRef(initialDraft?.idempotencyKey || crypto.randomUUID());
   const submittingRef = useRef(false);
@@ -394,53 +395,80 @@ function Wizard({
     }
   }
   async function useLocation() {
-    if (!navigator.geolocation) {
-      toast.error("Location is not supported. Enter your address manually.");
+    if (locating) return;
+    setLocationError("");
+    setEditingAddress(true);
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setLocationError(
+        "Location needs a secure connection and a supported browser. Enter your address manually.",
+      );
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const result = await api.post<{
-            data: {
-              area: string;
-              city: string;
-              state: string;
-              pinCode: string;
-            };
-          }>("/locations/reverse-geocode", {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          for (const field of ["area", "city", "state", "pinCode"] as const)
-            setValue(`address.${field}`, result.data.data[field], {
-              shouldDirty: true,
-            });
-          toast.success(
-            "Location detected. Please confirm your house number and address.",
-          );
-        } catch (error) {
-          toast.error(
-            axios.isAxiosError(error)
-              ? error.response?.data?.error?.message ||
-                  "Unable to resolve this location. Enter the address manually."
-              : "Enter your address manually.",
-          );
-        } finally {
-          setLocating(false);
-        }
-      },
-      (error) => {
-        setLocating(false);
-        toast.error(
-          error.code === 1
-            ? "Location access was denied. You can enter your address manually."
-            : "Unable to detect your location. Try again or enter it manually.",
+    try {
+      const getPosition = (options: PositionOptions) =>
+        new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, options),
         );
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
-    );
+      let position: GeolocationPosition;
+      try {
+        position = await getPosition({
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 60000,
+        });
+      } catch (error) {
+        if ((error as GeolocationPositionError).code === 1) throw error;
+        // Android network positioning can fail while GPS is still available.
+        position = await getPosition({
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 60000,
+        });
+      }
+      const result = await api.post<{
+        data: {
+          area: string;
+          city: string;
+          state: string;
+          pinCode: string;
+        };
+      }>("/locations/reverse-geocode", {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      let filled = false;
+      for (const field of ["area", "city", "state", "pinCode"] as const)
+        if (result.data.data[field]?.trim()) {
+          setValue(`address.${field}`, result.data.data[field].trim(), {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          filled = true;
+        }
+      if (!filled)
+        throw new Error(
+          "No address details were found. Enter your address manually.",
+        );
+      toast.success(
+        "Address found. Check your house or street below.",
+      );
+    } catch (error) {
+      const code = (error as GeolocationPositionError).code;
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.error?.message ||
+          "Address lookup is unavailable. Enter your address manually."
+        : code === 1
+          ? "Location is blocked. Allow location for FixBeez or Chrome in Android settings and turn on device Location, then try again. You can also enter your address manually."
+          : code === 2 || code === 3
+            ? "Unable to get a location fix. Turn on device Location and try again, or enter your address manually."
+            : error instanceof Error
+              ? error.message
+              : "Unable to detect your location. Enter your address manually.";
+      setLocationError(message);
+    } finally {
+      setLocating(false);
+    }
   }
   async function submit(data: BookingFormValues) {
     if (step !== 3 || submittingRef.current) return;
@@ -511,18 +539,6 @@ function Wizard({
         </div>
         <span className="step-count">{step + 1} / 4</span>
       </div>
-      <ol className="step-progress" aria-label="Booking progress">
-        {["Service", "Address", "Visit", "Preview"].map((title, index) => (
-          <li
-            key={title}
-            className={index <= step ? "selected" : ""}
-            aria-current={index === step ? "step" : undefined}
-          >
-            <span>{index + 1}</span>
-            <small>{t(title)}</small>
-          </li>
-        ))}
-      </ol>
       {initialDraft && <p className="inline-note">{t("Draft restored")}</p>}
       {repeat.isError && (
         <p role="alert">
@@ -773,6 +789,17 @@ function Wizard({
                 {locating ? t("Loading…") : t("Use My Current Location")}
               </button>
             </div>
+            {locationError && (
+              <p className="location-feedback" role="alert">
+                {locationError}
+              </p>
+            )}
+            {locating && (
+              <p className="location-feedback" role="status">
+                Finding your location? Keep Location turned on while we look up
+                your address.
+              </p>
+            )}
             <div className="address-options">
               {addresses.data?.map((address) => (
                 <button
@@ -1069,39 +1096,61 @@ function Wizard({
           </p>
         )}
         <div className="wizard-actions">
-          {step > 0 && (
-            <SafeAsyncButton
-              variant="outline"
-              type="button"
-              className="secondary"
-              disabled={busy}
-              onClick={() => setStep((current) => current - 1)}
-              pending={false}
-            >
-              {t("Back")}
-            </SafeAsyncButton>
-          )}
-          <SafeAsyncButton
-            variant="primary"
-            key={step === 3 ? "submit" : "continue"}
-            type={step === 3 ? "submit" : "button"}
-            className="primary"
-            disabled={
-              busy ||
-              locating ||
-              (step === 0 &&
-                (categories.isPending || services.isPending || !selected)) ||
-              (step === 1 && addresses.isPending) ||
-              (step === 2 && windows.isPending)
-            }
-            onClick={step < 3 ? continueStep : undefined}
-            pending={busy}
-            pendingLabel="Saving..."
-          >
-            {t(
-              busy ? "Submitting…" : step === 3 ? "Submit request" : "Continue",
+          <ol className="step-progress" aria-label="Booking progress">
+            {["Service", "Address", "Visit", "Preview"].map((title, index) => (
+              <li key={title} className={index <= step ? "selected" : ""}>
+                <button
+                  type="button"
+                  aria-label={`Step ${index + 1}: ${t(title)}`}
+                  aria-current={index === step ? "step" : undefined}
+                  disabled={index > step || busy || locating}
+                  onClick={() => setStep(index)}
+                >
+                  <span>{index + 1}</span>
+                  <small>{t(title)}</small>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="wizard-action-buttons">
+            {step > 0 && (
+              <SafeAsyncButton
+                variant="outline"
+                type="button"
+                className="secondary"
+                disabled={busy}
+                onClick={() => setStep((current) => current - 1)}
+                pending={false}
+              >
+                {t("Back")}
+              </SafeAsyncButton>
             )}
-          </SafeAsyncButton>
+            <SafeAsyncButton
+              variant="primary"
+              key={step === 3 ? "submit" : "continue"}
+              type={step === 3 ? "submit" : "button"}
+              className="primary"
+              disabled={
+                busy ||
+                locating ||
+                (step === 0 &&
+                  (categories.isPending || services.isPending || !selected)) ||
+                (step === 1 && addresses.isPending) ||
+                (step === 2 && windows.isPending)
+              }
+              onClick={step < 3 ? continueStep : undefined}
+              pending={busy}
+              pendingLabel="Saving..."
+            >
+              {t(
+                busy
+                  ? "Submitting…"
+                  : step === 3
+                    ? "Submit request"
+                    : "Continue",
+              )}
+            </SafeAsyncButton>
+          </div>
         </div>
       </form>
       {blocker.state === "blocked" && (

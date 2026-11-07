@@ -232,7 +232,7 @@ export function ServiceDiscovery({ compact = false }: { compact?: boolean }) {
         </div>
       ) : (
         <>
-          <div className="page-heading">
+          <div className="page-heading services-discovery-heading">
             <div>
               <span className="eyebrow">CARE FOR YOUR HOME</span>
               <h1>Services &amp; Installation</h1>
@@ -332,9 +332,6 @@ export function CategoryItems() {
   );
   return (
     <section className="section page services-discovery">
-      <Link className="text-button appliance-back" to="/services">
-        All categories
-      </Link>
       {q.isPending ? (
         <LoadingSkeleton variant="appliances" />
       ) : q.isError ? (
@@ -456,9 +453,6 @@ export function ApplianceServices() {
   );
   return (
     <section className="section page services-discovery">
-      <Link className="text-button appliance-back" to="/services">
-        All categories
-      </Link>
       <div className="page-heading">
         <div>
           <h1>{q.data.meta.appliance.name}</h1>
