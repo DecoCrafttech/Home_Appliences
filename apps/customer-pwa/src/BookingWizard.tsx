@@ -450,9 +450,7 @@ function Wizard({
         throw new Error(
           "No address details were found. Enter your address manually.",
         );
-      toast.success(
-        "Address found. Check your house or street below.",
-      );
+      toast.success("Address found. Check your house or street below.");
     } catch (error) {
       const code = (error as GeolocationPositionError).code;
       const message = axios.isAxiosError(error)
@@ -539,6 +537,22 @@ function Wizard({
         </div>
         <span className="step-count">{step + 1} / 4</span>
       </div>
+      <ol className="step-progress" aria-label="Booking progress">
+        {["Service", "Address", "Visit", "Preview"].map((title, index) => (
+          <li key={title} className={index <= step ? "selected" : ""}>
+            <button
+              type="button"
+              aria-label={`Step ${index + 1}: ${t(title)}`}
+              aria-current={index === step ? "step" : undefined}
+              disabled={index > step || busy || locating}
+              onClick={() => setStep(index)}
+            >
+              <span>{index + 1}</span>
+              <small>{t(title)}</small>
+            </button>
+          </li>
+        ))}
+      </ol>
       {initialDraft && <p className="inline-note">{t("Draft restored")}</p>}
       {repeat.isError && (
         <p role="alert">
@@ -1096,22 +1110,6 @@ function Wizard({
           </p>
         )}
         <div className="wizard-actions">
-          <ol className="step-progress" aria-label="Booking progress">
-            {["Service", "Address", "Visit", "Preview"].map((title, index) => (
-              <li key={title} className={index <= step ? "selected" : ""}>
-                <button
-                  type="button"
-                  aria-label={`Step ${index + 1}: ${t(title)}`}
-                  aria-current={index === step ? "step" : undefined}
-                  disabled={index > step || busy || locating}
-                  onClick={() => setStep(index)}
-                >
-                  <span>{index + 1}</span>
-                  <small>{t(title)}</small>
-                </button>
-              </li>
-            ))}
-          </ol>
           <div className="wizard-action-buttons">
             {step > 0 && (
               <SafeAsyncButton

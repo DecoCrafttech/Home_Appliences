@@ -239,15 +239,19 @@ for (const width of [320, 360, 412]) {
     await addressStep(page);
     await noOverflow(page);
     const actions = await page.locator(".wizard-actions").boundingBox();
-    const nav = await page.locator(".bottom-nav").boundingBox();
-    expect(actions!.y + actions!.height).toBeLessThanOrEqual(nav!.y + 1);
+    await expect(page.locator(".bottom-nav")).toHaveCount(0);
+    await expect(
+      page.getByRole("navigation", { name: "Main navigation", exact: true }),
+    ).toHaveCount(0);
+    expect(Math.abs(actions!.y + actions!.height - 800)).toBeLessThanOrEqual(1);
+    await expect(page.locator(".wizard-actions .step-progress")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Step 2: Address" }),
     ).toBeVisible();
   });
 }
 
-test("GPS fills editable saved address and booking controls stay above bottom navigation", async ({
+test("GPS fills editable saved address with actions-only footer and progress at the top", async ({
   page,
   context,
 }) => {
@@ -267,8 +271,14 @@ test("GPS fills editable saved address and booking controls stay above bottom na
   expect(lookups).toEqual([{ latitude: 13.0067, longitude: 80.257 }]);
   await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
   const actions = await page.locator(".wizard-actions").boundingBox();
-  const nav = await page.locator(".bottom-nav").boundingBox();
-  expect(actions!.y + actions!.height).toBeLessThanOrEqual(nav!.y + 1);
+  await expect(page.locator(".bottom-nav")).toHaveCount(0);
+  expect(Math.abs(actions!.y + actions!.height - 800)).toBeLessThanOrEqual(1);
+  await expect(page.locator(".wizard-actions .step-progress")).toHaveCount(0);
+  const progress = await page
+    .locator(".booking-page > .step-progress")
+    .boundingBox();
+  const fields = await page.locator(".wizard-form").boundingBox();
+  expect(progress!.y).toBeLessThan(fields!.y);
   await expect(
     page.getByRole("button", { name: "Step 2: Address" }),
   ).toBeVisible();

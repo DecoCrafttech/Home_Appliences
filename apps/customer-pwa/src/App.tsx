@@ -90,19 +90,9 @@ export function App() {
   });
   const location = useLocation();
   const navigate = useNavigate();
-  useEffect(() => {
-    const nav = document.querySelector<HTMLElement>(".bottom-nav");
-    if (!nav) return;
-    const update = () =>
-      document.documentElement.style.setProperty(
-        "--customer-bottom-nav-height",
-        `${nav.getBoundingClientRect().height}px`,
-      );
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(nav);
-    return () => observer.disconnect();
-  }, [location.pathname]);
+  const bookingInProgress = /^\/request\/(service|installation)\/?$/.test(
+    location.pathname,
+  );
   return (
     <>
       <a className="skip" href="#main">
@@ -113,7 +103,7 @@ export function App() {
           <Link to="/" className="brand" aria-label="Fixbeez home">
             <BrandLogo />
           </Link>
-          {location.pathname !== "/login" && (
+          {location.pathname !== "/login" && !bookingInProgress && (
             <nav aria-label="Main navigation">
               {navigation.map(({ to, label }) => (
                 <NavLink to={to} key={to} end={to === "/"}>
@@ -290,7 +280,7 @@ export function App() {
           </Routes>
         </AppErrorBoundary>
       </main>
-      {location.pathname !== "/login" && (
+      {location.pathname !== "/login" && !bookingInProgress && (
         <nav className="bottom-nav" aria-label="Mobile navigation">
           {navigation.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -480,31 +470,39 @@ function BookingEntry() {
       <div className="page-heading">
         <div>
           <h1>Book a visit</h1>
+          <p>Choose what your appliance needs.</p>
         </div>
       </div>
       <div className="booking-entry-grid">
         {[
           {
             to: "/request/service",
-            title: "Service Request",
-            description: "Service or repair an appliance in your home.",
+            title: "Service",
+            description: "Repairs and maintenance",
             icon: FaScrewdriverWrench,
           },
           {
             to: "/request/installation",
-            title: "Installation Request",
-            description: "Request help setting up your appliance.",
+            title: "Installation",
+            description: "New appliance setup",
             icon: FaToolbox,
           },
         ].map(({ to, title, description, icon: Icon }) => (
-          <Link className="record-card booking-entry-card" key={to} to={to}>
-            <span className="home-quick-icon">
+          <Link
+            className="record-card booking-entry-card"
+            key={to}
+            to={to}
+            aria-label={`${title} booking`}
+          >
+            <span className="booking-choice-icon" aria-hidden="true">
               <Icon aria-hidden="true" />
             </span>
-            <h2>{title}</h2>
-            <p>{description}</p>
-            <span className="text-button">
-              Choose appliance <FaArrowRight aria-hidden="true" />
+            <div className="booking-choice-copy">
+              <h2>{title}</h2>
+              <p>{description}</p>
+            </div>
+            <span className="booking-choice-action">
+              Continue <FaArrowRight aria-hidden="true" />
             </span>
           </Link>
         ))}

@@ -22,8 +22,93 @@ html {
   justify-content: flex-end;
   gap: 12px;
 }
-.wizard-actions .step-progress {
-  margin: 0 0 12px;
+.booking-page > .step-progress {
+  margin: 4px 0 16px;
+}
+.booking-page > .step-progress li {
+  background: transparent;
+}
+.booking-page > .step-progress li > button {
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+  min-height: 52px;
+}
+.booking-page > .step-progress small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.booking-page > .step-progress button[aria-current="step"] {
+  background: transparent;
+  box-shadow: none;
+  font-weight: 700;
+}
+#main .booking-entry-grid {
+  max-width: 680px;
+  margin-inline: auto;
+}
+#main .booking-entry-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  border: 1px solid #e7e2ee;
+  border-radius: 20px;
+  padding: 22px;
+  min-height: 220px;
+  background: #fff;
+  box-shadow: 0 3px 12px #26163b06;
+  text-decoration: none;
+}
+#main .booking-entry-card:hover {
+  border-color: #8d6bc4;
+  background: #fcfaff;
+}
+#main .booking-entry-card:focus-visible {
+  outline: 3px solid #8052c1;
+  outline-offset: 3px;
+}
+.booking-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f0e9fa;
+  color: #6840a7;
+}
+.booking-choice-icon svg {
+  width: 25px;
+  height: 25px;
+}
+.booking-entry-card:nth-child(2) .booking-choice-icon {
+  background: #fff3d9;
+  color: #9a6508;
+}
+#main .booking-entry-card .booking-choice-copy h2 {
+  font-size: 20px;
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+#main .booking-entry-card .booking-choice-copy p {
+  display: block;
+  margin: 0;
+  color: #71677d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.booking-choice-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #eee9f4;
+  color: #6740a5;
+  font-size: 13px;
+  font-weight: 600;
 }
 .step-progress li {
   min-width: 0;
@@ -102,23 +187,17 @@ html {
 @media (max-width: 760px) {
   html:has(.booking-page) {
     scroll-padding-top: 80px;
-    scroll-padding-bottom: calc(
-      var(--customer-bottom-nav-height, 80px) + 140px
-    );
+    scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
   }
   #main .booking-page :is(input, textarea, select) {
     scroll-margin-top: 80px;
-    scroll-margin-bottom: 150px;
+    scroll-margin-bottom: 90px;
   }
   #main .services-discovery-heading {
     display: none;
   }
-  body:has(.booking-page) .bottom-nav .nav-book-circle {
-    margin-top: 0;
-    width: 32px;
-    height: 32px;
-    border-width: 2px;
-    box-shadow: none;
+  body:has(.booking-page) main#main {
+    padding-bottom: 0;
   }
   body {
     font-size: 14px;
@@ -181,9 +260,9 @@ html {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 16px 12px;
-    min-height: 0;
-    gap: 10px;
+    padding: 16px 14px;
+    min-height: 194px;
+    gap: 12px;
   }
   #main .booking-entry-card h2 {
     font-size: 16px;
@@ -203,6 +282,23 @@ html {
   #main .booking-entry-card .home-quick-icon {
     width: 40px;
     height: 40px;
+  }
+  #main .booking-entry-card .booking-choice-copy h2 {
+    font-size: 17px;
+    margin-bottom: 5px;
+  }
+  #main .booking-entry-card .booking-choice-copy p {
+    font-size: 13px;
+    min-height: 39px;
+  }
+  .booking-choice-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .booking-choice-icon svg {
+    width: 23px;
+    height: 23px;
   }
   #main .services-discovery .appliance-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -263,7 +359,7 @@ html {
     line-height: 1.5;
   }
   #main .section.page.booking-page {
-    padding-bottom: 180px;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   }
   #main .booking-page .wizard-form {
     padding: 12px;
@@ -280,25 +376,14 @@ html {
   #main .booking-page .wizard-actions {
     position: fixed;
     z-index: 45;
-    bottom: var(
-      --customer-bottom-nav-height,
-      calc(80px + env(safe-area-inset-bottom, 0px))
-    );
+    bottom: 0;
     left: 0;
     right: 0;
     margin: 0;
-    padding: 8px 12px 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     background: #fff;
     border-top: 1px solid #e7e0ef;
     box-shadow: 0 -4px 16px #20103012;
-  }
-  #main .wizard-actions .step-progress {
-    margin: 0 0 6px;
-    gap: 4px;
-  }
-  #main .wizard-actions .step-progress small {
-    font-size: 11px;
-    white-space: nowrap;
   }
   #main .wizard-action-buttons {
     display: flex;
