@@ -1,0 +1,269 @@
+/* Request record: consistent card alignment and a clear reading order. */
+#main:has(.request-details-page) .customer-back {
+  max-width: 960px;
+  padding: 8px 32px 0;
+}
+#main .section.page.request-details-page {
+  max-width: 960px;
+  padding-top: 8px;
+}
+#main .request-details-page .request-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  margin: 0 0 16px;
+  background: #fff;
+  border: 1px solid #e8e6ed;
+  border-radius: 16px;
+  box-shadow: none;
+}
+.request-detail-heading {
+  min-width: 0;
+}
+.request-reference {
+  display: block;
+  color: #766b86;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+#main .request-detail-heading h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  line-height: 1.3;
+}
+#main .request-detail-heading p {
+  margin: 0;
+  font-size: 14px;
+  color: #6d6579;
+  line-height: 1.5;
+}
+.request-detail-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 46%;
+}
+#main .request-details-page .request-detail-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+#main .request-details-page .request-info-card {
+  min-width: 0;
+  padding: 18px;
+  margin: 0;
+  border: 1px solid #e8e6ed;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+}
+#main .request-details-page .request-info-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.request-details-page .request-facts {
+  margin: 0;
+}
+#main .request-details-page .request-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0edf4;
+}
+#main .request-details-page .request-facts > div:first-child {
+  padding-top: 0;
+}
+#main .request-details-page .request-facts > div:last-child {
+  padding-bottom: 0;
+  border: 0;
+}
+.request-details-page .request-facts dt {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #776f82;
+  font-size: 13px;
+  font-weight: 400;
+}
+.request-details-page .request-facts dt svg {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+#main .request-details-page .request-facts dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+.request-contact-section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+#main .request-details-page .request-priority-contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  text-align: left;
+  padding: 14px 18px;
+  background: #faf8ff;
+}
+#main .request-details-page .request-priority-contact h2 {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-size: 14px;
+}
+#main .request-details-page .request-priority-contact strong {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 14px;
+}
+#main .request-details-page .request-priority-contact .request-call-action {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: auto;
+  margin: 0;
+}
+#main .request-details-page .request-priority-contact > .secondary {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 32px;
+  padding: 2px 0;
+  font-size: 12px;
+  text-decoration: underline;
+  border: 0;
+  background: transparent;
+}
+.request-technician-contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#main .request-details-page .request-technician-contact h2 {
+  margin-bottom: 4px;
+}
+.request-technician-contact strong {
+  font-size: 14px;
+}
+.request-technician-contact .request-call-action {
+  width: auto;
+  margin: 0;
+}
+.request-address-card,
+.request-completion-card {
+  grid-column: 1 / -1;
+}
+.request-address-card p,
+.request-completion-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 14px;
+  overflow-wrap: break-word;
+}
+.request-recipient {
+  font-weight: 600;
+}
+.request-customer-phone {
+  display: inline-block;
+  padding-block: 8px;
+  color: #512da8;
+}
+.request-feedback-top {
+  margin-bottom: 16px;
+  scroll-margin-top: 80px;
+}
+#main .request-feedback-top .feedback-card {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #dfd4f0;
+  border-radius: 16px;
+  background: #faf8ff;
+  box-shadow: none;
+}
+.request-feedback-top h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.request-feedback-top h3 {
+  font-size: 16px;
+}
+.request-feedback-top .filter-chips {
+  flex-wrap: wrap;
+}
+.request-feedback-top .filter-chips button {
+  white-space: normal;
+}
+.request-feedback-top textarea {
+  width: 100%;
+  min-height: 96px;
+}
+.request-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  #main:has(.request-details-page) .customer-back {
+    padding: 2px 12px 0;
+  }
+  #main .section.page.request-details-page {
+    padding: 2px 12px 24px;
+  }
+  #main .request-details-page .request-detail-hero {
+    padding: 14px;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  #main .request-detail-heading h1 {
+    font-size: 21px;
+  }
+  .request-detail-status {
+    gap: 6px;
+    max-width: 42%;
+  }
+  #main .request-details-page .request-detail-sections {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  #main .request-details-page .request-info-card {
+    padding: 14px;
+  }
+  .request-details-page .request-facts dt {
+    font-size: 12px;
+  }
+  #main .request-details-page .request-facts dd {
+    font-size: 13px;
+  }
+  .request-technician-contact {
+    flex-wrap: wrap;
+  }
+  .request-technician-contact .request-call-action {
+    min-height: 44px;
+  }
+  #main .request-feedback-top .feedback-card {
+    padding: 14px;
+  }
+}

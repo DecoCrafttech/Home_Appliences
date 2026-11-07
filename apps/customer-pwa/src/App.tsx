@@ -1,8 +1,6 @@
 import { PrivacyPolicy, TermsConditions } from "./LegalPages";
 import { CategoryItems, useHomeBanner } from "./PublishedServices";
 import { AccountAccessState } from "./components/AccountAccessState";
-import { useGoogleConfiguration } from "./lib/googleAuth";
-import { contactPhone } from "@home/shared";
 import { CatalogueSearch } from "./CatalogueSearch";
 import { useCustomerProfile as useProfile } from "./lib/profile";
 import { AppErrorBoundary, BrandLogo } from "@home/ui";
@@ -29,7 +27,6 @@ import {
   FaUser,
   FaArrowRight,
   FaScrewdriverWrench,
-  FaPhone,
   FaShieldHalved,
   FaBolt,
   FaTag,
@@ -317,8 +314,6 @@ export function App() {
 }
 function Home() {
   const banner = useHomeBanner();
-  const config = useGoogleConfiguration();
-  const adminPhone = contactPhone(config.data?.adminOfficePhone);
   const profile = useProfile(),
     requests = useRequests(!!profile.data),
     [, setDraftVersion] = useState(0);
@@ -394,11 +389,6 @@ function Home() {
         </div>
       </div>
       <ServiceDiscovery compact />
-      {adminPhone && (
-        <a className="secondary home-call-admin" href={`tel:${adminPhone}`}>
-          <FaPhone aria-hidden="true" /> Call Admin
-        </a>
-      )}
       {draft && (
         <Link className="draft-banner" to={`/request/${draft.type}`}>
           <span>

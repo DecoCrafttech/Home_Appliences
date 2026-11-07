@@ -20,6 +20,10 @@ The Customer build passed. Six browser regression scenarios passed, covering lay
 
 ## Deployment and phone check
 
+### Request-details follow-up
+
+Home no longer has a Call Admin action. Request details now use a compact summary header, aligned overview/visit cards and a separate service-address card. Active requests retain Business Settings-backed admin contact and assigned technician actions. Once the request status is `COMPLETED`, structured admin, technician, customer telephone and address sections are no longer rendered; stored records are not deleted. The rating form or saved review is the first card, above the request summary. Review submission and refresh continue to use the existing API. Additional browser checks cover Home, completed requests at 320/360/1024px, review-card ordering/width and successful rating submission.
+
 Deploy the Customer build or create the upload ZIP with `powershell -File scripts/package-customer-hostinger.ps1`. Keep `.well-known` and `.htaccess` in the upload. The hosted PWA supplies these UI changes to the existing TWA; this update does not rebuild Android or change its signing key/package.
 
 On the actual Android phone, allow location for FixBeez/Chrome and enable device Location, then test “Use My Current Location.” A real authenticated production geocoding request could not be exercised here. The existing backend lookup requires a configured `GOOGLE_GEOCODING_API_KEY`; if the page reports “Address lookup is not configured,” that production server setting must be supplied by the operator. No public/client geocoding key or external fallback service was introduced. Manual address entry remains available when permission, positioning or lookup fails.

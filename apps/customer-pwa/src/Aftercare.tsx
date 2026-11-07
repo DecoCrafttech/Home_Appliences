@@ -28,7 +28,6 @@ import {
   FaLocationDot,
   FaPhone,
   FaArrowsRotate,
-  FaScrewdriverWrench,
 } from "react-icons/fa6";
 import type { RequestRecord, Review } from "./lib/types";
 import { useTranslation } from "./lib/language";
@@ -360,6 +359,7 @@ export function RequestPage() {
   if (detail.isError)
     return <RequestError error={detail.error} retry={() => detail.refetch()} />;
   const request = detail.data;
+  const completed = request.status === "COMPLETED";
   const address = request.address_snapshot;
   const technicianPhone = contactPhone(request.assigned_technician_phone);
   const officePhone = contactPhone(config.data?.adminOfficePhone);
@@ -401,171 +401,190 @@ export function RequestPage() {
       : "Not scheduled";
   return (
     <section className="section page request-details-page">
-      <article className="request-info-card request-contact-card admin-office-card request-priority-contact">
-        <h2>Contact Admin</h2>
-        {officePhone ? (
-          <>
-            <strong>{officePhone}</strong>
-            <a
-              className="primary request-call-action"
-              href={`tel:${officePhone}`}
-            >
-              <FaPhone aria-hidden="true" /> Call Admin
-            </a>
-          </>
-        ) : (
-          <p role="status">
-            Need help with this visit? Send a support request.
-          </p>
-        )}
-        <Link
-          className="secondary"
-          to={`/support?requestId=${request.id}&reference=${encodeURIComponent(requestReference(request))}`}
-        >
-          Contact Support
-        </Link>
-      </article>
+      {completed && (
+        <div className="request-feedback-top" id="request-feedback">
+          <ReviewCard requestId={request.id} />
+        </div>
+      )}
       <header className="request-detail-hero">
-        <div className="request-appliance-icon">
-          <FaScrewdriverWrench aria-hidden="true" />
-        </div>
-        <div>
-          <span className="eyebrow">{requestReference(request)}</span>
+        <div className="request-detail-heading">
+          <span className="request-reference">{requestReference(request)}</span>
           <h1>{t(request.appliance)}</h1>
-          <p>
-            {request.service_name} ·{" "}
-            {request.request_type === "INSTALLATION"
-              ? "Installation"
-              : "Service"}
-          </p>
+          <p>{request.service_name}</p>
         </div>
-        <StatusBadge status={request.status} />
+        <div className="request-detail-status">
+          <StatusBadge status={request.status} />
+          <SafeAsyncButton
+            className="secondary icon-refresh"
+            aria-label="Refresh requests"
+            title="Refresh"
+            pending={detail.isFetching}
+            pendingLabel=""
+            onClick={() =>
+              Promise.all([
+                detail.refetch(),
+                qc.refetchQueries({
+                  queryKey: ["customer-estimates", request.id],
+                  exact: true,
+                }),
+                ...(completed
+                  ? [
+                      qc.refetchQueries({
+                        queryKey: customerKeys.review(request.id),
+                        exact: true,
+                      }),
+                    ]
+                  : []),
+              ])
+            }
+          >
+            <FaArrowsRotate aria-hidden="true" />
+          </SafeAsyncButton>
+        </div>
       </header>
+      {!completed && (
+        <section
+          className="request-contact-section"
+          aria-label="Contact for this visit"
+        >
+          <article className="request-info-card request-contact-card admin-office-card request-priority-contact">
+            <h2>Contact Admin</h2>
+            {officePhone ? (
+              <>
+                <strong>{officePhone}</strong>
+                <a
+                  className="primary request-call-action"
+                  href={"tel:" + officePhone}
+                >
+                  <FaPhone aria-hidden="true" /> Call Admin
+                </a>
+              </>
+            ) : (
+              <p>Need help with this visit? Send a support request.</p>
+            )}
+            <Link
+              className="secondary"
+              to={
+                "/support?requestId=" +
+                request.id +
+                "&reference=" +
+                encodeURIComponent(requestReference(request))
+              }
+            >
+              Contact Support
+            </Link>
+          </article>
+          {request.assigned_technician_name && (
+            <article className="request-info-card request-technician-contact">
+              <div>
+                <h2>Your technician</h2>
+                <strong>{request.assigned_technician_name}</strong>
+              </div>
+              {technicianPhone && (
+                <a
+                  className="secondary request-call-action"
+                  href={"tel:" + technicianPhone}
+                >
+                  <FaPhone aria-hidden="true" /> Call Technician
+                </a>
+              )}
+            </article>
+          )}
+        </section>
+      )}
       <div className="request-detail-sections">
-        <article className="request-info-card">
+        <article className="request-info-card request-overview-card">
           <h2>Request overview</h2>
-          <dl>
+          <dl className="request-facts">
             <div>
-              <dt>Request ID</dt>
-              <dd>{requestReference(request)}</dd>
-            </div>
-            <div>
-              <dt>Requested on</dt>
-              <dd>{formatDate(request.created_at)}</dd>
-            </div>
-            <div>
-              <dt>Type</dt>
+              <dt>Service type</dt>
               <dd>
                 {request.request_type === "INSTALLATION"
                   ? "Installation"
                   : "Service"}
               </dd>
             </div>
+            <div>
+              <dt>Requested on</dt>
+              <dd>{formatDate(request.created_at)}</dd>
+            </div>
+            {completed && (
+              <div>
+                <dt>Completed on</dt>
+                <dd>{formatDate(request.completed_at)}</dd>
+              </div>
+            )}
           </dl>
         </article>
-        <article className="request-info-card">
-          <h2>Schedule information</h2>
-          <div className="request-info-row">
-            <FaCalendarDay aria-hidden="true" />
+        <article className="request-info-card request-schedule-card">
+          <h2>Visit details</h2>
+          <dl className="request-facts">
             <div>
-              <span>
+              <dt>
+                <FaCalendarDay aria-hidden="true" />{" "}
                 {request.confirmed_date ? "Confirmed date" : "Preferred date"}
-              </span>
-              <strong>
+              </dt>
+              <dd>
                 {formatDate(request.confirmed_date || request.preferred_date)}
-              </strong>
+              </dd>
             </div>
-          </div>
-          <div className="request-info-row">
-            <FaClock aria-hidden="true" />
             <div>
-              <span>Time slot</span>
-              <strong>
+              <dt>
+                <FaClock aria-hidden="true" /> Time slot
+              </dt>
+              <dd>
                 {request.confirmed_time_window ||
                   request.preferred_time_window ||
                   "Not scheduled"}
-              </strong>
+              </dd>
             </div>
-          </div>
-          <div className="request-info-row">
-            <FaLocationDot aria-hidden="true" />
-            <div>
-              <span>Service address</span>
-              <strong>
-                {[
-                  address.line1,
-                  address.area,
-                  address.city,
-                  address.state,
-                  address.pinCode,
-                ]
-                  .filter(Boolean)
-                  .join(", ")}
-              </strong>
-            </div>
-          </div>
+          </dl>
         </article>
-        {contactPhone(address.phone) && (
-          <article className="request-info-card request-contact-card">
-            <h2>Customer contact</h2>
-            <strong>{address.name}</strong>
-            <a href={`tel:${contactPhone(address.phone)}`}>
-              {contactPhone(address.phone)}
-            </a>
-          </article>
-        )}
-        {request.assigned_technician_name && (
-          <article className="request-info-card request-contact-card">
-            <h2>Technician details</h2>
-            <strong>{request.assigned_technician_name}</strong>
-            {technicianPhone && (
+        {!completed && (
+          <article className="request-info-card request-address-card">
+            <h2>
+              <FaLocationDot aria-hidden="true" /> Service address
+            </h2>
+            <p className="request-recipient">{address.name}</p>
+            <p>
+              {[
+                address.line1,
+                address.area,
+                address.city,
+                address.state,
+                address.pinCode,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </p>
+            {contactPhone(address.phone) && (
               <a
-                className="primary request-call-action"
-                href={`tel:${technicianPhone}`}
+                className="request-customer-phone"
+                href={"tel:" + contactPhone(address.phone)}
               >
-                <FaPhone aria-hidden="true" /> Call Technician:{" "}
-                {technicianPhone}
+                {contactPhone(address.phone)}
               </a>
             )}
+          </article>
+        )}
+        {completed && request.work_summary && (
+          <article className="request-info-card request-completion-card">
+            <h2>Work completed</h2>
+            <p>{request.work_summary}</p>
           </article>
         )}
       </div>
       <EstimateApproval
         requestId={request.id}
-        closed={["COMPLETED", "CANCELLED"].includes(request.status)}
+        closed={completed || request.status === "CANCELLED"}
       />
-      {request.completed_at && request.work_summary && (
-        <article className="request-info-card request-completion-card">
-          <h2>Work completed</h2>
-          <p>{request.work_summary}</p>
-        </article>
-      )}
-      <div className="detail-actions">
-        <SafeAsyncButton
-          className="secondary icon-refresh"
-          aria-label="Refresh requests"
-          title="Refresh"
-          pending={detail.isFetching}
-          pendingLabel=""
-          onClick={() =>
-            Promise.all([
-              detail.refetch(),
-              qc.refetchQueries({
-                queryKey: ["customer-estimates", request.id],
-                exact: true,
-              }),
-            ])
-          }
-        >
-          <FaArrowsRotate aria-hidden="true" />
-        </SafeAsyncButton>
-        {eligible && (
+      {eligible && (
+        <div className="request-detail-footer">
           <button className="danger-button" onClick={() => setCancel(true)}>
             {t("Cancel request")}
           </button>
-        )}
-      </div>
-      {request.status === "COMPLETED" && <ReviewCard requestId={request.id} />}
+        </div>
+      )}
       {cancel && (
         <AppModal
           title={t("Cancel request")}

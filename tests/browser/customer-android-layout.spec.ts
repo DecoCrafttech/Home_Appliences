@@ -65,8 +65,26 @@ const request = {
   completed_at: null,
 };
 
-async function setup(page: Page, lookupFails = false) {
+async function setup(page: Page, lookupFails = false, completed = false) {
   const lookups: unknown[] = [];
+  const record = {
+    ...request,
+    assigned_technician_name: "Tech Kumar",
+    assigned_technician_phone: "+919876543211",
+    ...(completed
+      ? {
+          status: "COMPLETED",
+          completed_at: "2026-11-07T10:00:00Z",
+          work_summary: "Cleaned the filters and checked operation.",
+        }
+      : {}),
+  };
+  let review: {
+    rating: number;
+    comment: string;
+    tags: string[];
+    created_at: string;
+  } | null = null;
   await page.route("**/api/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     let data: unknown = [];
@@ -108,8 +126,15 @@ async function setup(page: Page, lookupFails = false) {
         state: "Tamil Nadu",
         pinCode: "600020",
       };
-    } else if (path.endsWith(`/requests/${requestId}`)) data = request;
-    else if (path.endsWith("/requests")) data = [request];
+    } else if (path.endsWith(`/requests/${requestId}/review`)) {
+      if (route.request().method() === "POST")
+        review = {
+          ...route.request().postDataJSON(),
+          created_at: "2026-11-07T11:00:00Z",
+        };
+      data = review;
+    } else if (path.endsWith(`/requests/${requestId}`)) data = record;
+    else if (path.endsWith("/requests")) data = [record];
     return route.fulfill({ json: { data } });
   });
   return lookups;
@@ -200,9 +225,12 @@ for (const width of [320, 360, 412]) {
     await expect(
       contact.getByRole("link", { name: "Call Admin", exact: true }),
     ).toHaveAttribute("href", "tel:+919876543210");
-    expect((await contact.boundingBox())!.y).toBeLessThan(
+    expect((await contact.boundingBox())!.y).toBeGreaterThan(
       (await page.locator(".request-detail-hero").boundingBox())!.y,
     );
+    await expect(
+      page.getByRole("link", { name: "Call Technician", exact: true }),
+    ).toHaveAttribute("href", "tel:+919876543211");
     await noOverflow(page);
     await page.screenshot({
       path: `test-results/customer-android/details-${width}.png`,
@@ -286,6 +314,73 @@ test("GPS fills editable saved address and booking controls stay above bottom na
     fullPage: true,
   });
 });
+
+test("Home does not show Call Admin even when a business number is configured", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await setup(page);
+  await page.goto("/");
+  await expect(page.locator(".home-discovery")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Call Admin/ })).toHaveCount(0);
+});
+
+for (const width of [320, 360, 1024]) {
+  test(`completed request prioritizes rating and hides contact details at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await setup(page, false, true);
+    await page.goto(`/requests/${requestId}?review=1`);
+    await expect(
+      page.getByRole("heading", { name: "Rate & Review", exact: true }),
+    ).toBeVisible();
+    const feedback = page.locator(".request-feedback-top");
+    const feedbackCard = await feedback.locator(".feedback-card").boundingBox();
+    const summary = await page.locator(".request-detail-hero").boundingBox();
+    expect(Math.abs(feedbackCard!.width - summary!.width)).toBeLessThanOrEqual(
+      1,
+    );
+    expect((await feedback.boundingBox())!.y).toBeLessThan(
+      (await page.locator(".request-detail-hero").boundingBox())!.y,
+    );
+    await expect(
+      page.locator(".request-details-page a[href^='tel:']"),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".request-contact-section, .request-address-card"),
+    ).toHaveCount(0);
+    await expect(page.locator(".request-details-page")).not.toContainText(
+      "Tech Kumar",
+    );
+    await expect(page.locator(".request-details-page")).not.toContainText(
+      address.line1,
+    );
+    await expect(
+      page.getByRole("heading", { name: "Work completed", exact: true }),
+    ).toBeVisible();
+    await noOverflow(page);
+    await page.getByRole("button", { name: "5 stars", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: /Written feedback/ })
+      .fill("Clear and helpful service.");
+    await page
+      .getByRole("button", { name: "Submit review", exact: true })
+      .click();
+    await expect(
+      feedback.getByRole("heading", { name: "Your review", exact: true }),
+    ).toBeVisible();
+    await expect(feedback).toContainText("Clear and helpful service.");
+    await expect(
+      page.locator(".request-details-page a[href^='tel:']"),
+    ).toHaveCount(0);
+    await noOverflow(page);
+    await page.screenshot({
+      path: `test-results/customer-android/completed-${width}.png`,
+      fullPage: true,
+    });
+  });
+}
 
 test("denied location stays actionable and does not call geocoder", async ({
   page,
