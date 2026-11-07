@@ -10,8 +10,7 @@
   color: #625b70;
   font-size: 0.9rem;
 }
-.legal-navigation,
-.customer-legal-footer {
+.legal-navigation {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -40,17 +39,11 @@
   margin-top: 0.6rem;
 }
 .legal-content a,
-.legal-navigation a,
-.customer-legal-footer a {
+.legal-navigation a {
   color: #512da8;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.customer-legal-footer {
-  padding: 1.5rem 1rem calc(6rem + env(safe-area-inset-bottom));
-  font-size: 0.875rem;
-}
-.customer-legal-footer a:focus-visible,
 .legal-page a:focus-visible {
   outline: 2px solid #512da8;
   outline-offset: 4px;

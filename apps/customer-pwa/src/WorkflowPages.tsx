@@ -207,11 +207,7 @@ export function LoginPage() {
           </small>
         </div>
         <div className="customer-signin-footer">
-          <Link to="/privacy">Privacy Policy</Link>
-          <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/services">Browse services</Link>
-          <span aria-hidden="true">·</span>
-          <Link to="/support">Need help?</Link>
         </div>
       </div>
       <p className="customer-signin-caption">

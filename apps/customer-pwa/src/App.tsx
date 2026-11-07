@@ -280,11 +280,6 @@ export function App() {
           </Routes>
         </AppErrorBoundary>
       </main>
-      <footer className="customer-legal-footer" aria-label="Legal and support">
-        <Link to="/privacy">Privacy Policy</Link>
-        <Link to="/terms">Terms &amp; Conditions</Link>
-        <Link to="/support">Help &amp; support</Link>
-      </footer>
       {location.pathname !== "/login" && (
         <nav className="bottom-nav" aria-label="Mobile navigation">
           {navigation.map(({ to, label, icon: Icon }) => (
