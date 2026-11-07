@@ -207,6 +207,8 @@ export function LoginPage() {
           </small>
         </div>
         <div className="customer-signin-footer">
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/services">Browse services</Link>
           <span aria-hidden="true">·</span>
           <Link to="/support">Need help?</Link>
@@ -346,7 +348,8 @@ export function ProfilePage() {
           ["/addresses", "Saved addresses", FaLocationDot],
           ["/reviews", "My reviews", FaStar],
           ["/support", "Help & support", FaHeadset],
-          ["/privacy", "Privacy & Security", FaShieldHalved],
+          ["/privacy", "Privacy Policy", FaShieldHalved],
+          ["/terms", "Terms & Conditions", FaShieldHalved],
         ].map(([to, label, Icon]) => (
           <Link key={String(to)} to={String(to)}>
             {typeof Icon !== "string" && Icon && <Icon aria-hidden="true" />}

@@ -1,3 +1,4 @@
+import { PrivacyPolicy, TermsConditions } from "./LegalPages";
 import { CategoryItems, useHomeBanner } from "./PublishedServices";
 import { AccountAccessState } from "./components/AccountAccessState";
 import { useGoogleConfiguration } from "./lib/googleAuth";
@@ -202,33 +203,15 @@ export function App() {
               }
             />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route
-              path="/privacy"
-              element={
-                <section className="section page">
-                  <h1>Privacy & Security</h1>
-                  <p>
-                    Your account uses Google Sign-In. Manage your Google
-                    password and account security in your Google Account.
-                  </p>
-                  <p>
-                    Request information and uploaded files are available only to
-                    authorized participants. Sign out on shared devices when you
-                    finish.
-                  </p>
-                  <a
-                    className="secondary"
-                    href="https://myaccount.google.com/security"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Google Account security
-                  </a>
-                  <Link className="secondary" to="/support">
-                    Contact support about your data
-                  </Link>
-                </section>
-              }
+              path="/privacy-policy"
+              element={<Navigate to="/privacy" replace />}
+            />
+            <Route path="/terms" element={<TermsConditions />} />
+            <Route
+              path="/terms-and-conditions"
+              element={<Navigate to="/terms" replace />}
             />
             <Route
               path="/profile"
@@ -297,6 +280,11 @@ export function App() {
           </Routes>
         </AppErrorBoundary>
       </main>
+      <footer className="customer-legal-footer" aria-label="Legal and support">
+        <Link to="/privacy">Privacy Policy</Link>
+        <Link to="/terms">Terms &amp; Conditions</Link>
+        <Link to="/support">Help &amp; support</Link>
+      </footer>
       {location.pathname !== "/login" && (
         <nav className="bottom-nav" aria-label="Mobile navigation">
           {navigation.map(({ to, label, icon: Icon }) => (
