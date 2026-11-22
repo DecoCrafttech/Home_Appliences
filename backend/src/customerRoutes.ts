@@ -4,6 +4,7 @@ import { Router, type RequestHandler } from "express";
 import { createHash, randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "./db.js";
+import { queueAdminRequestEmail } from "./adminRequestEmail.js";
 import { env } from "./config/env.js";
 import { verifyGoogleCredential } from "./security/google.js";
 import { bookingSchema, profileSchema } from "./validation.js";
@@ -584,6 +585,7 @@ async function createRequest(
       await db()`SELECT * FROM service_requests WHERE customer_id=${req.customerId!} AND idempotency_key=${input.data.idempotencyKey}`;
     return replay(existing[0]!);
   }
+  await queueAdminRequestEmail(String(rows[0].id));
   return res.status(201).json({ data: rows[0] });
 }
 router.post(

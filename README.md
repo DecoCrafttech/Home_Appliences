@@ -59,6 +59,14 @@ All three persisted notification inboxes open in responsive header dialogs and l
 
 Notification, request and technician job/assignment endpoints bypass the shared API rate limit, including their nested actions. Admin dashboard summary/activity/allocation and GET auth/me also bypass that quota. Authentication limits and authorization remain enforced. See [rate-limit verification](docs/RATE_LIMIT_CHANGE.md).
 
+## Admin email alerts
+
+New service and installation requests can email an admin inbox through Hostinger Mail. Alerts include the request number, service details, and a link to the Admin panel. The backend queues one email per saved request and retries failed deliveries independently.
+
+1. In Hostinger **Emails → Developers → Manage keys**, create a key scoped to the sending mailbox. Use that mailbox's resource ID in the backend configuration. [Hostinger Mail setup](https://www.hostinger.com/support/how-to-use-agentic-mail-in-hostinger/)
+2. Set `HOSTINGER_MAIL_API_KEY`, `HOSTINGER_MAIL_MAILBOX_ID`, and `ADMIN_REQUEST_EMAIL_TO` in the backend hosting environment. Set `ADMIN_ORIGIN` to the public Admin panel URL.
+3. Apply the database migrations with `npm run db:migrate --workspace @home/api` before starting the updated backend with email enabled. Submit a test request and confirm it arrives in the admin inbox.
+
 ## Database changes
 
 Development migration and audit commands refuse to run outside the configured isolated development branch:

@@ -66,6 +66,13 @@ export const env = z
       .transform((value) => value === "true"),
     VAPID_PUBLIC_KEY: z.string().min(20).optional(),
     VAPID_PRIVATE_KEY: z.string().min(20).optional(),
+    HOSTINGER_MAIL_API_KEY: z.string().trim().min(1).optional(),
+    HOSTINGER_MAIL_MAILBOX_ID: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]+$/)
+      .optional(),
+    ADMIN_REQUEST_EMAIL_TO: z.string().trim().email().optional(),
     VAPID_SUBJECT: z
       .string()
       .regex(/^(mailto:|https:\/\/)/)
@@ -81,5 +88,16 @@ export const env = z
         3 ===
       0,
     "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be configured together",
+  )
+  .refine(
+    (value) =>
+      [
+        value.HOSTINGER_MAIL_API_KEY,
+        value.HOSTINGER_MAIL_MAILBOX_ID,
+        value.ADMIN_REQUEST_EMAIL_TO,
+      ].filter(Boolean).length %
+        3 ===
+      0,
+    "Configure the Hostinger Mail API key, mailbox ID and admin request email together",
   )
   .parse(process.env);

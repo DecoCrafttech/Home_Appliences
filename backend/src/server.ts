@@ -3,6 +3,10 @@ import { env } from "./config/env.js";
 import { drainPushOutbox, pushConfigured } from "./pushService.js";
 import { safeError } from "./security/safeError.js";
 import { closeDatabase } from "./db.js";
+import {
+  adminRequestEmailConfigured,
+  drainAdminRequestEmails,
+} from "./adminRequestEmail.js";
 const server = app.listen(env.PORT, () =>
   logger.info({ port: env.PORT }, "API listening"),
 );
@@ -13,6 +17,14 @@ if (pushConfigured) {
     );
   drain();
   setInterval(drain, 60_000).unref();
+}
+if (adminRequestEmailConfigured) {
+  const drain = () =>
+    void drainAdminRequestEmails().catch((error) =>
+      logger.warn(safeError(error), "Admin email outbox will retry"),
+    );
+  drain();
+  setInterval(drain, 30_000).unref();
 }
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () => {
