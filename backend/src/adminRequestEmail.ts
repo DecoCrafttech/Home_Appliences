@@ -90,17 +90,20 @@ export async function drainAdminRequestEmails() {
       ].filter(([, value]) => typeof value === "string" && value.trim());
       const subject = `New Fixbeez ${type} request ${job.request_number}`;
       const text = `${subject}\n\n${fields.map(([label, value]) => `${label}: ${value}`).join("\n")}\n\nOpen in Fixbeez Admin: ${url}`;
-      const html = `<div style="background:#f3f6f8;padding:24px 12px;font-family:Arial,sans-serif;color:#1b2933">
-        <div style="max-width:600px;margin:auto;background:#fff;border:1px solid #dce4e8;border-radius:12px;overflow:hidden">
-          <div style="background:#103746;color:#fff;padding:24px">
-            <div style="font-weight:bold">Fixbeez</div>
-            <h1 style="margin:8px 0 0;font-size:24px">New ${type} request</h1>
+      const html = `<div style="background:#f6f2fc;padding:24px 12px;font-family:Arial,sans-serif;color:#1f2638">
+        <div style="max-width:600px;margin:auto;background:#fff;border:1px solid #e5dcf5;border-radius:12px;overflow:hidden">
+          <div style="background:#512da8;color:#fff;padding:24px">
+            <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+              <td><img src="https://fixbeez.in/icon-192.png" alt="Fixbeez logo" width="48" height="48" style="display:block;background:#fff;border-radius:10px"></td>
+              <td style="padding-left:12px;color:#fff;font-size:20px;font-weight:bold">Fixbeez</td>
+            </tr></table>
+            <h1 style="margin:16px 0 0;font-size:24px;color:#fff">New ${type} request</h1>
           </div>
           <div style="padding:24px">
             <table style="width:100%;border-collapse:collapse;text-align:left;font-size:14px;line-height:1.5">
               ${fields.map(([label, value]) => `<tr><th scope="row" style="width:40%;vertical-align:top;padding:8px 12px 8px 0;border-bottom:1px solid #e5eaed">${escapeHtml(label)}</th><td style="padding:8px 0;border-bottom:1px solid #e5eaed;overflow-wrap:anywhere">${escapeHtml(value).replace(/\r?\n/g, "<br>")}</td></tr>`).join("")}
             </table>
-            <p style="margin:24px 0 0"><a href="${escapeHtml(url.href)}" style="display:inline-block;background:#103746;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Open in Fixbeez Admin</a></p>
+            <p style="margin:24px 0 0"><a href="${escapeHtml(url.href)}" style="display:inline-block;background:#512da8;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Open in Fixbeez Admin</a></p>
           </div>
         </div>
       </div>`;
