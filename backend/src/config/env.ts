@@ -72,7 +72,11 @@ export const env = z
       .trim()
       .regex(/^[A-Za-z0-9_-]+$/)
       .optional(),
-    ADMIN_REQUEST_EMAIL_TO: z.string().trim().email().optional(),
+    ADMIN_REQUEST_EMAIL_TO: z
+      .string()
+      .transform((value) => value.split(","))
+      .pipe(z.array(z.string().trim().email()).min(1).max(2))
+      .optional(),
     VAPID_SUBJECT: z
       .string()
       .regex(/^(mailto:|https:\/\/)/)

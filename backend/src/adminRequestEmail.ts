@@ -6,9 +6,9 @@ import { safeError } from "./security/safeError.js";
 const logger = pino({ name: "admin-request-email" });
 const apiKey = env.HOSTINGER_MAIL_API_KEY;
 const mailboxId = env.HOSTINGER_MAIL_MAILBOX_ID;
-const recipient = env.ADMIN_REQUEST_EMAIL_TO;
+const recipients = env.ADMIN_REQUEST_EMAIL_TO;
 export const adminRequestEmailConfigured = Boolean(
-  apiKey && mailboxId && recipient,
+  apiKey && mailboxId && recipients,
 );
 
 export async function queueAdminRequestEmail(requestId: string) {
@@ -41,7 +41,7 @@ function escapeHtml(value: string) {
 }
 
 export async function drainAdminRequestEmails() {
-  if (!apiKey || !mailboxId || !recipient || draining) return;
+  if (!apiKey || !mailboxId || !recipients || draining) return;
   draining = true;
   try {
     const jobs = await db()`SELECT request_id FROM admin_request_emails
@@ -117,7 +117,7 @@ export async function drainAdminRequestEmails() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              to: [recipient],
+              to: [...new Set(recipients)],
               displayName: "Fixbeez",
               subject,
               text,

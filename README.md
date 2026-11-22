@@ -64,7 +64,7 @@ Notification, request and technician job/assignment endpoints bypass the shared 
 New service and installation requests can email an admin inbox through Hostinger Mail. Alerts include the request number, service details, and a link to the Admin panel. The backend queues one email per saved request and retries failed deliveries independently.
 
 1. In Hostinger **Emails → Developers → Manage keys**, create a key scoped to the sending mailbox. Use that mailbox's resource ID in the backend configuration. [Hostinger Mail setup](https://www.hostinger.com/support/how-to-use-agentic-mail-in-hostinger/)
-2. Set `HOSTINGER_MAIL_API_KEY`, `HOSTINGER_MAIL_MAILBOX_ID`, and `ADMIN_REQUEST_EMAIL_TO` in the backend hosting environment. Set `ADMIN_ORIGIN` to the public Admin panel URL.
+2. Set `HOSTINGER_MAIL_API_KEY`, `HOSTINGER_MAIL_MAILBOX_ID`, and `ADMIN_REQUEST_EMAIL_TO` in the backend hosting environment. For two recipients, enter `first@example.com,second@example.com` as the value of `ADMIN_REQUEST_EMAIL_TO`. Set `ADMIN_ORIGIN` to the public Admin panel URL.
 3. Apply the database migrations with `npm run db:migrate --workspace @home/api` before starting the updated backend with email enabled. Submit a test request and confirm it arrives in the admin inbox.
 
 ## Database changes
