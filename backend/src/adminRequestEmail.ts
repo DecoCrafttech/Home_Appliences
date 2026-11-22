@@ -1,6 +1,9 @@
+import pino from "pino";
 import { env } from "./config/env.js";
 import { db } from "./db.js";
+import { safeError } from "./security/safeError.js";
 
+const logger = pino({ name: "admin-request-email" });
 const apiKey = env.HOSTINGER_MAIL_API_KEY;
 const mailboxId = env.HOSTINGER_MAIL_MAILBOX_ID;
 const recipient = env.ADMIN_REQUEST_EMAIL_TO;
@@ -10,8 +13,15 @@ export const adminRequestEmailConfigured = Boolean(
 
 export async function queueAdminRequestEmail(requestId: string) {
   if (!adminRequestEmailConfigured) return;
-  await db()`INSERT INTO admin_request_emails(request_id) VALUES (${requestId})
-    ON CONFLICT (request_id) DO NOTHING`;
+  try {
+    await db()`INSERT INTO admin_request_emails(request_id) VALUES (${requestId})
+      ON CONFLICT (request_id) DO NOTHING`;
+  } catch (error) {
+    logger.warn(
+      { ...safeError(error), requestId },
+      "Could not queue admin request email",
+    );
+  }
 }
 
 let draining = false;
