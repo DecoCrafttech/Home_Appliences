@@ -31,14 +31,16 @@ In hPanel, open the Node.js application for `api.fixbeez.in`. Upload `backend-so
 
 - Node.js: **24.x** (required for the runtime WebSocket used by database transactions).
 - Framework: Express, or Other if entry settings must be entered manually.
-- Application root for the source ZIP: archive root. For the GitHub monorepo picker, select `backend` while retaining the full repository checkout and npm workspaces. The adjacent `packages/shared` source must remain available during installation and at runtime.
+- Application root: the archive root for ZIP uploads or the repository root (`.`) for GitHub deployments. Both roots must contain `backend/` and `packages/shared/`.
 - Install: `npm ci`. A production-only `npm ci --omit=dev` also includes the backend compiler and required type declarations.
-- Build at archive/repository root: `npm run build -w @home/api`. When the selected root is `backend`, use `npm run build`.
+- Build command: `npm run build -w @home/api`.
 - Output directory: `.` (retain source, workspace files and installed dependencies).
-- Entry file at archive/repository root: `server.mjs`. When the selected root is `backend`, use `start.mjs`.
+- Entry file: `server.mjs`.
 - Start command, if offered: `npm start`.
 
-Internal packages use explicit `file:` dependencies, not npm-registry versions: the backend resolves `@home/shared` from `../packages/shared`, and the PWAs resolve shared/UI packages from `../../packages`. The backend also has a standalone `package-lock.json` and `install-links=true` in `.npmrc`, so an install from the selected `backend` root can copy the local package with its dependencies without workspace auto-detection. Keep the sibling package directories in the GitHub checkout. No npm account, scoped registry or npm authentication token is needed for these local packages. If shared package contents/dependencies change, refresh the standalone lock with `npm install --package-lock-only --ignore-scripts --workspaces=false --install-links --prefix backend`, then update the root lock with `npm install --ignore-scripts` and commit both.
+The backend resolves `@home/shared` from `../packages/shared`. If a Hostinger rebuild reports an `ENOENT` for `hbuilds/packages/shared/package.json`, update the app root and entry file to the settings above and deploy again from a fresh GitHub checkout or upload `backend-source.zip`. Restoring a deployment that contains only `backend/` leaves the sibling package unavailable. The committed lockfiles use relative paths; npm reports the absolute path it calculated inside Hostinger's build directory.
+
+If shared package dependencies change, refresh the backend lock with `npm install --package-lock-only --ignore-scripts --workspaces=false --install-links --prefix backend`, then update the root lock with `npm install --ignore-scripts` and commit both.
 
 The entry loads compiled `dist/server.js`. The build bundles backend code and `@home/shared` together, so production startup does not need `tsx`, `get-tsconfig`, the TypeScript sources or a workspace link to `@home/shared`. It then copies the standalone manifest and lockfile from `backend/runtime` into `dist` and runs a production-only `npm ci` there. This places Express and all transitive runtime dependencies in `dist/node_modules`, rather than relying on workspace dependencies hoisted outside the selected Hostinger root. Keep `start.mjs` and the entire `dist` directory, including its `node_modules`, in the deployed application. Install native dependencies on Hostinger's Linux build environment; do not upload Windows `node_modules`. The `tsx` dependency remains available for existing migration and account-management commands, but is not imported during API startup.
 
