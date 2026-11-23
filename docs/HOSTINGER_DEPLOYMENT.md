@@ -77,7 +77,7 @@ Create/configure each domain as a static/PHP website. In each domain's own docum
 
 The apps call `https://api.fixbeez.in` directly with credentials; no frontend `/api` proxy is required. Cookies remain host-only on the API and use the existing secure and SameSite settings. All four origins use the same HTTPS site. API CORS explicitly permits the three configured app origins, and catalogue media allows same-site embedding.
 
-In Google Cloud, add `https://fixbeez.in` to the OAuth Web client's authorized JavaScript origins. Use the same client ID in the backend. Add any additional origin only if it is intentionally supported; `www.fixbeez.in` should redirect to `fixbeez.in`.
+In Google Cloud, add `https://fixbeez.in` to the OAuth Web client's authorized JavaScript origins. Use the same client ID in the backend. In Hostinger, point `www.fixbeez.in` at the Customer document root and enable HTTPS for it. The packaged `.htaccess` redirects www requests to `https://fixbeez.in` with the original path and query string. Verify that `curl -I 'https://www.fixbeez.in/?source=www'` returns a 301 with `Location: https://fixbeez.in/?source=www`.
 
 ## Connect the Neon development branch
 
